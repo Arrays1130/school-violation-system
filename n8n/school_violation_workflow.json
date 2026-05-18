@@ -1,0 +1,131 @@
+{
+  "name": "School Violation Workflow (Gmail & SMS)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "school-violation-webhook",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "replace-this-with-generated-id"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{$json['body']['event_type']}}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "violation_recorded",
+              "output": 0
+            },
+            {
+              "value2": "hearing_scheduled",
+              "output": 1
+            },
+            {
+              "value2": "case_closed",
+              "output": 2
+            }
+          ]
+        }
+      },
+      "name": "Route Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "castillanesjaytzy@gmail.com",
+        "toEmail": "={{$json['body']['student_email']}}",
+        "subject": "=[Notice] {{ $json['body']['violation_title'] }} Recorded",
+        "text": "=Hello,\n\nThis is to notify you that a violation has been recorded.\n\nStudent: {{ $json['body']['student_name'] }}\nViolation: {{ $json['body']['violation_title'] }}\nSeverity: {{ $json['body']['violation_severity'] }}\nSanction: {{ $json['body']['sanction'] }}\n\nPlease log in to the School Violation System portal for more details.",
+        "options": {}
+      },
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        800,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "e079452334d6ba775de805d8a9537663"
+            },
+            {
+              "name": "number",
+              "value": "={{$node[\"Webhook\"].json[\"body\"][\"student_contact\"]}}"
+            },
+            {
+              "name": "message",
+              "value": "=[Notice] A new violation ({{ $json['body']['violation_title'] }}) was recorded for {{ $json['body']['student_name'] }}. Pls check your Portal."
+            },
+            {
+              "name": "sendername",
+              "value": "SEMAPHORE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Semaphore SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        800,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Event": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Semaphore SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}

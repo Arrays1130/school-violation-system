@@ -1,0 +1,49 @@
+<div class="space-y-1">
+    @if(auth()->user()->isDean())
+    <a href="{{ route('dean.dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('dean.dashboard') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span>Dashboard</span>
+    </a>
+    @else
+    <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span>Dashboard</span>
+    </a>
+    @endif
+
+    <a href="{{ route('students.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('students.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span>Student Records</span>
+    </a>
+
+    <a href="{{ route('cases.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('cases.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="folder-open" class="w-5 h-5"></i>
+        <span>Violation Records</span>
+    </a>
+
+    <a href="{{ route('violations.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('violations.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+        <span>Violation Matrix</span>
+    </a>
+
+    <a href="{{ route('handbooks.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('handbooks.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="book-open" class="w-5 h-5"></i>
+        <span>Handbook</span>
+    </a>
+
+    <a href="{{ route('meeting-minutes.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('meeting-minutes.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+        <span>Meeting Minutes</span>
+    </a>
+
+    <a href="{{ route('reports.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('reports.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="file-text" class="w-5 h-5"></i>
+        <span>Reports</span>
+    </a>
+
+    <a href="{{ route('ai-assistant.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('ai-assistant.*') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+        <i data-lucide="sparkles" class="w-5 h-5 text-purple-500"></i>
+        <span>AI Assistant</span>
+    </a>
+</div>
+
