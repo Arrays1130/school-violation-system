@@ -40,7 +40,8 @@
                 <!-- Logo Header -->
                 <div class="px-6 py-6 flex-shrink-0 border-b border-slate-100/80 flex items-center justify-between">
                     <div class="flex items-center gap-3.5">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-indigo-500/10 shrink-0">
+                        <img class="w-9 h-9 object-contain shrink-0 rounded-lg shadow-sm" src="{{ asset('brand_logo.png') }}" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-indigo-500/10 shrink-0" style="display: none;">
                             <i data-lucide="shield" class="w-5.5 h-5.5 text-white"></i>
                         </div>
                         <div>
@@ -55,7 +56,7 @@
                 </div>
 
                 <!-- Nav Links -->
-                <nav class="flex-1 overflow-y-auto px-4.5 py-6">
+                <nav class="flex-1 overflow-y-auto px-4.5 py-6 no-scrollbar">
                     @include('layouts.navigation-links')
                 </nav>
 
@@ -99,7 +100,7 @@
                     </div>
                 </header>
 
-                <main class="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10">
+                <main class="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 no-scrollbar">
                     <div class="max-w-7xl mx-auto">
                         {{ $slot }}
                     </div>

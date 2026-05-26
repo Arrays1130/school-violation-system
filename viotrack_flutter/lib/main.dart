@@ -9,8 +9,10 @@ import 'services/fcm_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
+
 import 'services/security_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +27,7 @@ void main() async {
     print("Firebase init error: $e");
   }
 
-  runApp(const VioTrackApp());
+  runApp(const ProviderScope(child: VioTrackApp())); // Wrapped with ProviderScope
 }
 
 class VioTrackApp extends StatelessWidget {
@@ -162,4 +164,3 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return const MainLayout();
   }
 }
-

@@ -4,21 +4,74 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Student;
+use Illuminate\Support\Facades\Hash;
 
 class StudentSeeder extends Seeder
 {
     public function run(): void
     {
-        $departments = ['BSIT', 'BSCS', 'BSBA', 'BSED', 'BSHRM'];
-        $sections = ['1-A', '1-B', '2-A', '3-A', '4-A', '4-B'];
+        $departments = [
+            'Bachelor Of Science In Information System',
+            'Bachelor Of Science In Criminology',
+            'Bachelor Of Technical Vocational Teachers Education',
+            'College Of Business And Accounting Education',
+        ];
 
-        // Create 50 random students
+        $sections = ['A', 'B', 'C', 'D'];
+        $yearLevels = ['1', '2', '3', '4'];
+
+        $filipinoFirstNames = [
+            'Juan', 'Maria', 'Jose', 'Angelo', 'Jayson', 'Ramil', 'Manuel', 'Ricardo', 'Antonio', 'Crisanto',
+            'Janice', 'Rhea', 'Camille', 'Shaira', 'Princess', 'Precious', 'Abigail', 'Rachelle', 'Jovelyn', 'Angelica',
+            'Christian', 'John Paul', 'Joshua', 'Aldrin', 'Jerome', 'Mark', 'Arnel', 'Jeffrey', 'Dexter', 'Renato',
+            'Michelle', 'Roxanne', 'Jonalyn', 'Mary Joy', 'Jocelyn', 'Sheryl', 'Gemma', 'Marites', 'Kyla', 'Andrea'
+        ];
+
+        $filipinoLastNames = [
+            'Dela Cruz', 'Santos', 'Reyes', 'Aquino', 'Santiago', 'Mendoza', 'Bautista', 'Garcia', 'Cruz', 'Diaz',
+            'Gonzales', 'Villanueva', 'Ramos', 'Castro', 'Mercado', 'Flores', 'Del Rosario', 'Pascual', 'Valenzuela', 'Soriano',
+            'Alcantara', 'Aquino', 'Mangahas', 'San Jose', 'Tolentino', 'Corpuz', 'Dizon', 'Salazar', 'Bermudez', 'Beltran'
+        ];
+
+        $guardians = [
+            ['name' => 'Roberto', 'relation' => 'Father'],
+            ['name' => 'Helen', 'relation' => 'Mother'],
+            ['name' => 'Alicia', 'relation' => 'Mother'],
+            ['name' => 'Eduardo', 'relation' => 'Father'],
+            ['name' => 'Teresa', 'relation' => 'Mother'],
+            ['name' => 'Fernando', 'relation' => 'Father'],
+            ['name' => 'Lourdes', 'relation' => 'Mother'],
+            ['name' => 'Gregorio', 'relation' => 'Father'],
+        ];
+
+        // Ensure we seed exactly 50 realistic students
         for ($i = 0; $i < 50; $i++) {
+            $firstName = fake()->randomElement($filipinoFirstNames);
+            $lastName = fake()->randomElement($filipinoLastNames);
+            $fullName = $firstName . ' ' . $lastName;
+            
+            $dept = fake()->randomElement($departments);
+            $year = fake()->randomElement($yearLevels);
+            $sec = fake()->randomElement($sections);
+            $sectionString = $year . '-' . $sec;
+
+            $emailName = strtolower(str_replace(' ', '', $firstName . '.' . $lastName));
+            $email = $emailName . $i . '@cst.edu.ph';
+
+            $g = fake()->randomElement($guardians);
+            $guardianName = $g['name'] . ' ' . $lastName;
+            $guardianEmail = strtolower($g['name'] . '.' . $lastName) . '@gmail.com';
+
             Student::create([
-                'full_name' => fake()->name(),
-                'section' => fake()->randomElement($sections),
-                'department' => fake()->randomElement($departments),
-                'email' => fake()->unique()->safeEmail(),
+                'full_name' => $fullName,
+                'section' => $sectionString,
+                'year_level' => $year,
+                'department' => $dept,
+                'email' => $email,
+                'guardian_name' => $guardianName,
+                'guardian_email' => $guardianEmail,
+                'guardian_phone' => '09' . fake()->numerify('#########'),
+                'password' => Hash::make('password'),
             ]);
         }
     }

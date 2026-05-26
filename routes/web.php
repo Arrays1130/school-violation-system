@@ -16,6 +16,7 @@ use App\Http\Controllers\CaseActionController;
 use App\Http\Controllers\CaseAttachmentController;
 use App\Http\Controllers\MeetingMinuteController;
 use App\Http\Controllers\EmailLogController;
+use App\Http\Controllers\UserController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -92,6 +93,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/system', [ReportController::class, 'system'])->name('reports.system');
+    Route::get('/reports/sanctions', [ReportController::class, 'sanctions'])->name('reports.sanctions');
     Route::get('/reports/retrieval', [ReportController::class, 'retrieval'])->name('reports.retrieval');
     Route::get('/reports/email-logs', [EmailLogController::class, 'index'])->name('reports.email-logs');
     Route::delete('/reports/email-logs/{emailLog}', [EmailLogController::class, 'destroy'])->name('reports.email-logs.destroy');
@@ -103,6 +106,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cases/{case}/actions', [CaseActionController::class, 'store'])->name('cases.actions.store');
     Route::post('/cases/{case}/endorse', [CaseActionController::class, 'endorse'])->name('cases.endorse');
 
+
+    // User Management
+    Route::resource('users', UserController::class);
 
     // Case Status
     Route::post('/cases/{case}/close', [CaseController::class, 'close'])->name('cases.close');

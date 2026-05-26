@@ -1,20 +1,20 @@
 <x-app-layout>
     @section('header', 'AI Assistant')
 
-    <div class="max-w-5xl mx-auto h-[calc(100vh-10rem)] flex flex-col space-y-6" x-data="handbookChat()">
+    <div class="max-w-5xl mx-auto h-[calc(100vh-10rem)] flex flex-col gap-6" x-data="handbookChat()">
         
         <style>
             .ai-glow {
-                box-shadow: 0 0 40px -5px rgba(124, 58, 237, 0.12);
+                box-shadow: 0 0 50px -10px rgba(99, 102, 241, 0.15);
             }
             .chat-bg {
                 background-image: 
-                    radial-gradient(at 0% 0%, rgba(243, 244, 246, 0.4) 0, transparent 50%),
-                    radial-gradient(at 100% 100%, rgba(224, 231, 255, 0.3) 0, transparent 50%);
+                    radial-gradient(at 0% 0%, rgba(243, 244, 246, 0.5) 0, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(238, 242, 255, 0.4) 0, transparent 50%);
             }
             .user-bubble {
-                background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
-                box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.2);
+                background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+                box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.3);
             }
             @keyframes pulse-ring {
                 0% { transform: scale(0.95); opacity: 1; }
@@ -22,71 +22,91 @@
                 100% { transform: scale(1.3); opacity: 0; }
             }
             .pulse-ring {
-                animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+                animation: pulse-ring 2.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+            }
+            #chat-container::-webkit-scrollbar {
+                width: 6px;
+            }
+            #chat-container::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            #chat-container::-webkit-scrollbar-thumb {
+                background: #e2e8f0;
+                border-radius: 4px;
+            }
+            #chat-container::-webkit-scrollbar-thumb:hover {
+                background: #cbd5e1;
             }
         </style>
 
         {{-- Top Premium Header Panel --}}
-        <div class="bg-white/85 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-gray-150 shrink-0 ai-glow flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/20 relative">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-6 shadow-xl shadow-indigo-950/10 border border-indigo-950/20 flex items-center justify-between group shrink-0">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
+            <div class="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-indigo-500/10 blur-3xl"></div>
+            
+            <div class="relative flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 relative transition-transform group-hover:scale-110 group-hover:rotate-3 duration-300">
                     <i data-lucide="sparkles" class="w-5.5 h-5.5 animate-pulse"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-900 tracking-tight">CST Guidance AI</h1>
+                    <h1 class="text-lg font-bold text-white tracking-tight">CST Guidance AI</h1>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="relative flex h-2 w-2">
-                            <span class="pulse-ring absolute inline-flex h-full w-full rounded-full bg-indigo-400"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            <span class="pulse-ring absolute inline-flex h-full w-full rounded-full bg-emerald-400"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <p class="text-xs text-gray-500 font-semibold tracking-wide uppercase">Core Intelligence Online</p>
+                        <p class="text-[10px] text-indigo-200/80 font-bold tracking-wider uppercase">Core Intelligence Online</p>
                     </div>
                 </div>
             </div>
             
-            {{-- Quick Stats / Status pill --}}
-            <span class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-150 rounded-xl text-xs font-semibold text-gray-600">
-                <i data-lucide="brain-circuit" class="w-4 h-4 text-indigo-500"></i>
-                Model: Handbook-GPT v4.0
-            </span>
+            <div class="relative flex items-center gap-3">
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/10 rounded-xl text-[11px] font-bold text-indigo-100/90 shadow-sm">
+                    <i data-lucide="brain-circuit" class="w-4 h-4 text-indigo-400"></i>
+                    Model: Handbook-GPT v4.0
+                </span>
+            </div>
         </div>
 
         {{-- Main Chat Hub --}}
-        <div class="flex-1 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-150 shadow-md flex flex-col overflow-hidden ai-glow">
+        <div class="flex-1 bg-white rounded-2xl border border-slate-100 shadow-lg shadow-indigo-950/5 flex flex-col overflow-hidden ai-glow">
             
             {{-- Chat Conversation Stream --}}
-            <div class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth chat-bg" id="chat-container">
+            <div class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth chat-bg no-scrollbar" id="chat-container">
                 
                 {{-- Welcome Screen --}}
                 <div x-show="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center space-y-6 max-w-lg mx-auto py-12">
-                    <div class="w-20 h-20 bg-gradient-to-tr from-indigo-50 to-purple-50 rounded-2xl flex items-center justify-center border border-indigo-100/50 shadow-inner">
-                        <i data-lucide="bot-message-square" class="w-10 h-10 text-indigo-600"></i>
+                    <div class="relative w-20 h-20 bg-white rounded-2xl flex items-center justify-center border border-indigo-50 shadow-md shadow-indigo-500/5 group transition-transform hover:scale-105 duration-300">
+                        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="relative w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                            <i data-lucide="bot" class="w-6 h-6"></i>
+                        </div>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-extrabold text-gray-900 tracking-tight">Institutional AI Companion</h2>
-                        <p class="text-sm text-gray-500 mt-2.5 leading-relaxed">
+                        <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Institutional AI Companion</h2>
+                        <p class="text-sm text-slate-400 mt-2.5 leading-relaxed font-medium">
                             Ask me anything about student regulations, handbook compliance standards, code of conduct, and case procedures.
                         </p>
                         
                         {{-- Interactive Suggestion Grid --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-8 text-left">
-                            <button @click="input = 'What are the major offenses?'; sendMessage()" class="p-4 rounded-xl bg-white border border-gray-200 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start gap-4 text-left group">
-                                <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
-                                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 text-left">
+                            <button @click="input = 'What are the major offenses?'; sendMessage()" class="p-4.5 rounded-2xl bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-1 transition-all duration-300 flex items-start gap-4 text-left group">
+                                <div class="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 border border-rose-100/50 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Major Offenses</h3>
-                                    <p class="text-xs text-gray-500 mt-1">Review severe violations and sanction limits.</p>
+                                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Major Offenses</h3>
+                                    <p class="text-xs text-slate-400 mt-1 font-medium leading-relaxed">Review severe violations and sanction limits.</p>
                                 </div>
                             </button>
                             
-                            <button @click="input = 'What is the disciplinary hearing process?'; sendMessage()" class="p-4 rounded-xl bg-white border border-gray-200 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-start gap-4 text-left group">
-                                <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100 transition-colors">
+                            <button @click="input = 'What is the disciplinary hearing process?'; sendMessage()" class="p-4.5 rounded-2xl bg-white border border-slate-100 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/5 hover:-translate-y-1 transition-all duration-300 flex items-start gap-4 text-left group">
+                                <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 border border-purple-100/50 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                     <i data-lucide="git-merge" class="w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Disciplinary Steps</h3>
-                                    <p class="text-xs text-gray-500 mt-1">Understand the timeline of a logged case.</p>
+                                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Disciplinary Steps</h3>
+                                    <p class="text-xs text-slate-400 mt-1 font-medium leading-relaxed">Understand the timeline of a logged case.</p>
                                 </div>
                             </button>
                         </div>
@@ -99,7 +119,7 @@
                         
                         {{-- Avatar Icon --}}
                         <div class="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm text-sm"
-                             :class="msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-700'">
+                             :class="msg.role === 'user' ? 'bg-indigo-600 text-white shadow-indigo-600/10' : 'bg-white border border-slate-200 text-slate-700 shadow-sm'">
                             <i :data-lucide="msg.role === 'user' ? 'user' : 'bot'" class="w-4.5 h-4.5"></i>
                         </div>
 
@@ -108,7 +128,7 @@
                             <div class="px-5 py-3.5 text-sm leading-relaxed"
                                  :class="msg.role === 'user'
                                     ? 'user-bubble text-white rounded-2xl rounded-tr-none font-medium'
-                                    : 'bg-white text-gray-800 rounded-2xl rounded-tl-none border border-gray-150 shadow-sm'">
+                                    : 'bg-white text-slate-800 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm shadow-slate-100/50'">
                                 <span x-html="msg.content"></span>
                             </div>
                             
@@ -116,7 +136,7 @@
                             <template x-if="msg.role === 'bot' && msg.sources && msg.sources.length > 0">
                                 <div class="mt-2.5 flex flex-wrap gap-2">
                                     <template x-for="source in msg.sources">
-                                        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-[10px] font-bold text-gray-500 shadow-sm uppercase tracking-wide">
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/50 border border-indigo-100 text-[10px] font-bold text-indigo-600 shadow-sm uppercase tracking-wide transition-transform hover:scale-105 cursor-default">
                                             <i data-lucide="file-text" class="w-3.5 h-3.5 text-indigo-500"></i>
                                             <span x-text="source"></span>
                                         </div>
@@ -129,10 +149,10 @@
 
                 {{-- Loading Anim --}}
                 <div x-show="isTyping" class="flex gap-4 w-full">
-                    <div class="w-9 h-9 rounded-xl bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center shadow-sm">
-                        <i data-lucide="bot" class="w-4.5 h-4.5 text-gray-400"></i>
+                    <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex-shrink-0 flex items-center justify-center shadow-sm">
+                        <i data-lucide="bot" class="w-4.5 h-4.5 text-slate-400"></i>
                     </div>
-                    <div class="bg-white border border-gray-150 rounded-2xl rounded-tl-none px-5 py-4 shadow-sm flex items-center gap-1.5">
+                    <div class="bg-white border border-slate-100 rounded-2xl rounded-tl-none px-5 py-4 shadow-sm flex items-center gap-1.5">
                         <span class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></span>
                         <span class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 0.15s"></span>
                         <span class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 0.3s"></span>
@@ -141,28 +161,27 @@
             </div>
 
             {{-- Input Control Board --}}
-            <div class="p-4 bg-white border-t border-gray-150 shrink-0">
-                <form @submit.prevent="sendMessage" class="relative flex items-end gap-3 max-w-4xl mx-auto">
-                    <div class="relative flex-1 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all duration-200">
-                        <textarea 
-                            x-model="input"
-                            @keydown.enter.prevent="if(!$event.shiftKey) sendMessage()"
-                            rows="1"
-                            class="w-full bg-transparent border-0 focus:ring-0 py-3.5 px-4 text-sm text-gray-900 placeholder-gray-400 resize-none"
-                            placeholder="Ask me about rules, regulations, infraction consequences..."
-                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                            style="min-height: 48px; max-height: 120px;"
-                        ></textarea>
-                    </div>
+            <div class="p-5 bg-slate-50/70 border-t border-slate-100 shrink-0">
+                <form @submit.prevent="sendMessage" class="relative flex items-center bg-white rounded-2xl border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all duration-300 shadow-sm pl-4 pr-2.5 py-2 w-full max-w-4xl mx-auto group">
+                    <i data-lucide="message-square" class="w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors mr-2"></i>
+                    <textarea 
+                        x-model="input"
+                        @keydown.enter.prevent="if(!$event.shiftKey) sendMessage()"
+                        rows="1"
+                        class="flex-1 bg-transparent border-0 focus:ring-0 py-2.5 text-sm text-slate-800 placeholder-slate-400 resize-none outline-none"
+                        placeholder="Ask me about rules, regulations, infraction consequences..."
+                        oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                        style="min-height: 40px; max-height: 120px;"
+                    ></textarea>
                     <button type="submit" 
                             :disabled="!input.trim() || isTyping"
-                            class="h-[48px] px-5 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-semibold text-sm shadow-md shadow-indigo-600/10 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200">
-                        <i data-lucide="send" class="w-4 h-4 mr-2"></i>
+                            class="h-[40px] px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-indigo-600/10 hover:from-indigo-500 hover:to-indigo-600 hover:shadow-lg hover:shadow-indigo-500/20 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200 ml-2 whitespace-nowrap">
+                        <i data-lucide="send" class="w-3.5 h-3.5 mr-2"></i>
                         Send Query
                     </button>
                 </form>
-                <p class="text-center mt-3 text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                    Powered by semantic handbook vector indexing • always review the <a href="/handbooks" class="text-indigo-600 hover:underline">Official Handbook</a>
+                <p class="text-center mt-3.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                    Powered by semantic handbook vector indexing • always review the <a href="{{ route('handbooks.index') }}" class="text-indigo-600 hover:underline">Official Handbook</a>
                 </p>
             </div>
         </div>
@@ -183,7 +202,7 @@
                     this.input = '';
                     
                     const textarea = document.querySelector('textarea');
-                    if (textarea) textarea.style.height = '48px';
+                    if (textarea) textarea.style.height = '40px';
                     
                     this.scrollToBottom();
                     this.isTyping = true;

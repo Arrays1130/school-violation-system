@@ -122,52 +122,52 @@ export default function DeanDashboard({
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="group bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 hover:border-indigo-200/50 transition-all duration-300 flex flex-col justify-between min-h-[140px]">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Total Cases</p>
-                                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats.total}</p>
-                                <div className="mt-2 flex items-center gap-1.5">
-                                    <span className={`text-xs font-medium ${trends.total.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Cases</p>
+                                <p className="text-3xl font-extrabold text-slate-800 tracking-tight mt-1.5">{stats.total}</p>
+                                <div className="mt-2 flex items-center gap-1.5 pt-3 border-t border-slate-50">
+                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${trends.total.isPositive ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                                         {trends.total.direction === 'up' ? '↑' : '↓'} {trends.total.percentage}%
                                     </span>
-                                    <span className="text-xs text-gray-500">vs last month</span>
+                                    <span className="text-[10px] text-slate-400 font-medium">vs last month</span>
                                 </div>
                             </div>
-                            <div className="p-3 bg-blue-50 rounded-md">
-                                <Activity className="w-6 h-6 text-blue-600" />
+                            <div className="p-3 rounded-xl bg-blue-50 text-blue-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                <Activity className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="group bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 hover:border-indigo-200/50 transition-all duration-300 flex flex-col justify-between min-h-[140px]">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Pending Review</p>
-                                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats.pending}</p>
-                                <div className="mt-2 flex items-center gap-1.5">
-                                    <span className="text-xs text-amber-600 font-medium">Action Needed</span>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Review</p>
+                                <p className="text-3xl font-extrabold text-slate-800 tracking-tight mt-1.5">{stats.pending}</p>
+                                <div className="mt-2 flex items-center gap-1.5 pt-3 border-t border-slate-50">
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">Action Needed</span>
                                 </div>
                             </div>
-                            <div className="p-3 bg-amber-50 rounded-md">
-                                <Clock className="w-6 h-6 text-amber-600" />
+                            <div className="p-3 rounded-xl bg-amber-50 text-amber-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                <Clock className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <div className="group bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 hover:border-indigo-200/50 transition-all duration-300 flex flex-col justify-between min-h-[140px]">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Resolution Rate</p>
-                                <p className="text-3xl font-semibold text-gray-900 mt-2">
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Resolution Rate</p>
+                                <p className="text-3xl font-extrabold text-slate-800 tracking-tight mt-1.5">
                                     {stats.total > 0 ? Math.round((stats.closed / stats.total) * 100) : 0}%
                                 </p>
-                                <div className="mt-2 flex items-center gap-1.5">
-                                    <span className="text-xs text-green-600 font-medium">System Healthy</span>
+                                <div className="mt-2 flex items-center gap-1.5 pt-3 border-t border-slate-50">
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">System Healthy</span>
                                 </div>
                             </div>
-                            <div className="p-3 bg-green-50 rounded-md">
-                                <CheckCircle className="w-6 h-6 text-green-600" />
+                            <div className="p-3 rounded-xl bg-green-50 text-green-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                <CheckCircle className="w-5 h-5" />
                             </div>
                         </div>
                     </div>
@@ -175,12 +175,12 @@ export default function DeanDashboard({
 
                 {/* Charts Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between">
-                        <div className="mb-4">
-                            <h3 className="text-base font-semibold text-gray-900">Monthly Violation Trends</h3>
-                            <p className="text-xs text-gray-500 mt-1">6-Month Case Volume</p>
+                    <div className="bg-white rounded-2xl border border-slate-100 border-l-4 border-l-indigo-500 shadow-sm p-6 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 hover:border-indigo-100 flex flex-col h-[420px] group">
+                        <div className="flex-none mb-6">
+                            <h3 className="text-base font-bold text-slate-800 tracking-tight">Monthly Violation Trends</h3>
+                            <p className="text-xs text-slate-400 mt-1 font-medium">6-Month Case Volume</p>
                         </div>
-                        <div className="h-64 relative w-full">
+                        <div className="flex-1 min-h-0 relative w-full pb-2">
                             <Line data={trendChartData} options={{ 
                                 maintainAspectRatio: false,
                                 plugins: { legend: { display: false } },
@@ -191,16 +191,16 @@ export default function DeanDashboard({
                             }} />
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between">
-                        <div className="mb-4">
-                            <h3 className="text-base font-semibold text-gray-900">Cases by Severity</h3>
-                            <p className="text-xs text-gray-500 mt-1">Severity Level Distribution</p>
+                    <div className="bg-white rounded-2xl border border-slate-100 border-l-4 border-l-rose-500 shadow-sm p-6 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 hover:border-indigo-100 flex flex-col h-[420px] group">
+                        <div className="flex-none mb-6">
+                            <h3 className="text-base font-bold text-slate-800 tracking-tight">Cases by Severity</h3>
+                            <p className="text-xs text-slate-400 mt-1 font-medium">Severity Level Distribution</p>
                         </div>
-                        <div className="h-64 relative w-full flex justify-center">
+                        <div className="flex-1 min-h-0 relative w-full flex justify-center pb-2">
                             <Pie data={severityData} options={{ 
                                 maintainAspectRatio: false,
                                 plugins: { 
-                                    legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 12 } } } 
+                                    legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 12, family: "'Inter', sans-serif" } } } 
                                 }
                             }} />
                         </div>
@@ -209,26 +209,26 @@ export default function DeanDashboard({
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Recent Cases Table */}
-                    <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[420px]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white flex-none">
                             <div>
-                                <h3 className="text-base font-semibold text-gray-900">Recent Violations</h3>
-                                <p className="text-xs text-gray-500 mt-1">Latest logged disciplinary actions</p>
+                                <h3 className="text-base font-bold text-slate-800 tracking-tight">Recent Violations</h3>
+                                <p className="text-xs text-slate-400 mt-1 font-medium">Latest logged disciplinary actions</p>
                             </div>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input 
                                     type="text" 
                                     placeholder="Search..." 
-                                    className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-48 transition-all"
+                                    className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-48 transition-all"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-white text-gray-500 text-xs font-medium tracking-wider uppercase text-left">
+                        <div className="flex-1 overflow-y-auto no-scrollbar">
+                            <table className="min-w-full divide-y divide-slate-100">
+                                <thead className="bg-slate-50/50 text-slate-500 text-[10px] font-bold tracking-wider uppercase text-left sticky top-0 z-10">
                                     <tr>
                                         <th className="px-6 py-3">Student</th>
                                         <th className="px-6 py-3">Violation</th>
@@ -236,31 +236,31 @@ export default function DeanDashboard({
                                         <th className="px-6 py-3 text-right">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="bg-white divide-y divide-slate-50">
                                     {recentCases.map(c => (
-                                        <tr key={c.id} onClick={() => { setSelectedCase(c); setIsModalOpen(true); }} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                                        <tr key={c.id} onClick={() => { setSelectedCase(c); setIsModalOpen(true); }} className="hover:bg-slate-50/50 transition-colors cursor-pointer group/row">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-semibold text-gray-600 text-xs">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs">
                                                         {c.student?.full_name?.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium text-gray-900 text-sm">{c.student?.full_name}</p>
-                                                        <p className="text-xs text-gray-500 mt-0.5">{c.student?.year_level}</p>
+                                                        <p className="font-bold text-slate-800 text-sm group-hover/row:text-indigo-600 transition-colors">{c.student?.full_name}</p>
+                                                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5 tracking-wider uppercase">{c.student?.year_level}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <p className="text-sm font-medium text-gray-900">{c.violation?.title}</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">{new Date(c.created_at).toLocaleDateString()}</p>
+                                                <p className="text-sm font-semibold text-slate-800">{c.violation?.title}</p>
+                                                <p className="text-xs text-slate-400 mt-0.5 font-medium">{new Date(c.created_at).toLocaleDateString()}</p>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${c.status === 'Closed' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${c.status === 'Closed' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
                                                     {c.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <button className="text-gray-400 hover:text-blue-600 transition-colors">
+                                                <button className="text-slate-400 hover:text-indigo-600 transition-colors">
                                                     <Eye className="w-5 h-5 ml-auto" />
                                                 </button>
                                             </td>
@@ -272,47 +272,47 @@ export default function DeanDashboard({
                     </div>
 
                     {/* Sidebar: Hearings & Repeaters */}
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
-                                <h3 className="text-base font-semibold text-gray-900">Upcoming Hearings</h3>
+                    <div className="flex flex-col h-[420px] gap-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col flex-1 min-h-0">
+                            <div className="px-5 py-4 border-b border-slate-100 bg-white flex-none">
+                                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Upcoming Hearings</h3>
                             </div>
-                            <div className="p-5 space-y-4">
+                            <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2">
                                 {upcomingHearings.length > 0 ? upcomingHearings.map(h => (
-                                    <div key={h.id} className="flex items-start gap-3 p-3 rounded-md hover:bg-gray-50 transition-colors border border-transparent cursor-pointer">
-                                        <div className="p-2 bg-blue-50 rounded text-blue-600">
+                                    <div key={h.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50/50 transition-colors cursor-pointer group/hearing">
+                                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600 group-hover/hearing:scale-110 transition-transform">
                                             <Calendar className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">{h.case.student.full_name}</p>
-                                            <p className="text-xs text-gray-500 mt-1">{new Date(h.scheduled_at).toLocaleDateString()}</p>
-                                            <p className="text-xs text-blue-600 mt-1 font-medium">{h.venue}</p>
+                                            <p className="text-xs font-bold text-slate-800 group-hover/hearing:text-indigo-600 transition-colors">{h.case.student.full_name}</p>
+                                            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{new Date(h.scheduled_at).toLocaleDateString()}</p>
+                                            <p className="text-[10px] text-indigo-600 mt-0.5 font-bold uppercase tracking-wider">{h.venue}</p>
                                         </div>
                                     </div>
                                 )) : (
-                                    <div className="text-center py-6">
-                                        <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-gray-500 text-sm">No scheduled hearings</p>
+                                    <div className="text-center py-6 h-full flex flex-col items-center justify-center">
+                                        <Calendar className="w-6 h-6 text-slate-200 mx-auto mb-2" />
+                                        <p className="text-slate-400 text-[11px] font-medium uppercase tracking-wider">No scheduled hearings</p>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
-                                <h3 className="text-base font-semibold text-gray-900">Frequent Offenders</h3>
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col flex-1 min-h-0">
+                            <div className="px-5 py-4 border-b border-slate-100 bg-white flex-none">
+                                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Frequent Offenders</h3>
                             </div>
-                            <div className="p-5 space-y-3">
+                            <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2">
                                 {topRepeaters.map((s, idx) => (
-                                    <div key={s.id} className="flex items-center justify-between p-3 rounded-md hover:bg-gray-50 transition-colors">
+                                    <div key={s.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50/50 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <span className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold ${idx === 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
+                                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold border ${idx === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-600 border-slate-100'}`}>
                                                 {idx + 1}
                                             </span>
-                                            <span className="text-sm font-medium text-gray-900">{s.full_name}</span>
+                                            <span className="text-xs font-bold text-slate-800">{s.full_name}</span>
                                         </div>
-                                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                            {s.cases_count} Cases
+                                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100/50">
+                                            {s.cases_count} cases
                                         </span>
                                     </div>
                                 ))}

@@ -26,7 +26,8 @@ class DeanDashboardController extends Controller
             // Base Query for students in the department
             $studentQuery = \App\Models\Student::query();
             if (!$user->isSuperAdmin()) {
-                $studentQuery->where('department', $department);
+                $longName = \App\Models\Student::resolveDepartmentLongName($department);
+                $studentQuery->where('department', $longName);
             }
             $studentIds = $studentQuery->pluck('id');
 

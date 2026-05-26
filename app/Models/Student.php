@@ -70,12 +70,25 @@ class Student extends Authenticatable
     public function getDepartmentShortcutAttribute()
     {
         $mapping = [
-            'Bachelor Of Science In Information System' => 'CEE',
+            'Bachelor Of Science In Information System' => 'CCE',
             'Bachelor Of Science In Criminology' => 'CCJE',
             'Bachelor Of Technical Vocational Teachers Education' => 'CTE',
             'College Of Business And Accounting Education' => 'CBAE',
         ];
 
         return $mapping[trim($this->department)] ?? $this->department;
+    }
+
+    public static function resolveDepartmentLongName($acronym)
+    {
+        $mapping = [
+            'CEE' => 'Bachelor Of Science In Information System',
+            'CCE' => 'Bachelor Of Science In Information System',
+            'CCJE' => 'Bachelor Of Science In Criminology',
+            'CTE' => 'Bachelor Of Technical Vocational Teachers Education',
+            'CBAE' => 'College Of Business And Accounting Education',
+        ];
+
+        return $mapping[strtoupper(trim($acronym))] ?? $acronym;
     }
 }

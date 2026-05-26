@@ -22,7 +22,7 @@ export default function DeanLogin({ status }) {
             <div className="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-xl overflow-hidden sm:rounded-xl border border-gray-200">
                 <div className="mb-8 text-center flex flex-col items-center">
                     <div className="bg-gray-50 p-3 rounded-full mb-4 border border-gray-100">
-                        <img className="w-16 h-16 object-contain" src="/brand_logo.png" alt="School Logo" onError={(e) => { e.target.src='https://ui-avatars.com/api/?name=Dean+Portal&background=4338ca&color=fff&rounded=true'; }} />
+                        <img className="w-16 h-16 object-contain" src={window.assetUrl ? `${window.assetUrl}brand_logo.png` : "/brand_logo.png"} alt="School Logo" onError={(e) => { e.target.src='https://ui-avatars.com/api/?name=Dean+Portal&background=4338ca&color=fff&rounded=true'; }} />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-tight">Dean Portal</h1>
                     <p className="text-sm text-gray-500 mt-1">College Department Access</p>

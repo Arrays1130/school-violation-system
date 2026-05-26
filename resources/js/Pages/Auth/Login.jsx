@@ -22,7 +22,7 @@ export default function Login({ status, canResetPassword }) {
             <div className="w-full sm:max-w-md mt-6 px-8 py-8 bg-white shadow-sm overflow-hidden sm:rounded-2xl border border-gray-200">
                 <div className="mb-8 text-center flex flex-col items-center">
                     <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center mb-4 border border-blue-100 shadow-sm">
-                        <img className="w-10 h-10 object-contain" src="/brand_logo.png" alt="Logo"
+                        <img className="w-10 h-10 object-contain" src={window.assetUrl ? `${window.assetUrl}brand_logo.png` : "/brand_logo.png"} alt="Logo"
                             onError={(e) => { e.target.style.display='none'; e.target.parentElement.innerHTML='<span class="text-blue-600 font-bold text-xl">IC</span>'; }} />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Welcome back</h2>

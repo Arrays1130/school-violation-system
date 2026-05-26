@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
@@ -13,13 +14,15 @@ import 'analytics_screen.dart';
 import 'main_layout.dart';
 import '../widgets/skeleton_loader.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
+  const DashboardScreen({Key? key}) : super(key: key);
+
   @override
-  _DashboardScreenState createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  final ApiService _apiService = ApiService();
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  // We'll use Riverpod provider for ApiService
   List<dynamic> _violations = [];
   Map<String, dynamic> _stats = {};
   List<dynamic> _topOffenses = [];
@@ -45,11 +48,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _refreshData() async {
     setState(() => _isLoading = true);
     try {
+      final api = ref.read(apiServiceProvider);
       final dynamic vResult =
-          await _apiService.getViolations(forcedRefresh: true);
+          await api.getViolations(forcedRefresh: true);
       final dynamic sResult =
-          await _apiService.getStats(forcedRefresh: true);
-      final int uCount = await _apiService.getUnreadCount();
+          await api.getStats(forcedRefresh: true);
+      final int uCount = await ref.read(apiServiceProvider).getUnreadCount();
       setState(() {
         if (vResult is Map) {
           _violations = (vResult['data'] ?? []) as List<dynamic>;
@@ -68,7 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _logout() async {
-    await _apiService.logout();
+    await ref.read(apiServiceProvider).logout();
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (context) => LoginScreen()));
   }

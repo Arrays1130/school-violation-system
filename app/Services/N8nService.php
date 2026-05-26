@@ -42,11 +42,12 @@ class N8nService
                 return true;
             }
 
-            Log::error("Failed to trigger N8n Webhook for event '{$eventName}'. Status: {$response->status()}");
-            return false;
+            $message = "Failed to trigger N8n Webhook for event '{$eventName}'. Status: {$response->status()}";
+            Log::error($message);
+            throw new \Exception($message);
         } catch (\Exception $e) {
             Log::error("Exception while triggering N8n Webhook for event '{$eventName}': " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
 }

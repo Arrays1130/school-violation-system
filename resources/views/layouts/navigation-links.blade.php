@@ -20,21 +20,63 @@
 <div class="mb-6">
     <p class="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Management</p>
     <div class="space-y-0.5">
-        <a href="{{ route('students.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('students.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
-            <i data-lucide="graduation-cap" class="w-[18px] h-[18px] {{ request()->routeIs('students.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+        {{-- Students Group --}}
+        @php $studentsActive = request()->routeIs('students.*'); @endphp
+        <a href="{{ route('students.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ $studentsActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
+            <i data-lucide="graduation-cap" class="w-[18px] h-[18px] {{ $studentsActive ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
             <span>Students</span>
         </a>
+        @if($studentsActive)
+        <div class="ml-4 pl-3 border-l-2 border-indigo-200 space-y-0.5">
+            <a href="{{ route('students.index') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 {{ request()->routeIs('students.index') ? 'text-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-indigo-600 hover:bg-slate-50' }}">
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                All Students
+            </a>
+            <a href="{{ route('students.trash') }}" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 {{ request()->routeIs('students.trash') ? 'text-red-700 bg-red-50' : 'text-gray-500 hover:text-red-600 hover:bg-red-50' }}">
+                <span class="flex items-center gap-2">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    Trash Bin
+                </span>
+                @php $trashedStudents = \App\Models\Student::onlyTrashed()->count(); @endphp
+                @if($trashedStudents > 0)
+                    <span class="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold bg-red-100 text-red-700">{{ $trashedStudents }}</span>
+                @endif
+            </a>
+        </div>
+        @endif
 
-        <a href="{{ route('cases.index') }}" class="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('cases.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
+        {{-- Cases Group --}}
+        @php
+            $casesActive = request()->routeIs('cases.*');
+            $openCases = \App\Models\StudentCase::whereNotIn('status', ['Closed', 'Dismissed'])->count();
+        @endphp
+        <a href="{{ route('cases.index') }}" class="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ $casesActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <span class="flex items-center gap-3">
-                <i data-lucide="folder-open" class="w-[18px] h-[18px] {{ request()->routeIs('cases.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+                <i data-lucide="folder-open" class="w-[18px] h-[18px] {{ $casesActive ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
                 <span>Violation Cases</span>
             </span>
-            @php $openCases = \App\Models\StudentCase::whereNotIn('status', ['Closed', 'Dismissed'])->count(); @endphp
             @if($openCases > 0)
-                <span class="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold {{ request()->routeIs('cases.*') ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ $openCases }}</span>
+                <span class="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold {{ $casesActive ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ $openCases }}</span>
             @endif
         </a>
+        @if($casesActive)
+        <div class="ml-4 pl-3 border-l-2 border-indigo-200 space-y-0.5">
+            <a href="{{ route('cases.index') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 {{ request()->routeIs('cases.index') ? 'text-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-indigo-600 hover:bg-slate-50' }}">
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                All Cases
+            </a>
+            <a href="{{ route('cases.trash') }}" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 {{ request()->routeIs('cases.trash') ? 'text-red-700 bg-red-50' : 'text-gray-500 hover:text-red-600 hover:bg-red-50' }}">
+                <span class="flex items-center gap-2">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    Trash Bin
+                </span>
+                @php $trashedCases = \App\Models\StudentCase::onlyTrashed()->count(); @endphp
+                @if($trashedCases > 0)
+                    <span class="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold bg-red-100 text-red-700">{{ $trashedCases }}</span>
+                @endif
+            </a>
+        </div>
+        @endif
 
         <a href="{{ route('violations.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('violations.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="shield-alert" class="w-[18px] h-[18px] {{ request()->routeIs('violations.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
@@ -57,9 +99,14 @@
             <span>Meeting Minutes</span>
         </a>
 
-        <a href="{{ route('reports.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
-            <i data-lucide="bar-chart-3" class="w-[18px] h-[18px] {{ request()->routeIs('reports.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+        <a href="{{ route('reports.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('reports.index') || request()->routeIs('reports.system') || request()->routeIs('reports.sanctions') || request()->routeIs('reports.print') || request()->routeIs('reports.pdf') || request()->routeIs('reports.csv') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
+            <i data-lucide="bar-chart-3" class="w-[18px] h-[18px] {{ request()->routeIs('reports.index') || request()->routeIs('reports.system') || request()->routeIs('reports.sanctions') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
             <span>Reports</span>
+        </a>
+
+        <a href="{{ route('reports.retrieval') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('reports.retrieval') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
+            <i data-lucide="database" class="w-[18px] h-[18px] {{ request()->routeIs('reports.retrieval') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+            <span>Record Retrieval</span>
         </a>
     </div>
 </div>
@@ -68,6 +115,11 @@
 <div class="mb-6">
     <p class="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">System</p>
     <div class="space-y-0.5">
+        <a href="{{ route('users.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('users.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
+            <i data-lucide="users" class="w-[18px] h-[18px] {{ request()->routeIs('users.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+            <span>User Accounts</span>
+        </a>
+
         <a href="{{ route('ai-assistant.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('ai-assistant.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="sparkles" class="w-[18px] h-[18px] {{ request()->routeIs('ai-assistant.*') ? '' : 'text-purple-500 group-hover:text-purple-600' }} transition-colors"></i>
             <span>AI Assistant</span>

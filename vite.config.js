@@ -13,7 +13,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.jsx',
-                'resources/js/blade.js',
+                'resources/js/theme.js',
             ],
             refresh: true,
         }),

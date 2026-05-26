@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'openCasesCount' => $request->user() ? \App\Models\StudentCase::whereNotIn('status', ['Closed', 'Dismissed'])->count() : 0,
         ];
     }
 }

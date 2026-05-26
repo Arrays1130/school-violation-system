@@ -35,6 +35,11 @@
                         <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full px-4 py-3 bg-white border border-gray-300 text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm">
                     </div>
 
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider pl-1">Month</label>
+                        <input type="month" name="date_month" value="{{ request('date_month') }}" class="w-full px-4 py-3 bg-white border border-gray-300 text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm">
+                    </div>
+
                     <!-- Identity & Logic -->
                     <div class="space-y-2">
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider pl-1">Violation Type</label>

@@ -113,6 +113,10 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end gap-1">
+                                        <a href="{{ route('cases.create', ['student_id' => $student->id]) }}" 
+                                           class="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-150" title="Log Violation">
+                                            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                                        </a>
                                         <a href="{{ route('students.show', $student) }}" 
                                            class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150" title="View Profile">
                                             <i data-lucide="eye" class="w-4 h-4"></i>

@@ -35,6 +35,7 @@
             </div>
         </div>
 
+
         {{-- Search & Filters --}}
         <div class="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
             <form action="{{ route('reports.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
@@ -79,6 +80,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <div class="sm:col-span-2 flex gap-2">
                     <button type="submit" class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 flex items-center justify-center gap-2">

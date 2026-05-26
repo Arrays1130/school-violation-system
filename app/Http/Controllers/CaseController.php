@@ -191,7 +191,7 @@ class CaseController extends Controller
                 // Notify Deans for the escalated case
                 try {
                     $deans = \App\Models\User::where('role', 'dean')
-                        ->where('department', $escalatedCase->student->department)
+                        ->where('department', $escalatedCase->student->department_shortcut)
                         ->get();
                     
                     foreach ($deans as $dean) {
@@ -231,7 +231,7 @@ class CaseController extends Controller
         // Send to Deans of the department
         try {
             $deans = \App\Models\User::where('role', 'dean')
-                ->where('department', $case->student->department)
+                ->where('department', $case->student->department_shortcut)
                 ->get();
             
             foreach ($deans as $dean) {

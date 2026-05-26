@@ -38,6 +38,7 @@ class StudentsImport implements ToCollection, WithHeadingRow
             // Map shortcuts to long department names for storage
             $deptMapping = [
                 'CEE' => 'Bachelor Of Science In Information System',
+                'CCE' => 'Bachelor Of Science In Information System',
                 'CCJE' => 'Bachelor Of Science In Criminology',
                 'CTE' => 'Bachelor Of Technical Vocational Teachers Education',
                 'CBAE' => 'College Of Business And Accounting Education',

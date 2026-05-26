@@ -150,7 +150,7 @@
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-lg font-semibold text-gray-900">Case Hearings</h3>
                         @if($case->status !== 'Closed')
-                            <a href="{{ route('hearings.create', $case) }}" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-gray-800 transition-colors flex items-center gap-2">
+                            <a href="{{ route('hearings.create', ['case' => $case->id]) }}" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-gray-800 transition-colors flex items-center gap-2">
                                 <i data-lucide="gavel" class="w-4 h-4"></i>
                                 Schedule Hearing
                             </a>
@@ -200,7 +200,7 @@
                     <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-5">Quick Actions</h3>
                     <div class="space-y-3">
                         @if($case->status === 'Pending')
-                            <a href="{{ route('hearings.create', $case) }}" class="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-bold shadow-sm shadow-blue-500/5 hover:bg-blue-100 hover:-translate-y-0.5 transition-all duration-200">
+                            <a href="{{ route('hearings.create', ['case' => $case->id]) }}" class="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-bold shadow-sm shadow-blue-500/5 hover:bg-blue-100 hover:-translate-y-0.5 transition-all duration-200">
                                 <i data-lucide="calendar-plus" class="w-4.5 h-4.5"></i>
                                 Schedule Hearing
                             </a>

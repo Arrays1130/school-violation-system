@@ -194,16 +194,13 @@ class StudentController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv',
         ]);
 
-        // try {
+        try {
             \Illuminate\Support\Facades\Log::info('Starting import process...');
-            
-            // dd($request->all(), $request->file('file')); // Debugging Disabled
-
             Excel::import(new StudentsImport, $request->file('file'));
             return redirect()->route('students.index')->with('success', 'Students imported successfully.');
-        // } catch (\Exception $e) {
-        //    dd($e); // Show error
-        //    return back()->with('error', 'Error importing students: ' . $e->getMessage());
-        // }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Student Import Failure: ' . $e->getMessage());
+            return back()->with('error', 'Error importing students: ' . $e->getMessage());
+        }
     }
 }

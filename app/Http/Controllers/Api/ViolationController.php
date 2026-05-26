@@ -17,7 +17,8 @@ class ViolationController extends Controller
         // Filter based on role
         if ($user->isDean()) {
             $query->whereHas('student', function ($q) use ($user) {
-                $q->where('department', $user->department);
+                $longName = \App\Models\Student::resolveDepartmentLongName($user->department);
+                $q->where('department', $longName);
             });
         }
 
@@ -33,8 +34,11 @@ class ViolationController extends Controller
         $case = StudentCase::with(['student', 'violation', 'creator', 'attachments', 'hearings'])->findOrFail($id);
 
         // Access control for Dean
-        if ($user->isDean() && $case->student->department !== $user->department) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if ($user->isDean()) {
+            $longName = \App\Models\Student::resolveDepartmentLongName($user->department);
+            if ($case->student->department !== $longName) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
         }
 
         return response()->json($case);
@@ -44,10 +48,11 @@ class ViolationController extends Controller
     {
         $user = $request->user();
         $dept = $user->department;
+        $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
 
         // 1. Status Counts
-        $counts = StudentCase::whereHas('student', function($q) use ($dept) {
-                $q->where('department', $dept);
+        $counts = StudentCase::whereHas('student', function($q) use ($longDept) {
+                $q->where('department', $longDept);
             })
             ->selectRaw("status, count(*) as count")
             ->groupBy('status')
@@ -58,8 +63,8 @@ class ViolationController extends Controller
         $resolved = $counts->get('Closed', 0);
 
         // 2. Top Offenses
-        $topOffenses = StudentCase::whereHas('student', function($q) use ($dept) {
-                $q->where('department', $dept);
+        $topOffenses = StudentCase::whereHas('student', function($q) use ($longDept) {
+                $q->where('department', $longDept);
             })
             ->join('violations', 'cases.violation_id', '=', 'violations.id')
             ->selectRaw('violations.title, count(*) as count')
@@ -69,8 +74,8 @@ class ViolationController extends Controller
             ->get();
 
         // 3. Upcoming Hearings
-        $upcomingHearings = \App\Models\Hearing::whereHas('case.student', function($q) use ($dept) {
-                $q->where('department', $dept);
+        $upcomingHearings = \App\Models\Hearing::whereHas('case.student', function($q) use ($longDept) {
+                $q->where('department', $longDept);
             })
             ->with(['case.student', 'case.violation'])
             ->where('scheduled_at', '>=', now())
@@ -79,8 +84,8 @@ class ViolationController extends Controller
             ->get();
 
         // 4. Severity Distribution (for Pie Chart)
-        $severityStats = StudentCase::whereHas('student', function($q) use ($dept) {
-                $q->where('department', $dept);
+        $severityStats = StudentCase::whereHas('student', function($q) use ($longDept) {
+                $q->where('department', $longDept);
             })
             ->join('violations', 'cases.violation_id', '=', 'violations.id')
             ->selectRaw('violations.severity, count(*) as count')
@@ -91,8 +96,8 @@ class ViolationController extends Controller
         $monthlyTrends = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
-            $count = StudentCase::whereHas('student', function($q) use ($dept) {
-                    $q->where('department', $dept);
+            $count = StudentCase::whereHas('student', function($q) use ($longDept) {
+                    $q->where('department', $longDept);
                 })
                 ->whereYear('created_at', $month->year)
                 ->whereMonth('created_at', $month->month)

@@ -31,10 +31,6 @@ class TriggerN8nWebhook implements ShouldQueue
      */
     public function handle(N8nService $n8n): void
     {
-        try {
-            $n8n->triggerWebhook($this->eventName, $this->payload);
-        } catch (\Exception $e) {
-            Log::error("Job failed to trigger N8n Webhook: " . $e->getMessage());
-        }
+        $n8n->triggerWebhook($this->eventName, $this->payload);
     }
 }
