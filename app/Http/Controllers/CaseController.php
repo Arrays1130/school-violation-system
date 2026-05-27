@@ -6,12 +6,19 @@ use Illuminate\Http\Request;
 
 class CaseController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(\App\Models\StudentCase::class, 'case');
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(\Illuminate\Http\Request $request)
     {
-        $query = \App\Models\StudentCase::with(['student', 'violation'])->latest('occurred_at');
+        $query = \App\Models\StudentCase::with(['student', 'violation'])
+            ->forUser($request->user())
+            ->latest('occurred_at');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -39,11 +46,14 @@ class CaseController extends Controller
         $cases = $query->paginate(15)->appends($request->all());
 
         // Summary stat cards
+        $scopedBaseQuery = \App\Models\StudentCase::query()->forUser($request->user());
+        $scopedBaseQuery->getQuery()->orders = []; // keep counts stable (remove accidental ordering)
+
         $summary = [
-            'total'   => \App\Models\StudentCase::count(),
-            'pending' => \App\Models\StudentCase::where('status', 'Pending')->count(),
-            'hearing' => \App\Models\StudentCase::where('status', 'Hearing Scheduled')->count(),
-            'closed'  => \App\Models\StudentCase::where('status', 'Closed')->count(),
+            'total'   => (clone $scopedBaseQuery)->count(),
+            'pending' => (clone $scopedBaseQuery)->where('status', 'Pending')->count(),
+            'hearing' => (clone $scopedBaseQuery)->where('status', 'Hearing Scheduled')->count(),
+            'closed'  => (clone $scopedBaseQuery)->where('status', 'Closed')->count(),
         ];
 
         return view('cases.index', compact('cases', 'summary'));
@@ -51,6 +61,8 @@ class CaseController extends Controller
 
     public function create(?\App\Models\Student $student = null)
     {
+        $this->authorize('create', \App\Models\StudentCase::class);
+
         // Support both /students/{student}/cases/create  AND  /cases/create?student_id=X
         if (is_null($student) || !$student->exists) {
             $studentId = request('student_id');
@@ -294,6 +306,8 @@ class CaseController extends Controller
      */
     public function trash()
     {
+        abort_if(auth()->user()->isDean(), 403);
+
         $cases = \App\Models\StudentCase::onlyTrashed()
             ->with(['student', 'violation'])
             ->latest('deleted_at')
@@ -308,6 +322,7 @@ class CaseController extends Controller
     public function restore($id)
     {
         $case = \App\Models\StudentCase::onlyTrashed()->findOrFail($id);
+        $this->authorize('restore', $case);
         $case->restore();
 
         return redirect()->route('students.show', $case->student_id)
@@ -320,6 +335,7 @@ class CaseController extends Controller
     public function forceDelete($id)
     {
         $case = \App\Models\StudentCase::onlyTrashed()->findOrFail($id);
+        $this->authorize('forceDelete', $case);
         $case->forceDelete();
 
         return redirect()->route('cases.trash')->with('success', 'Violation record has been permanently deleted.');
@@ -330,6 +346,8 @@ class CaseController extends Controller
      */
     public function close(\App\Models\StudentCase $case)
     {
+        $this->authorize('close', $case);
+
         $case->update([
             'status'    => 'Closed',
             'closed_at' => now(),

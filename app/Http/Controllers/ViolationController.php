@@ -6,6 +6,11 @@ use Illuminate\Http\Request;
 
 class ViolationController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(\App\Models\Violation::class, 'violation');
+    }
+
     /**
      * Display a listing of the resource.
      */

@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.jsx',
                 'resources/js/theme.js',
+                'resources/js/blade.js',
             ],
             refresh: true,
         }),

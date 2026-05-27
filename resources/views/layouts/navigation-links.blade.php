@@ -1,6 +1,6 @@
 {{-- Section: Overview --}}
 <div class="mb-6">
-    <p class="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Overview</p>
+    <p class="px-3 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em]">Overview</p>
     <div class="space-y-0.5">
         @if(auth()->user()->isDean())
         <a href="{{ route('dean.dashboard') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('dean.dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
@@ -18,7 +18,7 @@
 
 {{-- Section: Management --}}
 <div class="mb-6">
-    <p class="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Management</p>
+    <p class="px-3 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em]">Management</p>
     <div class="space-y-0.5">
         {{-- Students Group --}}
         @php $studentsActive = request()->routeIs('students.*'); @endphp
@@ -26,7 +26,7 @@
             <i data-lucide="graduation-cap" class="w-[18px] h-[18px] {{ $studentsActive ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
             <span>Students</span>
         </a>
-        @if($studentsActive)
+        @if($studentsActive && !auth()->user()->isDean())
         <div class="ml-4 pl-3 border-l-2 border-indigo-200 space-y-0.5">
             <a href="{{ route('students.index') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 {{ request()->routeIs('students.index') ? 'text-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-indigo-600 hover:bg-slate-50' }}">
                 <i data-lucide="list" class="w-3.5 h-3.5"></i>
@@ -37,9 +37,15 @@
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     Trash Bin
                 </span>
-                @php $trashedStudents = \App\Models\Student::onlyTrashed()->count(); @endphp
+                @php
+                    $trashedStudents = \Illuminate\Support\Facades\Cache::remember(
+                        'nav.trashed_students.all',
+                        now()->addSeconds(30),
+                        fn () => \App\Models\Student::onlyTrashed()->count()
+                    );
+                @endphp
                 @if($trashedStudents > 0)
-                    <span class="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold bg-red-100 text-red-700">{{ $trashedStudents }}</span>
+                    <span class="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center rounded-full text-[11px] font-bold bg-red-100 text-red-700">{{ $trashedStudents }}</span>
                 @endif
             </a>
         </div>
@@ -48,7 +54,19 @@
         {{-- Cases Group --}}
         @php
             $casesActive = request()->routeIs('cases.*');
-            $openCases = \App\Models\StudentCase::whereNotIn('status', ['Closed', 'Dismissed'])->count();
+            $user = auth()->user();
+            $isDean = $user?->isDean() ?? false;
+            $openCases = \Illuminate\Support\Facades\Cache::remember(
+                'nav.open_cases.' . ($isDean ? ('dean.' . $user->department) : 'all'),
+                now()->addSeconds(30),
+                function () use ($isDean, $user) {
+                    $q = \App\Models\StudentCase::query()->whereNotIn('status', ['Closed', 'Dismissed']);
+                    if ($isDean) {
+                        $q->forUser($user);
+                    }
+                    return $q->count();
+                }
+            );
         @endphp
         <a href="{{ route('cases.index') }}" class="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ $casesActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <span class="flex items-center gap-3">
@@ -56,10 +74,10 @@
                 <span>Violation Cases</span>
             </span>
             @if($openCases > 0)
-                <span class="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold {{ $casesActive ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ $openCases }}</span>
+                <span class="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[11px] font-bold {{ $casesActive ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700' }}">{{ $openCases }}</span>
             @endif
         </a>
-        @if($casesActive)
+        @if($casesActive && !auth()->user()->isDean())
         <div class="ml-4 pl-3 border-l-2 border-indigo-200 space-y-0.5">
             <a href="{{ route('cases.index') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 {{ request()->routeIs('cases.index') ? 'text-indigo-700 bg-indigo-50' : 'text-gray-500 hover:text-indigo-600 hover:bg-slate-50' }}">
                 <i data-lucide="list" class="w-3.5 h-3.5"></i>
@@ -70,9 +88,15 @@
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     Trash Bin
                 </span>
-                @php $trashedCases = \App\Models\StudentCase::onlyTrashed()->count(); @endphp
+                @php
+                    $trashedCases = \Illuminate\Support\Facades\Cache::remember(
+                        'nav.trashed_cases.all',
+                        now()->addSeconds(30),
+                        fn () => \App\Models\StudentCase::onlyTrashed()->count()
+                    );
+                @endphp
                 @if($trashedCases > 0)
-                    <span class="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold bg-red-100 text-red-700">{{ $trashedCases }}</span>
+                    <span class="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center rounded-full text-[11px] font-bold bg-red-100 text-red-700">{{ $trashedCases }}</span>
                 @endif
             </a>
         </div>
@@ -87,7 +111,7 @@
 
 {{-- Section: Records --}}
 <div class="mb-6">
-    <p class="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Records</p>
+    <p class="px-3 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em]">Records</p>
     <div class="space-y-0.5">
         <a href="{{ route('handbooks.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('handbooks.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="book-open" class="w-[18px] h-[18px] {{ request()->routeIs('handbooks.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
@@ -113,12 +137,14 @@
 
 {{-- Section: System --}}
 <div class="mb-6">
-    <p class="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">System</p>
+    <p class="px-3 mb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em]">System</p>
     <div class="space-y-0.5">
+        @can('viewAny', App\Models\User::class)
         <a href="{{ route('users.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('users.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="users" class="w-[18px] h-[18px] {{ request()->routeIs('users.*') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
             <span>User Accounts</span>
         </a>
+        @endcan
 
         <a href="{{ route('ai-assistant.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('ai-assistant.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="sparkles" class="w-[18px] h-[18px] {{ request()->routeIs('ai-assistant.*') ? '' : 'text-purple-500 group-hover:text-purple-600' }} transition-colors"></i>

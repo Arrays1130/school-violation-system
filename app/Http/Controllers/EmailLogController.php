@@ -8,6 +8,8 @@ class EmailLogController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', \App\Models\EmailLog::class);
+
         $query = \App\Models\EmailLog::query();
 
         if ($request->filled('search')) {
@@ -25,6 +27,8 @@ class EmailLogController extends Controller
     }
     public function destroy(\App\Models\EmailLog $emailLog)
     {
+        $this->authorize('delete', $emailLog);
+
         $emailLog->delete();
         return back()->with('success', 'Email record deleted successfully.');
     }

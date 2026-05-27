@@ -16,11 +16,15 @@ class AiAssistantController extends Controller
 
     public function index()
     {
+        $this->authorize('use-ai-assistant');
+
         return view('ai-assistant.index');
     }
 
     public function chat(Request $request)
     {
+        $this->authorize('use-ai-assistant');
+
         $request->validate([
             'message' => 'required|string|min:2',
         ]);
@@ -36,6 +40,8 @@ class AiAssistantController extends Controller
 
     public function stream(Request $request)
     {
+        $this->authorize('use-ai-assistant');
+
         $request->validate([
             'message' => 'required|string',
         ]);

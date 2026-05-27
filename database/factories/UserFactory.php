@@ -29,7 +29,26 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => 'admin',
         ];
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(fn () => ['role' => 'super_admin']);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn () => ['role' => 'admin']);
+    }
+
+    public function dean(string $department = 'CCE'): static
+    {
+        return $this->state(fn () => [
+            'role' => 'dean',
+            'department' => $department,
+        ]);
     }
 
     /**

@@ -16,20 +16,24 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        \Log::info('Login attempt for: ' . $request->email);
-
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            \Log::warning('Login failed for: ' . $request->email);
+        if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
         $user = Auth::user();
+
+        if (! $user->isDean() && ! $user->isAdmin() && ! $user->isSuperAdmin()) {
+            Auth::logout();
+
+            return response()->json(['message' => 'This account is not authorized for mobile access.'], 403);
+        }
+
         $deviceName = $request->input('device_name', 'mobile_device');
         $token = $user->createToken($deviceName)->plainTextToken;
 
         return response()->json([
             'token' => $token,
-            'user' => $user,
+            'user' => $user->only(['id', 'name', 'email', 'role', 'department']),
         ]);
     }
 

@@ -16,6 +16,7 @@
                     <h1 class="text-3xl font-bold text-white tracking-tight">Student Records</h1>
                     <p class="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">Centralized management of student profiles, academic details, and disciplinary histories.</p>
                 </div>
+
                 
                 <div class="flex items-center gap-3">
                     <a href="{{ route('students.import_form') }}" class="px-5 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl text-sm font-bold hover:bg-white/20 transition-all backdrop-blur-md flex items-center gap-2 shadow-sm hover:shadow">

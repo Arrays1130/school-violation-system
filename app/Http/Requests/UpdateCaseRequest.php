@@ -11,7 +11,7 @@ class UpdateCaseRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('update', $this->route('case'));
     }
 
     /**
@@ -25,7 +25,7 @@ class UpdateCaseRequest extends FormRequest
             'description' => 'required|string',
             'witness' => 'nullable|string|max:255',
             'occurred_at' => 'required|date',
-            'status' => 'required|in:Pending,Under OSA Review,Endorsed to Grievance,Hearing Scheduled,Approved,Closed,Dismissed',
+            'status' => 'required|in:Pending,Hearing Scheduled,Hearing,Closed',
         ];
     }
 }

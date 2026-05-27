@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:viotrack_flutter/config/api_config.dart';
 
 class ApiService {
-  // Gamitin ang local IP ng computer kung saan tumatakbo ang Laravel
-  static const String baseUrl = 'http://192.168.254.104:8000/api';
+  static const String baseUrl = ApiConfig.baseUrl;
   
   // Optimization: In-memory cache for speed
   final Map<String, dynamic> _cache = {};

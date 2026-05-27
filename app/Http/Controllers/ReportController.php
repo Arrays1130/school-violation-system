@@ -185,6 +185,8 @@ class ReportController extends Controller
 
     public function bulkAction(Request $request)
     {
+        abort_unless($request->user()->isSuperAdmin(), 403);
+
         $ids = $request->input('selected_ids', []);
         $action = $request->input('action');
         if (empty($ids) || empty($action)) {
@@ -207,7 +209,8 @@ class ReportController extends Controller
     private function getFilteredCases(Request $request)
     {
         $query = \App\Models\StudentCase::query()
-            ->whereHas('student') // Ensure we only get cases for non-deleted students
+            ->forUser($request->user())
+            ->whereHas('student')
             ->with(['student', 'violation', 'hearing']);
 
         if ($request->filled('department')) {

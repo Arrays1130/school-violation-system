@@ -16,6 +16,12 @@ class N8nService
      */
     public function triggerWebhook(string $eventName, array $payload): bool
     {
+        // Never call external services during tests; it makes the application brittle.
+        if (app()->environment('testing')) {
+            Log::warning("Skipping N8n webhook in testing environment for event '{$eventName}'.");
+            return false;
+        }
+
         $webhookUrl = env('N8N_WEBHOOK_URL');
 
         if (empty($webhookUrl)) {
@@ -44,10 +50,10 @@ class N8nService
 
             $message = "Failed to trigger N8n Webhook for event '{$eventName}'. Status: {$response->status()}";
             Log::error($message);
-            throw new \Exception($message);
-        } catch (\Exception $e) {
+            return false;
+        } catch (\Throwable $e) {
             Log::error("Exception while triggering N8n Webhook for event '{$eventName}': " . $e->getMessage());
-            throw $e;
+            return false;
         }
     }
 }

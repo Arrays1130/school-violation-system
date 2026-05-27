@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedForUser;
+use App\Support\DepartmentResolver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
 use Illuminate\Notifications\Notifiable;
 
 class Student extends Authenticatable
 {
-    use HasFactory, SoftDeletes, Notifiable;
+    use HasFactory, Notifiable, ScopedForUser, SoftDeletes;
 
     protected static function booted()
     {
@@ -69,26 +70,11 @@ class Student extends Authenticatable
 
     public function getDepartmentShortcutAttribute()
     {
-        $mapping = [
-            'Bachelor Of Science In Information System' => 'CCE',
-            'Bachelor Of Science In Criminology' => 'CCJE',
-            'Bachelor Of Technical Vocational Teachers Education' => 'CTE',
-            'College Of Business And Accounting Education' => 'CBAE',
-        ];
-
-        return $mapping[trim($this->department)] ?? $this->department;
+        return DepartmentResolver::longToShortcut($this->department) ?? $this->department;
     }
 
-    public static function resolveDepartmentLongName($acronym)
+    public static function resolveDepartmentLongName($acronym): ?string
     {
-        $mapping = [
-            'CEE' => 'Bachelor Of Science In Information System',
-            'CCE' => 'Bachelor Of Science In Information System',
-            'CCJE' => 'Bachelor Of Science In Criminology',
-            'CTE' => 'Bachelor Of Technical Vocational Teachers Education',
-            'CBAE' => 'College Of Business And Accounting Education',
-        ];
-
-        return $mapping[strtoupper(trim($acronym))] ?? $acronym;
+        return DepartmentResolver::shortcutToLong($acronym);
     }
 }

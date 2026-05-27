@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\User;
+use App\Support\DepartmentResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,15 +20,8 @@ class StudentCase extends Model
             if ($case && $case->student) {
                 \Illuminate\Support\Facades\Cache::forget('dean_dashboard.data.' . md5($case->student->department));
             }
-            $departments = [
-                'Bachelor Of Science In Information System',
-                'Bachelor Of Science In Criminology',
-                'Bachelor Of Technical Vocational Teachers Education',
-                'College Of Business And Accounting Education',
-                'All Departments'
-            ];
-            foreach ($departments as $dept) {
-                \Illuminate\Support\Facades\Cache::forget('dean_dashboard.data.' . md5($dept));
+            foreach (DepartmentResolver::cacheKeysForDeanDashboard() as $cacheKey) {
+                \Illuminate\Support\Facades\Cache::forget($cacheKey);
             }
         } catch (\Exception $e) {}
     }
@@ -78,6 +74,23 @@ class StudentCase extends Model
         'endorsed_at'  => 'datetime',
         'closed_at'    => 'datetime',
     ];
+
+    public function scopeForUser(Builder $query, User $user): Builder
+    {
+        if ($user->isSuperAdmin() || $user->isAdmin()) {
+            return $query;
+        }
+
+        if ($user->isDean()) {
+            $department = DepartmentResolver::shortcutToLong($user->department);
+
+            return $query->whereHas('student', function (Builder $q) use ($department) {
+                $q->whereRaw('TRIM(department) = ?', [trim((string) $department)]);
+            });
+        }
+
+        return $query->whereRaw('0 = 1');
+    }
 
     // ─── Relationships ──────────────────────────────────────────
 

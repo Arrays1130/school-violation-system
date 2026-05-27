@@ -13,6 +13,8 @@ class CaseActionController extends Controller
      */
     public function store(Request $request, StudentCase $case)
     {
+        $this->authorize('recordAction', $case);
+
         $request->validate([
             'action_type' => 'required|in:letter_sent,counseling,parent_conference,verbal_warning,written_warning,other',
             'description' => 'required|string|max:2000',
@@ -35,6 +37,8 @@ class CaseActionController extends Controller
      */
     public function endorse(Request $request, StudentCase $case)
     {
+        $this->authorize('endorse', $case);
+
         $request->validate([
             'description' => 'required|string|max:2000',
         ]);

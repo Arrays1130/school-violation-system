@@ -9,15 +9,18 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered(): void
+    public function test_registration_is_disabled_by_default(): void
     {
-        $response = $this->get('/register');
-
-        $response->assertStatus(200);
+        $this->get('/register')->assertNotFound();
     }
 
-    public function test_new_users_can_register(): void
+    public function test_registration_works_when_explicitly_enabled(): void
     {
+        config(['school.registration_enabled' => true]);
+
+        $response = $this->get('/register');
+        $response->assertOk();
+
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',

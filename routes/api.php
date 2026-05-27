@@ -4,11 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('mobile')->group(function () {
-    Route::any('/debug', function() {
-        \Log::info('API Debug hit: ' . request()->fullUrl());
-        return response()->json(['status' => 'ok']);
-    });
-    Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+    Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])
+        ->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {

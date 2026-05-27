@@ -6,6 +6,11 @@ use Illuminate\Http\Request;
 
 class HandbookController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(\App\Models\Handbook::class, 'handbook');
+    }
+
     /**
      * Display a listing of the resource.
      */

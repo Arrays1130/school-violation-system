@@ -5,15 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Imports\StudentsImport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(\App\Models\Student::class, 'student');
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = \App\Models\Student::query();
+        $query = \App\Models\Student::query()->forUser($request->user());
 
         // Simple search - just check if search exists
         if ($request->has('search') && !empty($request->search)) {
@@ -74,7 +81,11 @@ class StudentController extends Controller
             'guardian_phone' => 'nullable|string|max:20',
         ]);
 
-        $validated['password'] = \Illuminate\Support\Facades\Hash::make('ilink2026');
+        // Avoid a shared/default password across all students.
+        // If STUDENT_DEFAULT_PASSWORD is unset, we generate a random password per student.
+        $tempPassword = config('school.student_default_password') ?: Str::random(24);
+        $validated['password'] = Hash::make($tempPassword);
+        $validated['password_changed_at'] = null; // force reset if student auth is enabled
 
         \App\Models\Student::create($validated);
 
@@ -129,6 +140,8 @@ class StudentController extends Controller
      */
     public function trash()
     {
+        abort_if(auth()->user()->isDean(), 403);
+
         $students = \App\Models\Student::onlyTrashed()->withCount('cases')->latest()->paginate(15);
         return view('students.trash', compact('students'));
     }
@@ -139,6 +152,7 @@ class StudentController extends Controller
     public function restore($id)
     {
         $student = \App\Models\Student::onlyTrashed()->findOrFail($id);
+        $this->authorize('restore', $student);
         $student->restore();
 
         return redirect()->route('students.index')->with('success', 'Student and all their records have been successfully restored.');
@@ -150,6 +164,7 @@ class StudentController extends Controller
     public function forceDelete($id)
     {
         $student = \App\Models\Student::onlyTrashed()->findOrFail($id);
+        $this->authorize('forceDelete', $student);
         $student->forceDelete();
 
         return redirect()->route('students.trash')->with('success', 'Student has been permanently deleted.');
@@ -162,8 +177,12 @@ class StudentController extends Controller
     {
         $search = $request->get('q', '');
         
-        $students = \App\Models\Student::where('full_name', 'LIKE', "%{$search}%")
-            ->orWhere('email', 'LIKE', "%{$search}%")
+        $students = \App\Models\Student::query()
+            ->forUser($request->user())
+            ->where(function ($q) use ($search) {
+                $q->where('full_name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            })
             ->withCount('cases')
             ->with(['cases' => function($query) {
                 $query->with('violation')->latest()->take(5);
@@ -185,11 +204,15 @@ class StudentController extends Controller
 
     public function importForm()
     {
+        $this->authorize('import', \App\Models\Student::class);
+
         return view('students.import');
     }
 
     public function import(Request $request)
     {
+        $this->authorize('import', \App\Models\Student::class);
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv',
         ]);
