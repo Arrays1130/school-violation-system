@@ -76,27 +76,44 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#ffffff',
-                titleColor: '#111827',
-                bodyColor: '#4b5563',
-                titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
-                bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                titleColor: '#0f172a',
+                bodyColor: '#334155',
+                titleFont: { size: 12, weight: '700', family: "'Inter', sans-serif" },
+                bodyFont: { size: 12, weight: '500', family: "'Inter', sans-serif" },
                 padding: 12,
-                borderColor: '#e5e7eb',
+                borderColor: '#f1f5f9',
                 borderWidth: 1,
-                cornerRadius: 8,
-                displayColors: false,
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                cornerRadius: 10,
+                displayColors: true,
+                usePointStyle: true,
+                boxWidth: 8,
+                boxHeight: 8,
+                boxPadding: 6,
+                shadowColor: 'rgba(0, 0, 0, 0.05)',
+                shadowBlur: 10,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y + (context.parsed.y === 1 ? ' case' : ' cases');
+                        }
+                        return label;
+                    }
+                }
             }
         },
         scales: {
             x: { 
                 grid: { display: false }, 
-                ticks: { font: { size: 11, family: "'Inter', sans-serif" }, color: '#6b7280' } 
+                ticks: { font: { size: 11, weight: '500', family: "'Inter', sans-serif" }, color: '#64748b' } 
             },
             y: { 
-                grid: { color: '#f3f4f6', drawBorder: false }, 
-                ticks: { stepSize: 1, font: { size: 11, family: "'Inter', sans-serif" }, color: '#6b7280' },
+                grid: { color: '#f1f5f9', drawBorder: false }, 
+                ticks: { stepSize: 1, font: { size: 11, weight: '500', family: "'Inter', sans-serif" }, color: '#64748b' },
                 beginAtZero: true 
             },
         },
@@ -105,13 +122,30 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
     const deptChartData = {
         labels: Object.keys(casesPerDept),
         datasets: [{
+            label: 'Cases',
             data: Object.values(casesPerDept),
-            backgroundColor: 'rgba(59, 130, 246, 0.85)',
-            borderColor: '#3b82f6',
-            borderWidth: 1.5,
-            borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
+            backgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return 'rgba(59, 130, 246, 0.85)';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, '#3b82f6');
+                gradient.addColorStop(1, '#6366f1');
+                return gradient;
+            },
+            borderColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
             barThickness: 28,
-            hoverBackgroundColor: '#2563eb',
+            hoverBackgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return '#2563eb';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, '#2563eb');
+                gradient.addColorStop(1, '#4f46e5');
+                return gradient;
+            },
         }],
     };
 
@@ -119,9 +153,9 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
         labels: Object.keys(casesPerSeverity),
         datasets: [{
             data: Object.values(casesPerSeverity),
-            backgroundColor: ['#14b8a6', '#f59e0b', '#f43f5e'],
+            backgroundColor: ['#0d9488', '#d97706', '#e11d48'], // Polished Teal, Amber, Rose
             borderColor: '#ffffff',
-            borderWidth: 2,
+            borderWidth: 3,
             borderRadius: 4,
             hoverOffset: 4,
         }],
@@ -134,17 +168,26 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             return date.toLocaleDateString('en-US', { month: 'short' });
         }),
         datasets: [{
+            label: 'Incidents',
             data: Object.values(monthlyTrend || {}),
             borderColor: '#6366f1',
-            borderWidth: 2.5,
+            borderWidth: 3,
             pointBackgroundColor: '#ffffff',
             pointBorderColor: '#6366f1',
-            pointBorderWidth: 2,
+            pointBorderWidth: 2.5,
             pointRadius: 5,
             pointHoverRadius: 7,
             tension: 0.4,
             fill: true,
-            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+            backgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return 'rgba(99, 102, 241, 0.08)';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, 'rgba(99, 102, 241, 0.005)');
+                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.22)');
+                return gradient;
+            },
         }],
     };
 

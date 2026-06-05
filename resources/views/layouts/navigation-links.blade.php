@@ -8,9 +8,12 @@
             <span>Dashboard</span>
         </a>
         @else
-        <a href="{{ route('dashboard') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
-            <i data-lucide="layout-dashboard" class="w-[18px] h-[18px] {{ request()->routeIs('dashboard') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+        <a href="{{ route('dashboard') }}" 
+           class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }} accessible-button"
+           aria-current="{{ request()->routeIs('dashboard') ? 'page' : 'false' }}">
+            <i data-lucide="layout-dashboard" class="w-[18px] h-[18px] {{ request()->routeIs('dashboard') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors" aria-hidden="true"></i>
             <span>Dashboard</span>
+            <span class="sr-only">{{ request()->routeIs('dashboard') ? '(current page)' : '' }}</span>
         </a>
         @endif
     </div>
@@ -22,9 +25,12 @@
     <div class="space-y-0.5">
         {{-- Students Group --}}
         @php $studentsActive = request()->routeIs('students.*'); @endphp
-        <a href="{{ route('students.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ $studentsActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
-            <i data-lucide="graduation-cap" class="w-[18px] h-[18px] {{ $studentsActive ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+        <a href="{{ route('students.index') }}" 
+           class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ $studentsActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }} accessible-button"
+           aria-current="{{ $studentsActive ? 'page' : 'false' }}">
+            <i data-lucide="graduation-cap" class="w-[18px] h-[18px] {{ $studentsActive ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors" aria-hidden="true"></i>
             <span>Students</span>
+            <span class="sr-only">{{ $studentsActive ? '(current page)' : '' }}</span>
         </a>
         @if($studentsActive && !auth()->user()->isDean())
         <div class="ml-4 pl-3 border-l-2 border-indigo-200 space-y-0.5">
@@ -145,6 +151,13 @@
             <span>User Accounts</span>
         </a>
         @endcan
+
+        @if(auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
+        <a href="{{ route('reports.audit-logs') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('reports.audit-logs') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
+            <i data-lucide="shield-check" class="w-[18px] h-[18px] {{ request()->routeIs('reports.audit-logs') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
+            <span>Audit Logs</span>
+        </a>
+        @endif
 
         <a href="{{ route('ai-assistant.index') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('ai-assistant.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="sparkles" class="w-[18px] h-[18px] {{ request()->routeIs('ai-assistant.*') ? '' : 'text-purple-500 group-hover:text-purple-600' }} transition-colors"></i>

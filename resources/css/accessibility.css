@@ -1,0 +1,338 @@
+/* Accessibility Enhancements for School Violation System */
+
+/* ===================== FOCUS MANAGEMENT ===================== */
+.focus-visible {
+    @apply outline-2 outline-offset-2 outline-indigo-600 ring-4 ring-indigo-500/20;
+}
+
+/* Custom focus styles for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    @apply outline-2 outline-offset-2 outline-indigo-600 ring-4 ring-indigo-500/20;
+}
+
+/* Remove default outline for mouse users, keep for keyboard */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+    @apply outline-none;
+}
+
+/* ===================== HIGH CONTRAST MODE ===================== */
+@media (prefers-contrast: high) {
+    .high-contrast {
+        --text-primary: #000000;
+        --text-secondary: #333333;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f0f0f0;
+        --border-primary: #000000;
+        --accent-primary: #0056b3;
+    }
+    
+    body {
+        color: var(--text-primary);
+        background-color: var(--bg-primary);
+    }
+    
+    .bg-white {
+        background-color: var(--bg-primary) !important;
+    }
+    
+    .border-gray-200 {
+        border-color: var(--border-primary) !important;
+    }
+    
+    .text-gray-900 {
+        color: var(--text-primary) !important;
+    }
+    
+    .text-gray-500 {
+        color: var(--text-secondary) !important;
+    }
+    
+    .bg-indigo-600 {
+        background-color: var(--accent-primary) !important;
+    }
+}
+
+/* ===================== REDUCED MOTION ===================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .transition-all,
+    .transition-colors,
+    .transition-transform,
+    .transition-opacity,
+    .hover\:transition-all,
+    .group-hover\:transition-all {
+        transition-duration: 0.01ms !important;
+    }
+    
+    .animate-spin,
+    .animate-pulse {
+        animation: none !important;
+    }
+}
+
+/* ===================== SCREEN READER UTILITIES ===================== */
+.sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+    clip: rect(0, 0, 0, 0);
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+    @apply static w-auto h-auto p-0 m-0 overflow-visible whitespace-normal;
+    clip: auto;
+}
+
+/* ===================== ACCESSIBLE COLOR CONTRAST FIXES ===================== */
+/* Ensure status badges meet WCAG AA contrast ratio */
+.bg-amber-50.text-amber-700 {
+    color: #92400e !important; /* amber-800 for better contrast */
+}
+
+.bg-emerald-50.text-emerald-700 {
+    color: #065f46 !important; /* emerald-800 for better contrast */
+}
+
+.bg-blue-50.text-blue-700 {
+    color: #1e40af !important; /* blue-800 for better contrast */
+}
+
+.bg-rose-50.text-rose-700 {
+    color: #9f1239 !important; /* rose-800 for better contrast */
+}
+
+.bg-red-50.text-red-700 {
+    color: #991b1b !important; /* red-800 for better contrast */
+}
+
+/* ===================== ACCESSIBLE FORM CONTROLS ===================== */
+.accessible-input {
+    @apply relative;
+}
+
+.accessible-input label {
+    @apply block mb-2 text-sm font-semibold text-gray-700;
+}
+
+.accessible-input input:not([type="checkbox"]):not([type="radio"]),
+.accessible-input select,
+.accessible-input textarea {
+    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-white text-gray-900;
+}
+
+.accessible-input input:focus,
+.accessible-input select:focus,
+.accessible-input textarea:focus {
+    @apply border-indigo-600 ring-4 ring-indigo-500/20 outline-none;
+}
+
+.accessible-input .error-message {
+    @apply mt-1 text-sm text-rose-600 font-medium;
+}
+
+.accessible-input .helper-text {
+    @apply mt-1 text-sm text-gray-500;
+}
+
+/* ===================== ACCESSIBLE DATA TABLES ===================== */
+.accessible-table {
+    @apply w-full border-collapse;
+}
+
+.accessible-table thead th {
+    @apply px-4 py-3 text-left text-sm font-semibold text-gray-900 bg-gray-50 border-b-2 border-gray-200;
+    position: relative;
+}
+
+.accessible-table thead th:focus {
+    @apply outline-2 outline-offset-2 outline-indigo-600;
+}
+
+.accessible-table tbody tr {
+    @apply border-b border-gray-100 hover:bg-gray-50;
+}
+
+.accessible-table tbody tr:focus-within {
+    @apply bg-indigo-50 outline-2 outline-offset-2 outline-indigo-600;
+}
+
+.accessible-table tbody td {
+    @apply px-4 py-3 text-sm text-gray-700;
+}
+
+.accessible-table tbody td:focus {
+    @apply outline-2 outline-offset-2 outline-indigo-600;
+}
+
+/* ===================== ACCESSIBLE MODALS & DIALOGS ===================== */
+.accessible-modal {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50;
+}
+
+.accessible-modal[aria-hidden="true"] {
+    @apply hidden;
+}
+
+.accessible-modal-content {
+    @apply relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto;
+}
+
+.accessible-modal-header {
+    @apply px-6 py-4 border-b border-gray-200 flex items-center justify-between;
+}
+
+.accessible-modal-title {
+    @apply text-lg font-semibold text-gray-900;
+}
+
+.accessible-modal-close {
+    @apply p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500;
+}
+
+.accessible-modal-body {
+    @apply px-6 py-4;
+}
+
+/* ===================== ACCESSIBLE SKIP LINKS ===================== */
+.skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-white focus:text-indigo-600 focus:font-bold focus:rounded-lg focus:shadow-lg focus:outline-2 focus:outline-indigo-600;
+}
+
+/* ===================== ACCESSIBLE LOADING STATES ===================== */
+.accessible-loading {
+    @apply relative;
+}
+
+.accessible-loading[aria-busy="true"]::after {
+    content: '';
+    @apply absolute inset-0 bg-white/80 flex items-center justify-center;
+}
+
+.accessible-loading[aria-busy="true"]::before {
+    content: 'Loading...';
+    @apply sr-only;
+}
+
+/* ===================== ACCESSIBLE TOOLTIPS ===================== */
+[data-tooltip] {
+    @apply relative;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus::after {
+    content: attr(data-tooltip);
+    @apply absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg whitespace-nowrap z-50;
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:focus::before {
+    content: '';
+    @apply absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 border-8 border-transparent border-t-gray-900;
+}
+
+/* ===================== ACCESSIBLE CHARTS ===================== */
+.chart-container {
+    @apply relative;
+}
+
+.chart-container figcaption {
+    @apply sr-only;
+}
+
+.chart-data-table {
+    @apply sr-only;
+}
+
+/* ===================== ACCESSIBLE NOTIFICATIONS ===================== */
+.accessible-notification {
+    @apply fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border-l-4 max-w-sm;
+}
+
+.accessible-notification[role="alert"] {
+    @apply bg-white border-emerald-500;
+}
+
+.accessible-notification[role="status"] {
+    @apply bg-white border-blue-500;
+}
+
+.accessible-notification[role="alert"][aria-live="assertive"] {
+    @apply border-rose-500;
+}
+
+/* ===================== ACCESSIBLE LANDMARKS ===================== */
+[role="banner"] {
+    @apply relative;
+}
+
+[role="navigation"] {
+    @apply relative;
+}
+
+[role="main"] {
+    @apply relative;
+}
+
+[role="complementary"] {
+    @apply relative;
+}
+
+[role="contentinfo"] {
+    @apply relative;
+}
+
+/* ===================== ACCESSIBLE INTERACTIVE ELEMENTS ===================== */
+.accessible-button {
+    @apply px-4 py-2 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.accessible-button-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500;
+}
+
+.accessible-button-secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+}
+
+.accessible-button-danger {
+    @apply bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500;
+}
+
+/* Ensure buttons have minimum touch target size */
+@media (max-width: 768px) {
+    button,
+    a[role="button"],
+    [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* ===================== ACCESSIBLE FORM VALIDATION ===================== */
+[aria-invalid="true"] {
+    @apply border-rose-500 ring-2 ring-rose-500/20;
+}
+
+[aria-invalid="true"]:focus {
+    @apply border-rose-500 ring-4 ring-rose-500/20;
+}
+
+[aria-describedby] {
+    @apply mb-1;
+}

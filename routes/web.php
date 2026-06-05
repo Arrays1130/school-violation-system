@@ -17,6 +17,7 @@ use App\Http\Controllers\CaseAttachmentController;
 use App\Http\Controllers\MeetingMinuteController;
 use App\Http\Controllers\EmailLogController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuditLogController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -98,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reports/retrieval', [ReportController::class, 'retrieval'])->name('reports.retrieval');
     Route::get('/reports/email-logs', [EmailLogController::class, 'index'])->name('reports.email-logs');
     Route::delete('/reports/email-logs/{emailLog}', [EmailLogController::class, 'destroy'])->name('reports.email-logs.destroy');
+    Route::get('/reports/audit-logs', [AuditLogController::class, 'index'])->name('reports.audit-logs');
     Route::get('/reports/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/reports/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/csv', [ReportController::class, 'csv'])->name('reports.csv');

@@ -1,3 +1,6 @@
+/* Import accessibility styles */
+@import './accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +8,24 @@
 @layer base {
     body {
         @apply antialiased text-gray-900 bg-gray-50;
+    }
+
+    /* Improve focus styles for better accessibility */
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-indigo-600 ring-4 ring-indigo-500/20;
+    }
+
+    /* Ensure sufficient color contrast */
+    .text-gray-900 {
+        color: #111827; /* Ensure WCAG AA contrast */
+    }
+
+    .text-gray-700 {
+        color: #374151; /* Ensure WCAG AA contrast */
+    }
+
+    .text-gray-500 {
+        color: #6b7280; /* Ensure WCAG AA contrast */
     }
 }
 
@@ -24,6 +45,61 @@
     .sidebar-link {
         @apply flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200;
     }
+
+    /* Accessible button variants */
+    .btn-primary {
+        @apply px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 
+               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+               transition-colors duration-200;
+    }
+
+    .btn-secondary {
+        @apply px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300 
+               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500
+               transition-colors duration-200;
+    }
+
+    .btn-danger {
+        @apply px-4 py-2 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 
+               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500
+               transition-colors duration-200;
+    }
+
+    /* Accessible form controls */
+    .form-input {
+        @apply w-full px-3 py-2 border-2 border-gray-300 rounded-lg bg-white text-gray-900
+               focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none
+               transition-colors duration-200;
+    }
+
+    .form-label {
+        @apply block mb-2 text-sm font-semibold text-gray-700;
+    }
+
+    .form-error {
+        @apply mt-1 text-sm text-rose-600 font-medium;
+    }
+
+    /* Accessible status badges with improved contrast */
+    .status-badge {
+        @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border;
+    }
+
+    .status-pending {
+        @apply bg-amber-100 text-amber-800 border-amber-200;
+    }
+
+    .status-closed {
+        @apply bg-emerald-100 text-emerald-800 border-emerald-200;
+    }
+
+    .status-hearing {
+        @apply bg-blue-100 text-blue-800 border-blue-200;
+    }
+
+    .status-critical {
+        @apply bg-red-100 text-red-800 border-red-200;
+    }
 }
 
 @layer utilities {
@@ -35,5 +111,40 @@
     .no-scrollbar {
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
+    }
+
+    /* Screen reader only utility */
+    .sr-only {
+        @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .sr-only-focusable:focus,
+    .sr-only-focusable:active {
+        @apply static w-auto h-auto p-0 m-0 overflow-visible whitespace-normal;
+        clip: auto;
+    }
+
+    /* Reduced motion utilities */
+    @media (prefers-reduced-motion: reduce) {
+        .motion-safe\:animate-spin {
+            animation: none;
+        }
+        
+        .motion-safe\:transition-all {
+            transition: none;
+        }
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .high-contrast {
+            --text-primary: #000000;
+            --text-secondary: #333333;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f0f0f0;
+            --border-primary: #000000;
+            --accent-primary: #0056b3;
+        }
     }
 }

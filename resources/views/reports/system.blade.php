@@ -144,7 +144,7 @@
                 <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
                     <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
                 </div>
-                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Monthly Cases — {{ $currentYear }}</h2>
+                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Comparative Monthly Cases (Minor vs Major) — {{ $currentYear }}</h2>
             </div>
             <canvas id="monthlyChart" height="90"></canvas>
         </div>
@@ -192,29 +192,39 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const monthlyData = @json(array_values($monthlyData));
+        const monthlyMinorData = @json(array_values($monthlyMinorData));
+        const monthlyMajorData = @json(array_values($monthlyMajorData));
 
-        // Monthly bar chart
+        // Monthly bar chart (Stacked Minor vs Major)
         new Chart(document.getElementById('monthlyChart'), {
             type: 'bar',
             data: {
                 labels: months,
-                datasets: [{
-                    label: 'Cases',
-                    data: monthlyData,
-                    backgroundColor: 'rgba(99,102,241,0.15)',
-                    borderColor: 'rgba(99,102,241,0.9)',
-                    borderWidth: 2,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }]
+                datasets: [
+                    {
+                        label: 'Minor Cases',
+                        data: monthlyMinorData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Major Cases',
+                        data: monthlyMajorData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)', // Red
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }
+                ]
             },
             options: {
                 responsive: true,
-                plugins: { legend: { display: false } },
+                plugins: { legend: { display: true, position: 'top' } },
                 scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }
+                    x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+                    y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }
                 }
             }
         });

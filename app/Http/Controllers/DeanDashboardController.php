@@ -70,7 +70,7 @@ class DeanDashboardController extends Controller
 
             $monthlyTrend = [];
             for ($i = 5; $i >= 0; $i--) {
-                $month = now()->subMonths($i)->format('Y-m');
+                $month = now()->startOfMonth()->subMonths($i)->format('Y-m');
                 $monthlyTrend[$month] = $rawMonthlyTrend->get($month, 0);
             }
 

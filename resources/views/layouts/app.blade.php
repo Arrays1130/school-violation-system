@@ -29,34 +29,53 @@
             ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
             ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         </style>
+        
+        <!-- Accessibility CSS is compiled by Vite -->
     </head>
     <body class="antialiased text-slate-900" x-data="{ sidebarOpen: false }" x-init="setTimeout(() => { lucide.createIcons(); }, 50)">
+        <!-- Skip to main content link for keyboard users -->
+        <a href="#main-content" class="skip-link">
+            Skip to main content
+        </a>
+        
         <div class="h-screen flex overflow-hidden">
 
             <!-- ===================== SIDEBAR ===================== -->
             <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-                   class="fixed inset-y-0 left-0 z-50 w-66 bg-white border-r border-slate-100 flex flex-col transition-all duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-xl lg:shadow-none shrink-0">
+                   class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col transition-all duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-xl lg:shadow-none shrink-0"
+                   id="sidebar-navigation"
+                   role="navigation"
+                   aria-label="Main navigation">
                 
                 <!-- Logo Header -->
                 <div class="px-6 py-6 flex-shrink-0 border-b border-slate-100/80 flex items-center justify-between">
                     <div class="flex items-center gap-3.5">
-                        <img class="w-9 h-9 object-contain shrink-0 rounded-lg shadow-sm" src="{{ asset('brand_logo.png') }}" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-indigo-500/10 shrink-0" style="display: none;">
-                            <i data-lucide="shield" class="w-5.5 h-5.5 text-white"></i>
+                        <img class="w-9 h-9 object-contain shrink-0 rounded-lg shadow-sm" 
+                             src="{{ asset('brand_logo.png') }}" 
+                             alt="I-Link CST Disciplinary System Logo" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-indigo-500/10 shrink-0" 
+                             style="display: none;"
+                             aria-hidden="true">
+                            <i data-lucide="shield" class="w-5.5 h-5.5 text-white" aria-hidden="true"></i>
                         </div>
                         <div>
-                            <p class="text-slate-900 font-extrabold text-[15px] tracking-tight leading-none uppercase">I-Link CST</p>
-                            <p class="text-slate-400 text-[9px] font-bold uppercase tracking-wider mt-1.5">Disciplinary System</p>
+                            <p class="text-slate-900 font-extrabold text-[15px] tracking-tight leading-none uppercase" aria-hidden="true">I-Link CST</p>
+                            <p class="text-slate-400 text-[9px] font-bold uppercase tracking-wider mt-1.5" aria-hidden="true">Disciplinary System</p>
+                            <h2 class="sr-only">I-Link CST Disciplinary System</h2>
                         </div>
                     </div>
                     <!-- Close button for mobile -->
-                    <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-slate-900 transition-colors">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+                    <button @click="sidebarOpen = false" 
+                            class="lg:hidden text-slate-400 hover:text-slate-900 transition-colors accessible-button"
+                            aria-label="Close navigation menu">
+                        <i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i>
+                        <span class="sr-only">Close menu</span>
                     </button>
                 </div>
 
                 <!-- Nav Links -->
-                <nav class="flex-1 overflow-y-auto px-4.5 py-6 no-scrollbar">
+                <nav class="flex-1 overflow-y-auto px-4.5 py-6 no-scrollbar" aria-label="Primary navigation">
                     @include('layouts.navigation-links')
                 </nav>
 
@@ -70,7 +89,7 @@
                             <p class="text-slate-800 text-sm font-extrabold truncate leading-tight">{{ Auth::user()->name }}</p>
                             <form method="POST" action="{{ route('logout') }}" class="mt-1">
                                 @csrf
-                                <button type="submit" class="text-slate-450 text-[10px] font-bold uppercase tracking-wide hover:text-indigo-600 transition-colors flex items-center gap-1">
+                                <button type="submit" class="text-slate-500 text-[11px] font-bold uppercase tracking-wide hover:text-indigo-600 transition-colors flex items-center gap-1">
                                     <i data-lucide="log-out" class="w-3 h-3"></i>
                                     Sign Out
                                 </button>
@@ -86,21 +105,27 @@
                  class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden" x-cloak></div>
 
             <!-- ===================== MAIN AREA ===================== -->
-            <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50">
+            <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50" role="main" id="main-content">
 
-                <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6 sm:px-8 lg:px-10 sticky top-0 z-30 shrink-0">
+                <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6 sm:px-8 lg:px-10 sticky top-0 z-30 shrink-0" role="banner">
                     <div class="flex items-center gap-4">
                         <button @click="sidebarOpen = !sidebarOpen"
-                                class="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors border border-slate-100">
-                            <i data-lucide="menu" class="w-5 h-5"></i>
+                                class="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors border border-slate-100 accessible-button"
+                                aria-label="Toggle navigation menu"
+                                aria-expanded="false"
+                                :aria-expanded="sidebarOpen ? 'true' : 'false'"
+                                aria-controls="sidebar-navigation">
+                            <i data-lucide="menu" class="w-5 h-5" aria-hidden="true"></i>
+                            <span class="sr-only">Menu</span>
                         </button>
                         <div class="text-base font-bold text-slate-800">
-                            @yield('header')
+                            <h1 class="sr-only">School Violation System</h1>
+                            <div aria-hidden="true">@yield('header')</div>
                         </div>
                     </div>
                 </header>
 
-                <main class="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 no-scrollbar">
+                <main class="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 no-scrollbar" id="main-content">
                     <div class="max-w-7xl mx-auto">
                         {{ $slot }}
                     </div>

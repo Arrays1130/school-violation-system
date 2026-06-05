@@ -162,6 +162,7 @@ class CasesScreenState extends State<CasesScreen> {
               ),
               // Refresh button
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   _fetchData();
@@ -180,6 +181,7 @@ class CasesScreenState extends State<CasesScreen> {
               const SizedBox(width: 10),
               // Sort button
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   setState(() => _isAscending = !_isAscending);
@@ -286,6 +288,7 @@ class CasesScreenState extends State<CasesScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: 6),
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () {
                 HapticFeedback.selectionClick();
                 onSelected(opt);

@@ -3,7 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard, GraduationCap, FolderOpen, ShieldAlert, BookOpen,
     ClipboardList, BarChart3, Sparkles, Settings, LogOut, Menu, Bell, History,
-    UserCircle, ChevronRight, X, Shield
+    UserCircle, ChevronRight, X, Shield, Database
 } from 'lucide-react';
 
 export default function Authenticated({ user, header, children }) {
@@ -42,11 +42,14 @@ export default function Authenticated({ user, header, children }) {
                 { name: 'Handbook', href: route('handbooks.index'), icon: BookOpen, isExternal: true, activeCheck: () => route().current('handbooks.*') },
                 { name: 'Meeting Minutes', href: route('meeting-minutes.index'), icon: ClipboardList, isExternal: true, activeCheck: () => route().current('meeting-minutes.*') },
                 { name: 'Reports', href: route('reports.index'), icon: BarChart3, isExternal: true, activeCheck: () => route().current('reports.index') || route().current('reports.*') },
+                { name: 'Record Retrieval', href: route('reports.retrieval'), icon: Database, isExternal: true, activeCheck: () => route().current('reports.retrieval') },
             ],
         },
         {
             label: 'System',
             items: [
+                ...(user?.role === 'super_admin' ? [{ name: 'User Accounts', href: route('users.index'), icon: UserCircle, isExternal: true, activeCheck: () => route().current('users.*') }] : []),
+                ...(user?.role === 'super_admin' || user?.role === 'admin' ? [{ name: 'Audit Logs', href: route('reports.audit-logs'), icon: Shield, isExternal: true, activeCheck: () => route().current('reports.audit-logs') }] : []),
                 { 
                     name: 'AI Assistant', 
                     href: route('ai-assistant.index'), 

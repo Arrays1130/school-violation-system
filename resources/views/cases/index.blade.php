@@ -3,24 +3,26 @@
 
     <div class="space-y-6">
         {{-- Premium Header --}}
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
-            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
-            <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20" role="banner">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]" aria-hidden="true"></div>
+            <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" aria-hidden="true"></div>
             
             <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div>
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-3 backdrop-blur-md">
-                        <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-3 backdrop-blur-md" aria-hidden="true">
+                        <i data-lucide="shield-alert" class="w-3.5 h-3.5" aria-hidden="true"></i>
                         Student Disciplinary Board
                     </div>
-                    <h1 class="text-3xl font-bold text-white tracking-tight">Violation Records</h1>
+                    <h1 class="text-3xl font-bold text-white tracking-tight" id="page-title">Violation Records</h1>
                     <p class="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">Manage and track student violation cases, monitor disciplinary actions, and streamline institutional resolution processes.</p>
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('cases.create') }}" class="group relative px-6 py-3 bg-white text-indigo-950 rounded-xl text-sm font-bold shadow-lg shadow-black/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-r from-white via-indigo-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <i data-lucide="plus-circle" class="w-4.5 h-4.5 relative z-10 text-indigo-600"></i>
+                    <a href="{{ route('cases.create') }}" 
+                       class="group relative px-6 py-3 bg-white text-indigo-950 rounded-xl text-sm font-bold shadow-lg shadow-black/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 overflow-hidden accessible-button"
+                       aria-label="Create new violation record">
+                        <div class="absolute inset-0 bg-gradient-to-r from-white via-indigo-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500" aria-hidden="true"></div>
+                        <i data-lucide="plus-circle" class="w-4.5 h-4.5 relative z-10 text-indigo-600" aria-hidden="true"></i>
                         <span class="relative z-10">New Record</span>
                     </a>
                 </div>
@@ -131,21 +133,27 @@
         </div>
 
         {{-- Records List --}}
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative" role="region" aria-labelledby="page-title">
             <div class="overflow-x-auto">
-                <table class="min-w-full text-left border-collapse">
+                <table class="min-w-full text-left border-collapse accessible-table" 
+                       role="table"
+                       aria-label="Violation cases list">
+                    <caption class="sr-only">List of student violation cases with date, student details, violation type, status, and actions</caption>
                     <thead>
-                        <tr class="bg-gray-50/80 border-b border-gray-200">
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Date & Time</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Student Details</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Violation Type</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center whitespace-nowrap">Current Status</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right whitespace-nowrap">Actions</th>
+                        <tr class="bg-gray-50/80 border-b border-gray-200" role="row">
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Date & Time</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Student Details</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Violation Type</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center whitespace-nowrap" role="columnheader">Current Status</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right whitespace-nowrap" role="columnheader">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
                         @forelse($cases as $case)
-                            <tr class="hover:bg-slate-50/60 transition-colors duration-200 group">
+                            <tr class="hover:bg-slate-50/60 transition-colors duration-200 group" 
+                                role="row"
+                                tabindex="0"
+                                aria-label="Case for {{ $case->student->full_name ?? 'Anonymous' }} - {{ $case->violation->title ?? 'Undefined Infraction' }}">
                                 <td class="px-6 py-5 whitespace-nowrap">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">

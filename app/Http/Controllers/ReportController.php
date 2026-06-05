@@ -119,10 +119,13 @@ class ReportController extends Controller
         $cases = $query->latest('occurred_at')->paginate(20)->appends($request->all());
 
         // Summary counters
-        $base = \App\Models\StudentCase::query()->whereHas('student');
-        $totalSanctions  = (clone $base)->whereNotNull('sanction')->count();
-        $sanctionsServed = (clone $base)->where('status', 'Closed')->whereNotNull('sanction')->count();
-        $sanctionsPending = (clone $base)->where('status', '!=', 'Closed')->whereNotNull('sanction')->count();
+        $base = \App\Models\StudentCase::query()->whereHas('student')->whereNotNull('sanction');
+        $sanctionStatusCounts = (clone $base)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('status')->pluck('total', 'status');
+
+        $totalSanctions  = $sanctionStatusCounts->sum();
+        $sanctionsServed = $sanctionStatusCounts['Closed'] ?? 0;
+        $sanctionsPending = $totalSanctions - $sanctionsServed;
         $complianceRate  = $totalSanctions > 0 ? round(($sanctionsServed / $totalSanctions) * 100) : 0;
 
         $departments = \App\Models\Student::distinct()->pluck('department');
@@ -138,11 +141,14 @@ class ReportController extends Controller
         $cases = \App\Models\StudentCase::query()->whereHas('student')->with(['student', 'violation']);
 
         // Overview counters
-        $total      = (clone $cases)->count();
-        $pending    = (clone $cases)->where('status', 'Pending')->count();
-        $hearing    = (clone $cases)->where('status', 'Hearing Scheduled')->count();
-        $endorsed   = (clone $cases)->where('status', 'Endorsed to Grievance')->count();
-        $closed     = (clone $cases)->where('status', 'Closed')->count();
+        $statusCounts = clone($cases)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('status')->pluck('total', 'status');
+
+        $total      = $statusCounts->sum();
+        $pending    = $statusCounts['Pending'] ?? 0;
+        $hearing    = $statusCounts['Hearing Scheduled'] ?? 0;
+        $endorsed   = $statusCounts['Endorsed to Grievance'] ?? 0;
+        $closed     = $statusCounts['Closed'] ?? 0;
 
         // Department breakdown
         $byDepartment = (clone $cases)
@@ -171,15 +177,39 @@ class ReportController extends Controller
             ->pluck('total', 'month')
             ->toArray();
 
+        $monthlyMinorTrend = (clone $cases)
+            ->join('violations as minor_violations', 'cases.violation_id', '=', 'minor_violations.id')
+            ->whereYear('cases.occurred_at', $currentYear)
+            ->where('minor_violations.severity', 'Minor')
+            ->selectRaw('MONTH(cases.occurred_at) as month, COUNT(*) as total')
+            ->groupByRaw('MONTH(cases.occurred_at)')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
+        $monthlyMajorTrend = (clone $cases)
+            ->join('violations as major_violations', 'cases.violation_id', '=', 'major_violations.id')
+            ->whereYear('cases.occurred_at', $currentYear)
+            ->whereIn('major_violations.severity', ['Major', 'Critical'])
+            ->selectRaw('MONTH(cases.occurred_at) as month, COUNT(*) as total')
+            ->groupByRaw('MONTH(cases.occurred_at)')
+            ->orderBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
+
         // Fill all 12 months (0 for months with no data)
         $monthlyData = [];
+        $monthlyMinorData = [];
+        $monthlyMajorData = [];
         for ($m = 1; $m <= 12; $m++) {
             $monthlyData[$m] = $monthlyTrend[$m] ?? 0;
+            $monthlyMinorData[$m] = $monthlyMinorTrend[$m] ?? 0;
+            $monthlyMajorData[$m] = $monthlyMajorTrend[$m] ?? 0;
         }
 
         return view('reports.system', compact(
             'total', 'pending', 'hearing', 'endorsed', 'closed',
-            'byDepartment', 'topViolations', 'monthlyData', 'currentYear'
+            'byDepartment', 'topViolations', 'monthlyData', 'monthlyMinorData', 'monthlyMajorData', 'currentYear'
         ));
     }
 

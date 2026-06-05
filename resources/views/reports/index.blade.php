@@ -37,13 +37,13 @@
 
 
         {{-- Search & Filters --}}
-        <div class="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
+        <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-gray-200/80 shadow-sm">
             <form action="{{ route('reports.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
                 <div class="sm:col-span-4">
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">Search Student</label>
                     <div class="relative">
-                        <input type="text" name="student_search" value="{{ request('student_search') }}" placeholder="Name, course or student ID..." 
-                               class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200">
+                        <input type="text" name="student_search" value="{{ request('student_search') }}" placeholder="Name, course or student ID..."
+                               class="w-full pl-10 pr-4 py-2.5 bg-gray-50/60 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200">
                         <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                             <i data-lucide="search" class="w-4 h-4"></i>
                         </div>
@@ -53,7 +53,7 @@
                 <div class="sm:col-span-3">
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">Department</label>
                     <div class="relative">
-                        <select name="department" class="w-full pl-3.5 pr-10 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 appearance-none">
+                        <select name="department" class="w-full pl-3.5 pr-10 py-2.5 bg-gray-50/60 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 appearance-none">
                             <option value="">All Departments</option>
                             @foreach($departments as $dept)
                                 <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
@@ -68,7 +68,7 @@
                 <div class="sm:col-span-3">
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">Current Status</label>
                     <div class="relative">
-                        <select name="status" class="w-full pl-3.5 pr-10 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 appearance-none">
+                        <select name="status" class="w-full pl-3.5 pr-10 py-2.5 bg-gray-50/60 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 appearance-none">
                             <option value="">All Statuses</option>
                             <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
                             <option value="Hearing Scheduled" {{ request('status') == 'Hearing Scheduled' ? 'selected' : '' }}>Hearing Scheduled</option>
@@ -83,11 +83,11 @@
 
 
                 <div class="sm:col-span-2 flex gap-2">
-                    <button type="submit" class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 flex items-center justify-center gap-2">
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all duration-200 flex items-center justify-center gap-2">
                         <i data-lucide="filter" class="w-4 h-4"></i>
                         Apply
                     </button>
-                    <a href="{{ route('reports.index') }}" class="px-4 py-2.5 bg-white text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 transition-all duration-200" title="Clear Filters">
+                    <a href="{{ route('reports.index') }}" class="px-4 py-2.5 bg-white text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-xl flex items-center justify-center border border-gray-200 transition-all duration-200" title="Clear Filters">
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                     </a>
                 </div>
@@ -95,7 +95,7 @@
         </div>
 
         {{-- Analytics Data List --}}
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-150 text-left">
                     <thead>

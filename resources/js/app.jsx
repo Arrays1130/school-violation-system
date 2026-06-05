@@ -1,6 +1,7 @@
 import './bootstrap';
 import './echo';
 import '../css/app.css';
+import './accessibility'; // Accessibility enhancements
 import { route } from 'ziggy-js';
 
 window.route = route;

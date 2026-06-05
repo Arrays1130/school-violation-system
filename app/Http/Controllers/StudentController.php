@@ -53,11 +53,14 @@ class StudentController extends Controller
             ->filter()
             ->values();
         // Summary stat cards
+        $totalStudents = \App\Models\Student::count();
+        $withCases = \App\Models\Student::has('cases')->count();
+
         $summary = [
-            'total'       => \App\Models\Student::count(),
-            'with_cases'  => \App\Models\Student::has('cases')->count(),
+            'total'       => $totalStudents,
+            'with_cases'  => $withCases,
             'departments' => $departments->count(),
-            'clean'       => \App\Models\Student::doesntHave('cases')->count(),
+            'clean'       => $totalStudents - $withCases,
         ];
 
         return view('students.index', compact('students', 'departments', 'summary'));

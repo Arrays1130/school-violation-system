@@ -232,6 +232,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 padding:
                     const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () {
                     HapticFeedback.mediumImpact();
                     MainLayout.of(context)?.navigateToTab(1);
@@ -500,6 +501,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           if (onTap != null) ...[
             const Spacer(),
             GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: onTap,
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -533,6 +535,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       LinearGradient gradient, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           HapticFeedback.mediumImpact();
           onTap();

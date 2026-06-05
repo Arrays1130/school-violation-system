@@ -9,7 +9,6 @@
     "devDependencies": {
         "@laravel/echo-react": "^2.3.1",
         "@tailwindcss/forms": "^0.5.2",
-        "@tailwindcss/vite": "^4.0.0",
         "alpinejs": "^3.4.2",
         "autoprefixer": "^10.4.2",
         "axios": "^1.11.0",
@@ -23,7 +22,6 @@
     },
     "dependencies": {
         "@inertiajs/react": "^2.3.14",
-        "@tabler/icons-react": "^3.41.1",
         "@vitejs/plugin-react": "^5.1.4",
         "chart.js": "^4.5.1",
         "clsx": "^2.1.1",

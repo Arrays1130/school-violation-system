@@ -19,6 +19,7 @@
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
         "pusher/pusher-php-server": "*",
+        "spatie/laravel-activitylog": "^4.12",
         "tightenco/ziggy": "^2.6"
     },
     "require-dev": {

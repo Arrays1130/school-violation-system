@@ -33,7 +33,7 @@ import {
     Tooltip,
     Legend,
 } from 'chart.js';
-import { Bar, Line, Pie } from 'react-chartjs-2';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
     CategoryScale,
@@ -64,15 +64,80 @@ export default function DeanDashboard({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const chartBaseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                titleColor: '#0f172a',
+                bodyColor: '#334155',
+                titleFont: { size: 12, weight: '700', family: "'Inter', sans-serif" },
+                bodyFont: { size: 12, weight: '500', family: "'Inter', sans-serif" },
+                padding: 12,
+                borderColor: '#f1f5f9',
+                borderWidth: 1,
+                cornerRadius: 10,
+                displayColors: true,
+                usePointStyle: true,
+                boxWidth: 8,
+                boxHeight: 8,
+                boxPadding: 6,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y + (context.parsed.y === 1 ? ' case' : ' cases');
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: { 
+                grid: { display: false }, 
+                ticks: { font: { size: 11, weight: '500', family: "'Inter', sans-serif" }, color: '#64748b' } 
+            },
+            y: { 
+                grid: { color: '#f1f5f9', drawBorder: false }, 
+                ticks: { stepSize: 1, font: { size: 11, weight: '500', family: "'Inter', sans-serif" }, color: '#64748b' },
+                beginAtZero: true 
+            },
+        },
+    };
+
     const trendChartData = {
-        labels: Object.keys(chartData.monthlyTrend),
+        labels: Object.keys(chartData.monthlyTrend || {}).map(m => {
+            const parts = m.split('-');
+            const date = new Date(parts[0], parseInt(parts[1]) - 1, 1);
+            return date.toLocaleDateString('en-US', { month: 'short' });
+        }),
         datasets: [{
             label: 'Incidents',
             data: Object.values(chartData.monthlyTrend),
             borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 3,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#3b82f6',
+            pointBorderWidth: 2.5,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            tension: 0.4,
             fill: true,
-            tension: 0.1,
+            backgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return 'rgba(59, 130, 246, 0.08)';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.005)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.22)');
+                return gradient;
+            },
         }]
     };
 
@@ -81,7 +146,28 @@ export default function DeanDashboard({
         datasets: [{
             label: 'Cases',
             data: chartData.topViolations.map(v => v.count),
-            backgroundColor: '#3b82f6',
+            backgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return '#3b82f6';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, '#3b82f6');
+                gradient.addColorStop(1, '#6366f1');
+                return gradient;
+            },
+            borderColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
+            barThickness: 28,
+            hoverBackgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return '#2563eb';
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, '#2563eb');
+                gradient.addColorStop(1, '#4f46e5');
+                return gradient;
+            },
         }]
     };
 
@@ -89,7 +175,11 @@ export default function DeanDashboard({
         labels: Object.keys(chartData.severityBreakdown),
         datasets: [{
             data: Object.values(chartData.severityBreakdown),
-            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            backgroundColor: ['#0d9488', '#d97706', '#e11d48'], // Polished Teal, Amber, Rose
+            borderColor: '#ffffff',
+            borderWidth: 3,
+            borderRadius: 4,
+            hoverOffset: 4,
         }]
     };
 
@@ -181,14 +271,7 @@ export default function DeanDashboard({
                             <p className="text-xs text-slate-400 mt-1 font-medium">6-Month Case Volume</p>
                         </div>
                         <div className="flex-1 min-h-0 relative w-full pb-2">
-                            <Line data={trendChartData} options={{ 
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: { 
-                                    y: { border: { display: false }, grid: { color: '#f3f4f6' } },
-                                    x: { border: { display: false }, grid: { display: false } }
-                                }
-                            }} />
+                            <Line data={trendChartData} options={chartBaseOptions} />
                         </div>
                     </div>
                     <div className="bg-white rounded-2xl border border-slate-100 border-l-4 border-l-rose-500 shadow-sm p-6 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 hover:border-indigo-100 flex flex-col h-[420px] group">
@@ -196,13 +279,29 @@ export default function DeanDashboard({
                             <h3 className="text-base font-bold text-slate-800 tracking-tight">Cases by Severity</h3>
                             <p className="text-xs text-slate-400 mt-1 font-medium">Severity Level Distribution</p>
                         </div>
-                        <div className="flex-1 min-h-0 relative w-full flex justify-center pb-2">
-                            <Pie data={severityData} options={{ 
-                                maintainAspectRatio: false,
+                        <div className="flex-1 min-h-0 relative w-full flex items-center justify-center pb-2">
+                            <Doughnut data={severityData} options={{ 
+                                ...chartBaseOptions, 
+                                cutout: '75%', 
                                 plugins: { 
-                                    legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 12, family: "'Inter', sans-serif" } } } 
-                                }
+                                    ...chartBaseOptions.plugins, 
+                                    legend: { 
+                                        display: true, 
+                                        position: 'bottom', 
+                                        labels: { 
+                                            boxWidth: 10, 
+                                            font: { size: 11, family: "'Inter', sans-serif" }, 
+                                            color: '#4b5563', 
+                                            usePointStyle: true, 
+                                            padding: 20 
+                                        } 
+                                    } 
+                                } 
                             }} />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-30px]">
+                                <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Total</p>
+                                <p className="text-2xl font-extrabold text-slate-800 tracking-tight mt-0.5">{stats.total}</p>
+                            </div>
                         </div>
                     </div>
                 </div>

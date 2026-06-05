@@ -49,11 +49,14 @@ class CaseController extends Controller
         $scopedBaseQuery = \App\Models\StudentCase::query()->forUser($request->user());
         $scopedBaseQuery->getQuery()->orders = []; // keep counts stable (remove accidental ordering)
 
+        $statusCounts = (clone $scopedBaseQuery)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('status')->pluck('total', 'status');
+
         $summary = [
-            'total'   => (clone $scopedBaseQuery)->count(),
-            'pending' => (clone $scopedBaseQuery)->where('status', 'Pending')->count(),
-            'hearing' => (clone $scopedBaseQuery)->where('status', 'Hearing Scheduled')->count(),
-            'closed'  => (clone $scopedBaseQuery)->where('status', 'Closed')->count(),
+            'total'   => $statusCounts->sum(),
+            'pending' => $statusCounts['Pending'] ?? 0,
+            'hearing' => $statusCounts['Hearing Scheduled'] ?? 0,
+            'closed'  => $statusCounts['Closed'] ?? 0,
         ];
 
         return view('cases.index', compact('cases', 'summary'));
@@ -261,20 +264,19 @@ class CaseController extends Controller
     {
         $case->load(['student', 'violation', 'hearings', 'creator', 'actions.user', 'attachments.uploader', 'closedByUser']);
 
-        // Get full offense history for this student (all cases, not just this violation)
-        $offenseHistory = \App\Models\StudentCase::where('student_id', $case->student_id)
-            ->where('id', '!=', $case->id)
+        // Get full offense history for this student
+        $allStudentCases = \App\Models\StudentCase::where('student_id', $case->student_id)
             ->with('violation')
             ->latest('occurred_at')
             ->get();
 
-        // Count offenses by severity for this student
+        $offenseHistory = $allStudentCases->filter(fn($c) => $c->id !== $case->id)->values();
+
+        // Count offenses by severity for this student in memory
         $offenseSummary = [
-            'total'  => \App\Models\StudentCase::where('student_id', $case->student_id)->count(),
-            'minor'  => \App\Models\StudentCase::where('student_id', $case->student_id)
-                            ->whereHas('violation', fn($q) => $q->where('severity', 'Minor'))->count(),
-            'major'  => \App\Models\StudentCase::where('student_id', $case->student_id)
-                            ->whereHas('violation', fn($q) => $q->whereIn('severity', ['Major', 'Critical']))->count(),
+            'total'  => $allStudentCases->count(),
+            'minor'  => $allStudentCases->filter(fn($c) => $c->violation?->severity === 'Minor')->count(),
+            'major'  => $allStudentCases->filter(fn($c) => in_array($c->violation?->severity, ['Major', 'Critical']))->count(),
         ];
 
         return view('cases.show', compact('case', 'offenseHistory', 'offenseSummary'));

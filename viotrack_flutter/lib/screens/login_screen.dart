@@ -402,6 +402,7 @@ class _LoginScreenState extends State<LoginScreen>
     int delay = 0,
   }) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         HapticFeedback.lightImpact();
         onTap();
@@ -502,6 +503,7 @@ class _LoginScreenState extends State<LoginScreen>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () =>
                         setState(() => _currentStage = LoginStage.selection),
                     child: Container(

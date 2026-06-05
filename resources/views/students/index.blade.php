@@ -33,13 +33,13 @@
 
 
         {{-- Search & Filters --}}
-        <div class="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
+        <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-5 border border-gray-200/80 shadow-sm">
             <form method="GET" action="{{ route('students.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div class="md:col-span-2">
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">Search Records</label>
                     <div class="relative">
-                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, ID, or email..." 
-                               class="w-full pl-10 pr-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name, ID, or email..."
+                               class="w-full pl-10 pr-3 py-2.5 bg-gray-50/60 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
                         <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                             <i data-lucide="search" class="w-4 h-4"></i>
                         </div>
@@ -48,7 +48,7 @@
                 
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">Department</label>
-                    <select name="department" class="w-full px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none">
+                    <select name="department" class="w-full px-3 py-2.5 bg-gray-50/60 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
                             <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
@@ -56,11 +56,11 @@
                     </select>
                 </div>
 
-                <button type="submit" class="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                <button type="submit" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
                     <i data-lucide="filter" class="w-4 h-4"></i>
                     Filter
                 </button>
-                <a href="{{ route('students.index') }}" class="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                <a href="{{ route('students.index') }}" class="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                     <i data-lucide="x" class="w-4 h-4"></i>
                     Clear
                 </a>
@@ -68,7 +68,7 @@
         </div>
 
         {{-- Records List --}}
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 text-left">
                     <thead class="bg-gray-50/80">
@@ -81,10 +81,10 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
                         @forelse($students as $student)
-                            <tr class="hover:bg-blue-50/30 transition-colors duration-150">
+                            <tr class="hover:bg-indigo-50/30 transition-colors duration-150">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-xs border border-blue-100">
+                                        <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-semibold text-xs border border-indigo-100">
                                             {{ $student->initials }}
                                         </div>
                                         <div>
@@ -119,7 +119,7 @@
                                             <i data-lucide="shield-alert" class="w-4 h-4"></i>
                                         </a>
                                         <a href="{{ route('students.show', $student) }}" 
-                                           class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150" title="View Profile">
+                                           class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150" title="View Profile">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
                                         <a href="{{ route('students.edit', $student) }}" 
@@ -146,7 +146,7 @@
                                         </div>
                                         <h3 class="text-sm font-semibold text-gray-900">No Students Found</h3>
                                         <p class="text-sm text-gray-500 mt-1 max-w-xs">Refine your search parameters or add a new student.</p>
-                                        <a href="{{ route('students.create') }}" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                        <a href="{{ route('students.create') }}" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors">
                                             Add First Student
                                         </a>
                                     </div>
@@ -164,4 +164,116 @@
             @endif
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('input[name="search"]');
+            const deptSelect = document.querySelector('select[name="department"]');
+            const filterForm = searchInput ? searchInput.closest('form') : null;
+            const tableBody = document.querySelector('tbody');
+            const tableContainer = tableBody ? tableBody.closest('.bg-white') : null;
+
+            let debounceTimer;
+
+            function fetchFilteredData(url) {
+                if (tableContainer) {
+                    tableContainer.classList.add('opacity-60', 'transition-opacity', 'duration-150');
+                }
+
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Replace table body contents
+                    const newTableBody = doc.querySelector('tbody');
+                    if (newTableBody && tableBody) {
+                        tableBody.innerHTML = newTableBody.innerHTML;
+                    }
+
+                    // Replace or hide pagination
+                    const newPagination = doc.querySelector('.border-t.border-gray-100');
+                    const oldPagination = document.querySelector('.border-t.border-gray-100');
+                    
+                    if (oldPagination) {
+                        if (newPagination) {
+                            oldPagination.innerHTML = newPagination.innerHTML;
+                            oldPagination.style.display = '';
+                        } else {
+                            oldPagination.style.display = 'none';
+                        }
+                    } else if (newPagination && tableContainer) {
+                        const pagDiv = document.createElement('div');
+                        pagDiv.className = 'px-6 py-4 border-t border-gray-100';
+                        pagDiv.innerHTML = newPagination.innerHTML;
+                        tableContainer.appendChild(pagDiv);
+                    }
+
+                    // Update browser address bar without reload
+                    history.pushState(null, '', url);
+
+                    if (tableContainer) {
+                        tableContainer.classList.remove('opacity-60');
+                    }
+
+                    // Re-initialize Lucide icons
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching search results:', error);
+                    if (tableContainer) {
+                        tableContainer.classList.remove('opacity-60');
+                    }
+                });
+            }
+
+            function triggerSearch() {
+                const searchVal = encodeURIComponent(searchInput.value);
+                const deptVal = encodeURIComponent(deptSelect.value);
+                const baseUrl = "{{ route('students.index') }}";
+                const url = `${baseUrl}?search=${searchVal}&department=${deptVal}`;
+                fetchFilteredData(url);
+            }
+
+            if (searchInput && deptSelect && filterForm) {
+                // Typing search input
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(triggerSearch, 300);
+                });
+
+                // Prevent default form submit on Enter key, trigger search immediately instead
+                filterForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    clearTimeout(debounceTimer);
+                    triggerSearch();
+                });
+
+                // Changing department selection
+                deptSelect.addEventListener('change', function() {
+                    clearTimeout(debounceTimer);
+                    triggerSearch();
+                });
+
+                // Intercept pagination clicks for instant AJAX loading
+                document.addEventListener('click', function(e) {
+                    const paginationLink = e.target.closest('.border-t.border-gray-100 a');
+                    if (paginationLink) {
+                        e.preventDefault();
+                        const url = paginationLink.getAttribute('href');
+                        fetchFilteredData(url);
+                    }
+                });
+            }
+        });
+    </script>
+    @endpush
 </x-app-layout>
