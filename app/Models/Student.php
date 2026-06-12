@@ -36,6 +36,7 @@ class Student extends Authenticatable
         'section',
         'year_level',
         'department',
+        'phone',
         'email',
         'guardian_name',
         'guardian_email',
@@ -86,5 +87,18 @@ class Student extends Authenticatable
     public static function resolveDepartmentLongName($acronym): ?string
     {
         return DepartmentResolver::shortcutToLong($acronym);
+    }
+
+    /**
+     * Route notifications for the Sms channel.
+     *
+     * @param  \Illuminate\Notifications\Notification  $notification
+     * @return string|null
+     */
+    public function routeNotificationForSms($notification)
+    {
+        // First preference is the student's personal phone.
+        // Fallback to guardian phone if they don't have one on file.
+        return $this->phone ?: $this->guardian_phone;
     }
 }

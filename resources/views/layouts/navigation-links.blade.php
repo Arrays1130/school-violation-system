@@ -152,7 +152,7 @@
         </a>
         @endcan
 
-        @if(auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
+        @if(auth()->user()->isSuperAdmin() || auth()->user()->isDean())
         <a href="{{ route('reports.audit-logs') }}" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 {{ request()->routeIs('reports.audit-logs') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/20' : 'text-gray-600 hover:bg-slate-50 hover:text-indigo-600' }}">
             <i data-lucide="shield-check" class="w-[18px] h-[18px] {{ request()->routeIs('reports.audit-logs') ? '' : 'text-gray-400 group-hover:text-indigo-600' }} transition-colors"></i>
             <span>Audit Logs</span>

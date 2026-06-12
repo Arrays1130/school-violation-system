@@ -9,8 +9,8 @@ class AuditLogController extends Controller
 {
     public function index(Request $request)
     {
-        // Only Super Admin and Admin can access this
-        abort_unless($request->user()->isSuperAdmin() || $request->user()->isAdmin(), 403, 'Unauthorized access to audit logs.');
+        // Only Super Admin and Dean can access this
+        abort_unless($request->user()->isSuperAdmin() || $request->user()->isDean(), 403, 'Unauthorized access to audit logs.');
 
         $query = Activity::with(['causer', 'subject'])->latest();
 

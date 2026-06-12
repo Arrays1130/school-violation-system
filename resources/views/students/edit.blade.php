@@ -69,6 +69,30 @@
                             </div>
                         </div>
 
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                        <i data-lucide="at-sign" class="w-4.5 h-4.5"></i>
+                                    </div>
+                                    <input type="email" name="email" value="{{ old('email', $student->email) }}" placeholder="student@example.com"
+                                        class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
+                                    @error('email') <p class="text-red-500 text-xs mt-1.5 font-bold">{{ $message }}</p> @enderror
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                        <i data-lucide="phone" class="w-4.5 h-4.5"></i>
+                                    </div>
+                                    <input type="text" name="phone" value="{{ old('phone', $student->phone) }}" placeholder="e.g. 09XX XXX XXXX"
+                                        class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
+                                    @error('phone') <p class="text-red-500 text-xs mt-1.5 font-bold">{{ $message }}</p> @enderror
+                                </div>
+                            </div>
+
                         <div>
                             <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Department</label>
                             <div class="relative">

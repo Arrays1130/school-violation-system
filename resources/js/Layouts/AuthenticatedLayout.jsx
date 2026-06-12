@@ -49,7 +49,7 @@ export default function Authenticated({ user, header, children }) {
             label: 'System',
             items: [
                 ...(user?.role === 'super_admin' ? [{ name: 'User Accounts', href: route('users.index'), icon: UserCircle, isExternal: true, activeCheck: () => route().current('users.*') }] : []),
-                ...(user?.role === 'super_admin' || user?.role === 'admin' ? [{ name: 'Audit Logs', href: route('reports.audit-logs'), icon: Shield, isExternal: true, activeCheck: () => route().current('reports.audit-logs') }] : []),
+                ...(user?.role === 'super_admin' || user?.role === 'dean' ? [{ name: 'Audit Logs', href: route('reports.audit-logs'), icon: Shield, isExternal: true, activeCheck: () => route().current('reports.audit-logs') }] : []),
                 { 
                     name: 'AI Assistant', 
                     href: route('ai-assistant.index'), 
@@ -151,7 +151,6 @@ export default function Authenticated({ user, header, children }) {
                         </div>
                         <div>
                             <p className="text-slate-900 font-extrabold text-[15px] tracking-tight leading-none uppercase">I-Link CST</p>
-                            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider mt-1.5">Disciplinary System</p>
                         </div>
                     </div>
                     {/* Close button for mobile */}

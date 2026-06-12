@@ -31,18 +31,12 @@ export default {
             },
             colors: {
                 primary: {
-                    50: '#eff6ff',
-                    100: '#dbeafe',
-                    200: '#bfdbfe',
-                    300: '#93c5fd',
-                    400: '#60a5fa',
-                    500: '#3b82f6', // Premium Blue
-                    600: '#2563eb',
-                    700: '#1d4ed8',
-                    800: '#1e40af',
-                    900: '#1e3a8a',
-                    950: '#172554',
-                    DEFAULT: "#00668a"
+                    ...colors.blue,
+                    DEFAULT: colors.blue[600]
+                },
+                secondary: {
+                    ...colors.yellow,
+                    DEFAULT: colors.yellow[500]
                 },
                 "surface-variant": "#e1e3e4",
                 "on-primary-fixed": "#001e2c",
@@ -72,7 +66,6 @@ export default {
                 "on-tertiary-fixed-variant": "#24467c",
                 "on-background": "#191c1d",
                 "surface-container-low": "#f3f4f5",
-                "secondary": "#705d00",
                 "on-tertiary-container": "#214479",
                 "outline": "#6d7981",
                 "secondary-fixed": "#ffe16d",

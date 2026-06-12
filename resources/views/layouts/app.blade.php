@@ -61,8 +61,7 @@
                         </div>
                         <div>
                             <p class="text-slate-900 font-extrabold text-[15px] tracking-tight leading-none uppercase" aria-hidden="true">I-Link CST</p>
-                            <p class="text-slate-400 text-[9px] font-bold uppercase tracking-wider mt-1.5" aria-hidden="true">Disciplinary System</p>
-                            <h2 class="sr-only">I-Link CST Disciplinary System</h2>
+                            <h2 class="sr-only">I-Link CST</h2>
                         </div>
                     </div>
                     <!-- Close button for mobile -->
