@@ -27,11 +27,11 @@ Route::get('/seed-db-now', function () {
     try {
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
         return 'SUCCESS! Database seeded! You can now login with admin@ilinkCST.edu and password.';
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         if (str_contains($e->getMessage(), 'Duplicate entry')) {
             return 'Database is already seeded! You can login now.';
         }
-        return 'Error: ' . $e->getMessage();
+        return 'Error: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine();
     }
 });
 
