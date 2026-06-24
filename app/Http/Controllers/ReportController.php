@@ -12,7 +12,11 @@ class ReportController extends Controller
         $cases = $this->getFilteredCases($request)->paginate(15);
         $departments = \App\Models\Student::distinct()->pluck('department');
         
-        return view('reports.index', compact('cases', 'departments'));
+        return inertia('Reports/Index', [
+            'cases' => $cases,
+            'departments' => $departments,
+            'filters' => $request->all(),
+        ]);
     }
 
     public function print(Request $request)
@@ -85,8 +89,21 @@ class ReportController extends Controller
         $cases = $this->getFilteredCases($request)->paginate(15);
         $departments = \App\Models\Student::distinct()->pluck('department');
         $violations = \App\Models\Violation::all();
+        $academicYears = \App\Models\Student::whereNotNull('academic_year')
+                            ->distinct()
+                            ->pluck('academic_year')
+                            ->merge(\App\Models\Student::whereNotNull('academic_year_graduated')->distinct()->pluck('academic_year_graduated'))
+                            ->unique()
+                            ->sortDesc()
+                            ->values();
         
-        return view('reports.retrieval', compact('cases', 'departments', 'violations'));
+        return inertia('Reports/Retrieval', [
+            'cases' => $cases,
+            'departments' => $departments,
+            'violations' => $violations,
+            'academicYears' => $academicYears,
+            'filters' => $request->all(),
+        ]);
     }
 
     public function sanctions(Request $request)
@@ -130,10 +147,15 @@ class ReportController extends Controller
 
         $departments = \App\Models\Student::distinct()->pluck('department');
 
-        return view('reports.sanctions', compact(
-            'cases', 'departments',
-            'totalSanctions', 'sanctionsServed', 'sanctionsPending', 'complianceRate'
-        ));
+        return inertia('Reports/Sanctions', [
+            'cases' => $cases,
+            'departments' => $departments,
+            'totalSanctions' => $totalSanctions,
+            'sanctionsServed' => $sanctionsServed,
+            'sanctionsPending' => $sanctionsPending,
+            'complianceRate' => $complianceRate,
+            'filters' => $request->all(),
+        ]);
     }
 
     public function system(Request $request)
@@ -207,10 +229,19 @@ class ReportController extends Controller
             $monthlyMajorData[$m] = $monthlyMajorTrend[$m] ?? 0;
         }
 
-        return view('reports.system', compact(
-            'total', 'pending', 'hearing', 'endorsed', 'closed',
-            'byDepartment', 'topViolations', 'monthlyData', 'monthlyMinorData', 'monthlyMajorData', 'currentYear'
-        ));
+        return inertia('Reports/System', [
+            'total' => $total,
+            'pending' => $pending,
+            'hearing' => $hearing,
+            'endorsed' => $endorsed,
+            'closed' => $closed,
+            'byDepartment' => $byDepartment,
+            'topViolations' => $topViolations,
+            'monthlyData' => $monthlyData,
+            'monthlyMinorData' => $monthlyMinorData,
+            'monthlyMajorData' => $monthlyMajorData,
+            'currentYear' => $currentYear,
+        ]);
     }
 
     public function bulkAction(Request $request)
@@ -285,6 +316,13 @@ class ReportController extends Controller
             $query->whereHas('student', function($q) use ($searchTerm) {
                 $q->where('full_name', 'like', "%{$searchTerm}%")
                   ->orWhere('student_id', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        if ($request->filled('academic_year')) {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('academic_year', $request->academic_year)
+                  ->orWhere('academic_year_graduated', $request->academic_year);
             });
         }
 

@@ -32,7 +32,10 @@ class HandbookController extends Controller
             return response()->json($handbooks);
         }
 
-        return view('handbooks.index', compact('handbooks'));
+        return inertia('Handbooks/Index', [
+            'handbooks' => $handbooks,
+            'filters' => ['search' => $request->search]
+        ]);
     }
 
     /**
@@ -40,7 +43,7 @@ class HandbookController extends Controller
      */
     public function create()
     {
-        return view('handbooks.create');
+        return inertia('Handbooks/Create');
     }
 
     /**
@@ -64,7 +67,9 @@ class HandbookController extends Controller
      */
     public function show(\App\Models\Handbook $handbook)
     {
-        return view('handbooks.show', compact('handbook'));
+        return inertia('Handbooks/Show', [
+            'handbook' => $handbook
+        ]);
     }
 
     /**
@@ -72,7 +77,9 @@ class HandbookController extends Controller
      */
     public function edit(\App\Models\Handbook $handbook)
     {
-        return view('handbooks.edit', compact('handbook'));
+        return inertia('Handbooks/Edit', [
+            'handbook' => $handbook
+        ]);
     }
 
     /**

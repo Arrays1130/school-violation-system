@@ -17,8 +17,11 @@ class HearingController extends Controller
     public function create(StudentCase $case)
     {
         $this->authorize('create', Hearing::class);
+        $case->load('student', 'violation');
 
-        return view('hearings.create', compact('case'));
+        return inertia('Hearings/Create', [
+            'studentCase' => $case,
+        ]);
     }
 
     public function store(\App\Http\Requests\StoreHearingRequest $request)
@@ -37,6 +40,29 @@ class HearingController extends Controller
         $hearing = Hearing::create($hearingData);
 
         $hearing->case->update(['status' => 'Hearing Scheduled']);
+        
+        // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
+        $guardianPhone = $hearing->case->student->guardian_phone;
+        
+
+        if ($guardianPhone) {
+            try {
+                $formattedDate = \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A');
+                $studentName = $hearing->case->student->full_name ?? ($hearing->case->student->first_name . ' ' . $hearing->case->student->last_name);
+                $smsMessage = "SVS Notice: A hearing is scheduled for your student {$studentName} regarding {$hearing->case->violation->title} on {$formattedDate} at {$hearing->venue}. Please be present.";
+                
+                \Illuminate\Support\Facades\Http::withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
+                    ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                        'textMessage' => [
+                            'text' => $smsMessage
+                        ],
+                        'phoneNumbers' => [$guardianPhone]
+                    ]);
+            } catch (\Exception $e) {
+                // Ignore errors
+            }
+        }
+        // ------------------------------------------------
 
         \App\Jobs\TriggerN8nWebhook::dispatch('hearing_scheduled', [
             'hearing_id' => $hearing->id,
@@ -80,12 +106,18 @@ class HearingController extends Controller
 
     public function show(Hearing $hearing)
     {
-        return view('hearings.show', compact('hearing'));
+        $hearing->load('case.student', 'case.violation');
+        return inertia('Hearings/Show', [
+            'hearing' => $hearing
+        ]);
     }
 
     public function edit(Hearing $hearing)
     {
-        return view('hearings.edit', compact('hearing'));
+        $hearing->load('case.student', 'case.violation');
+        return inertia('Hearings/Edit', [
+            'hearing' => $hearing
+        ]);
     }
 
     public function update(\App\Http\Requests\UpdateHearingRequest $request, Hearing $hearing)

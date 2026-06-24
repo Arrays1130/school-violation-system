@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\AiService;
+use Illuminate\Support\Facades\Log;
 
 class AiAssistantController extends Controller
 {
@@ -18,7 +19,7 @@ class AiAssistantController extends Controller
     {
         $this->authorize('use-ai-assistant');
 
-        return view('ai-assistant.index');
+        return inertia('AiAssistant/Index');
     }
 
     public function chat(Request $request)
@@ -30,10 +31,10 @@ class AiAssistantController extends Controller
         ]);
 
         $message = $request->input('message');
-        $result = $this->aiService->processChat($message);
+        $result  = $this->aiService->processChat($message);
 
         return response()->json([
-            'reply' => $result['reply'] ?? '',
+            'reply'   => $result['reply']   ?? '',
             'sources' => $result['sources'] ?? [],
         ]);
     }
@@ -49,18 +50,53 @@ class AiAssistantController extends Controller
         $message = $request->input('message');
 
         return response()->stream(function () use ($message) {
-            $this->aiService->streamChat($message, function ($chunk) {
-                echo "data: " . json_encode(['text' => $chunk]) . "\n\n";
+            // Helper to send a single SSE chunk
+            $send = function (string $text) {
+                echo 'data: ' . json_encode(['text' => $text]) . "\n\n";
                 if (ob_get_level() > 0) ob_flush();
                 flush();
-            });
-            echo "data: [DONE]\n\n";
-            if (ob_get_level() > 0) ob_flush();
-            flush();
+            };
+
+            $sendDone = function () {
+                echo "data: [DONE]\n\n";
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+            };
+
+            try {
+                set_time_limit(180);
+
+                $this->aiService->streamChat($message, $send);
+
+                $sendDone();
+
+            } catch (\Throwable $e) {
+                Log::error('AI Stream error: ' . $e->getMessage());
+
+                // Send a graceful error message as a valid SSE event
+                // so the frontend can display it instead of a network crash
+                $send("\n\n⚠️ **Connection issue with the AI core.** Attempting local handbook search...\n\n");
+
+                // Fallback: try the non-streaming local search
+                try {
+                    $result = $this->aiService->processChat($message);
+                    $reply  = strip_tags($result['reply'] ?? '');
+                    if (!empty($reply)) {
+                        $send($reply);
+                    } else {
+                        $send("Hindi ko mahanap ang sagot sa handbook. Subukan mong i-rephrase ang tanong.");
+                    }
+                } catch (\Throwable $inner) {
+                    $send("Paumanhin, hindi pa rin available ang AI. Pakisuri ang Ollama server.");
+                }
+
+                $sendDone();
+            }
         }, 200, [
-            'Cache-Control' => 'no-cache',
-            'Content-Type' => 'text/event-stream',
-            'X-Accel-Buffering' => 'no', // For Nginx
+            'Cache-Control'    => 'no-cache',
+            'Content-Type'     => 'text/event-stream',
+            'X-Accel-Buffering'=> 'no',
+            'Connection'       => 'keep-alive',
         ]);
     }
 }

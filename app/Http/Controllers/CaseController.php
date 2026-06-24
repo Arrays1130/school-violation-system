@@ -25,7 +25,8 @@ class CaseController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($sq) use ($search) {
                     $sq->where('full_name', 'LIKE', "%{$search}%")
-                      ->orWhere('id_number', 'LIKE', "%{$search}%");
+                      ->orWhere('email', 'LIKE', "%{$search}%")
+                      ->orWhere('section', 'LIKE', "%{$search}%");
                 })->orWhereHas('violation', function ($vq) use ($search) {
                     $vq->where('title', 'LIKE', "%{$search}%");
                 });
@@ -59,7 +60,11 @@ class CaseController extends Controller
             'closed'  => $statusCounts['Closed'] ?? 0,
         ];
 
-        return view('cases.index', compact('cases', 'summary'));
+        return inertia('Cases/Index', [
+            'cases' => $cases,
+            'summary' => $summary,
+            'filters' => request()->only(['search', 'status', 'severity'])
+        ]);
     }
 
     public function create(?\App\Models\Student $student = null)
@@ -75,7 +80,11 @@ class CaseController extends Controller
         $violations = \App\Models\Violation::query()->get();
         $students   = \App\Models\Student::orderBy('full_name')->get(); // for picker when no student
 
-        return view('cases.create', compact('student', 'violations', 'students'));
+        return inertia('Cases/Create', [
+            'student' => $student,
+            'violations' => $violations,
+            'students' => $students
+        ]);
     }
 
     public function store(\App\Http\Requests\StoreCaseRequest $request)
@@ -111,8 +120,39 @@ class CaseController extends Controller
 
         $case = \App\Models\StudentCase::create($data);
         
+        // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
+        $guardianPhone = $case->student->guardian_phone;
+        
+
+        if ($guardianPhone) {
+            try {
+                $smsMessage = "SVS Notice: Your student {$case->student->full_name} has a recorded violation: {$violation->title}. Sanction: {$data['sanction']}. Please contact the school.";
+                
+                \Illuminate\Support\Facades\Http::withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
+                    ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                        'textMessage' => [
+                            'text' => $smsMessage
+                        ],
+                        'phoneNumbers' => [$guardianPhone]
+                    ]);
+            } catch (\Exception $e) {
+                // Ignore errors (Halimbawa: naka-off ang WiFi ng phone para hindi mag-crash ang system)
+            }
+        }
+        // ------------------------------------------------
+        
         // Dispatch Real-time Event
         event(new \App\Events\ViolationRecorded($case));
+
+        // Dispatch Reverb & Database Notifications
+        $notifiableUsers = \App\Models\User::where('role', 'super_admin')
+            ->orWhere(function($query) use ($case) {
+                if ($case->student->department) {
+                    $query->where('role', 'dean')
+                          ->where('department', $case->student->department);
+                }
+            })->get();
+        \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($case));
 
         // Trigger N8n Webhook Asynchronously
         \App\Jobs\TriggerN8nWebhook::dispatch('violation_recorded', [
@@ -178,6 +218,9 @@ class CaseController extends Controller
 
                 // Dispatch Real-time Event for Escalated Case
                 event(new \App\Events\ViolationRecorded($escalatedCase));
+
+                // Dispatch Reverb & Database Notifications for Escalated Case
+                \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($escalatedCase));
 
                 // Trigger N8n Webhook for Escalated Case Asynchronously
                 \App\Jobs\TriggerN8nWebhook::dispatch('violation_recorded', [
@@ -256,8 +299,13 @@ class CaseController extends Controller
             \Illuminate\Support\Facades\Log::error("Failed to notify Deans: " . $e->getMessage());
         }
 
-        return redirect()->route('cases.show', $case)
-            ->with('success', 'Violation recorded successfully.');
+        session()->flash('success', 'Violation recorded successfully.');
+
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location(route('cases.show', $case));
+        }
+
+        return redirect()->route('cases.show', $case);
     }
 
     public function show(\App\Models\StudentCase $case)
@@ -279,13 +327,22 @@ class CaseController extends Controller
             'major'  => $allStudentCases->filter(fn($c) => in_array($c->violation?->severity, ['Major', 'Critical']))->count(),
         ];
 
-        return view('cases.show', compact('case', 'offenseHistory', 'offenseSummary'));
+        return inertia('Cases/Show', [
+            'caseRecord' => $case,
+            'offenseHistory' => $offenseHistory,
+            'offenseSummary' => $offenseSummary,
+            'auth' => ['user' => auth()->user()]
+        ]);
     }
 
     public function edit(\App\Models\StudentCase $case)
     {
         $case->load(['student', 'violation']);
-        return view('cases.edit', compact('case'));
+        $violations = \App\Models\Violation::all();
+        return inertia('Cases/Edit', [
+            'caseRecord' => $case,
+            'violations' => $violations
+        ]);
     }
 
     public function update(\App\Http\Requests\UpdateCaseRequest $request, \App\Models\StudentCase $case)

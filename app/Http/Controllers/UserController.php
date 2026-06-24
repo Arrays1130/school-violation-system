@@ -34,7 +34,10 @@ class UserController extends Controller
 
         $users = $query->latest()->paginate(15)->withQueryString();
 
-        return view('users.index', compact('users'));
+        return inertia('Users/Index', [
+            'users' => $users,
+            'filters' => $request->only(['search', 'role'])
+        ]);
     }
 
     /**
@@ -42,7 +45,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('users.create');
+        return inertia('Users/Create');
     }
 
     /**
@@ -71,7 +74,7 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        return view('users.edit', compact('user'));
+        return inertia('Users/Edit', ['userRecord' => $user]);
     }
 
     /**

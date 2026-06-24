@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_layout.dart';
@@ -8,10 +9,12 @@ import 'services/notification_service.dart';
 import 'services/fcm_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 
 import 'services/security_service.dart';
+import 'config/api_config.dart';
 
 
 void main() async {
@@ -20,9 +23,15 @@ void main() async {
   // 1. Initialize Firebase
   // Note: Kailangan mo pang i-set up ang google-services.json para gumana ito
   try {
-    await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
-    await FCMService.initialize();
+    if (!kIsWeb) {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp();
+      }
+      FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
+      await FCMService.initialize();
+    } else {
+      print("Running on Web: Skipping Firebase FCM init");
+    }
   } catch (e) {
     print("Firebase init error: $e");
   }
@@ -46,11 +55,24 @@ class VioTrackApp extends StatelessWidget {
       theme: AppTheme.lightTheme.copyWith(
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           },
         ),
       ),
+      builder: (context, child) {
+        return Container(
+          color: const Color(0xFFF0F2F5), // subtle dark gray background for web
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: ClipRRect(
+                child: child!,
+              ),
+            ),
+          ),
+        );
+      },
       home: const AuthWrapper(),
     );
   }
@@ -76,12 +98,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _initNotifications() {
-    NotificationService().connect('192.168.254.104', (msg) {
+    NotificationService().connect(ApiConfig.wsHost, (msg) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg, style: GoogleFonts.outfit()),
-            backgroundColor: AppTheme.accentPurple,
+            backgroundColor: AppTheme.accentCyan,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -151,7 +173,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 icon: const Icon(Icons.fingerprint_rounded),
                 label: const Text("UNLOCK NOW"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentPurple,
+                  backgroundColor: AppTheme.accentCyan,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
               ),

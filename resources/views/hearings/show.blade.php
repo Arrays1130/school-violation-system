@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     @section('header', 'Hearing Details')
 
     <div class="space-y-6 max-w-5xl mx-auto">
@@ -17,7 +17,7 @@
                             <i data-lucide="gavel" class="w-3.5 h-3.5"></i>
                             Hearing Summary
                         </div>
-                        <h2 class="text-3xl font-bold text-white tracking-tight">Disciplinary Hearing</h2>
+                        <h2 class="text-3xl font-bold text-white tracking-tight">Violation Hearing</h2>
                         <p class="text-indigo-100/70 text-sm mt-1">Accused Student: <span class="text-white font-medium">{{ $hearing->case->student->full_name }}</span></p>
                     </div>
                 </div>
@@ -42,10 +42,10 @@
                             <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
                             Hearing Record
                         </span>
-                        <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">
-                            Disciplinary Board Hearing
+                        <h1 class="text-2xl font-semibold text-slate-800 tracking-tight">
+                            Violation Board Hearing
                         </h1>
-                        <div class="flex flex-wrap items-center gap-3 text-gray-500 text-sm">
+                        <div class="flex flex-wrap items-center gap-3 text-slate-500 text-sm">
                             <span class="uppercase tracking-wider">Ref ID: HR-{{ $hearing->id }}</span>
                             <div class="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
                             <span>Case Violation: {{ $hearing->case->violation->title }}</span>
@@ -53,11 +53,11 @@
                     </div>
                     
                     <div class="text-left md:text-right">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-2">
                             <i data-lucide="calendar" class="w-3 h-3"></i> Scheduled Time
                         </span>
-                        <p class="text-xl font-bold text-gray-900 tracking-tight">{{ $hearing->scheduled_at->format('M d, Y') }}</p>
-                        <p class="text-sm font-medium text-gray-500 mt-0.5">{{ $hearing->scheduled_at->format('h:i A') }}</p>
+                        <p class="text-xl font-bold text-slate-800 tracking-tight">{{ $hearing->scheduled_at->format('M d, Y') }}</p>
+                        <p class="text-sm font-medium text-slate-500 mt-0.5">{{ $hearing->scheduled_at->format('h:i A') }}</p>
                     </div>
                 </div>
             </div>
@@ -66,7 +66,7 @@
             <div class="p-8 space-y-8 bg-white">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
-                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                             <i data-lucide="map-pin" class="w-4 h-4 text-indigo-500"></i>
                             Venue / Room
                         </h3>
@@ -76,7 +76,7 @@
                     </div>
 
                     <div class="space-y-2">
-                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                             <i data-lucide="users" class="w-4 h-4 text-purple-500"></i>
                             Accompanying Participants
                         </h3>
@@ -92,7 +92,7 @@
 
                 @if($hearing->notes)
                     <div class="space-y-2">
-                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                             <i data-lucide="quote" class="w-4 h-4 text-pink-500"></i>
                             Hearing Protocol Notes
                         </h3>
@@ -108,7 +108,7 @@
                 {{-- Minutes of the Meeting --}}
                 <div class="pt-8 border-t border-gray-150 space-y-5">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                             <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-500"></i>
                             Minutes of the Meeting (MOM)
                         </h3>
@@ -128,11 +128,11 @@
                         </div>
                     @else
                         <div class="py-16 bg-white rounded-lg border border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
-                            <div class="w-12 h-12 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center mb-4 shadow-sm text-gray-400">
+                            <div class="w-12 h-12 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center mb-4 shadow-sm text-slate-400">
                                 <i data-lucide="file-edit" class="w-5 h-5"></i>
                             </div>
-                            <h4 class="text-sm font-semibold text-gray-900">No Minutes Recorded</h4>
-                            <p class="text-sm text-gray-500 mt-1 max-w-sm leading-relaxed">Minutes of this official hearing session have not yet been transcribed. Click below to add documentation.</p>
+                            <h4 class="text-sm font-semibold text-slate-800">No Minutes Recorded</h4>
+                            <p class="text-sm text-slate-500 mt-1 max-w-sm leading-relaxed">Minutes of this official hearing session have not yet been transcribed. Click below to add documentation.</p>
                             <a href="{{ route('hearings.edit', $hearing) }}" class="mt-5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-blue-700 transition-all duration-200">
                                 Add Meeting Minutes
                             </a>

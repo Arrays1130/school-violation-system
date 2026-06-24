@@ -122,12 +122,12 @@ export default function EnhancedLogin({ status, canResetPassword }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex flex-col items-center justify-center p-4 font-sans">
             <Head>
-                <title>Secure Login — I-Link CST Disciplinary System</title>
-                <meta name="description" content="Secure login portal for I-Link College disciplinary system administrators" />
+                <title>Secure Login — I-Link CST Violation System</title>
+                <meta name="description" content="Secure login portal for I-Link College violation system administrators" />
             </Head>
 
             {/* Skip to main content for accessibility */}
-            <a href="#login-form" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-indigo-600 focus:font-bold focus:rounded-lg focus:shadow-lg">
+            <a href="#login-form" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white dark:bg-slate-900 focus:text-indigo-600 dark:text-indigo-400 focus:font-bold focus:rounded-lg focus:shadow-lg">
                 Skip to login form
             </a>
 
@@ -137,32 +137,32 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 mb-4 shadow-lg">
                         <Shield className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Secure Access Portal</h1>
-                    <p className="text-slate-600 text-sm">I-Link College Disciplinary System</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Secure Access Portal</h1>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm">I-Link College Violation System</p>
                     
                     {/* Security Badge */}
-                    <div className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
+                    <div className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 rounded-full">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                         <span className="text-xs font-semibold text-emerald-700">🔒 SSL Secured Connection</span>
                     </div>
                 </div>
 
                 {/* Login Card */}
-                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     {/* Card Header */}
-                    <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50">
-                        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                            <Lock className="w-5 h-5 text-indigo-600" />
+                    <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-indigo-50">
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Lock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                             Administrator Login
                         </h2>
-                        <p className="text-sm text-slate-500 mt-1">Enter your credentials to access the system</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Enter your credentials to access the system</p>
                     </div>
 
                     {/* Card Body */}
                     <div className="p-6">
                         {status && (
-                            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3" role="alert">
-                                <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 rounded-xl flex items-start gap-3" role="alert">
+                                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium text-emerald-800">{status}</p>
                                 </div>
@@ -171,16 +171,16 @@ export default function EnhancedLogin({ status, canResetPassword }) {
 
                         {/* Login Attempts Warning */}
                         {loginAttempts > 0 && (
-                            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl" role="alert">
+                            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-xl" role="alert">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                     <span className="text-sm font-semibold text-amber-800">Security Notice</span>
                                 </div>
                                 <p className="text-sm text-amber-700">
                                     {loginAttempts === 1 ? "1 unsuccessful login attempt" : `${loginAttempts} unsuccessful login attempts`}
                                 </p>
                                 {loginAttempts >= 3 && (
-                                    <p className="text-xs text-amber-600 mt-2">
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
                                         Additional security verification required
                                     </p>
                                 )}
@@ -190,21 +190,21 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                         <form onSubmit={submit} id="login-form" className="space-y-5" noValidate>
                             {/* Email Field */}
                             <div className="space-y-2">
-                                <label htmlFor="email" className="block text-sm font-semibold text-slate-700">
+                                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
                                     Institutional Email
                                     <span className="text-rose-500 ml-1" aria-hidden="true">*</span>
                                     <span className="sr-only"> (required)</span>
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Mail className={`w-5 h-5 ${data.email ? 'text-indigo-600' : 'text-slate-400'} transition-colors`} />
+                                        <Mail className={`w-5 h-5 ${data.email ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} transition-colors`} />
                                     </div>
                                     <input
                                         id="email"
                                         type="email"
                                         name="email"
                                         value={data.email}
-                                        className={`w-full pl-10 pr-4 py-3 bg-white border rounded-lg text-slate-900 placeholder-slate-400 outline-none transition-all text-sm
+                                        className={`w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border rounded-lg text-slate-900 dark:text-white placeholder-slate-400 outline-none transition-all text-sm
                                             ${errors.email || emailError ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 
                                               data.email && !emailError ? 'border-emerald-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20' :
                                               'border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'}`}
@@ -219,12 +219,12 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                     />
                                 </div>
                                 {(errors.email || emailError) && (
-                                    <p id="email-error" className="text-sm text-rose-600 flex items-center gap-1">
+                                    <p id="email-error" className="text-sm text-rose-600 dark:text-rose-400 flex items-center gap-1">
                                         <AlertCircle className="w-4 h-4" />
                                         {errors.email || emailError}
                                     </p>
                                 )}
-                                <p id="email-help" className="text-xs text-slate-500">
+                                <p id="email-help" className="text-xs text-slate-500 dark:text-slate-400">
                                     Use your institutional email ending with @ilink.edu.ph
                                 </p>
                             </div>
@@ -232,7 +232,7 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                             {/* Password Field */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
+                                    <label htmlFor="password" className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         Password
                                         <span className="text-rose-500 ml-1" aria-hidden="true">*</span>
                                         <span className="sr-only"> (required)</span>
@@ -240,7 +240,7 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                     {canResetPassword && (
                                         <Link 
                                             href={route('password.request')}
-                                            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                                            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
                                         >
                                             Forgot password?
                                         </Link>
@@ -248,14 +248,14 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Lock className={`w-5 h-5 ${data.password ? 'text-indigo-600' : 'text-slate-400'} transition-colors`} />
+                                        <Lock className={`w-5 h-5 ${data.password ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} transition-colors`} />
                                     </div>
                                     <input
                                         id="password"
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={data.password}
-                                        className={`w-full pl-10 pr-12 py-3 bg-white border rounded-lg text-slate-900 placeholder-slate-400 outline-none transition-all text-sm
+                                        className={`w-full pl-10 pr-12 py-3 bg-white dark:bg-slate-900 border rounded-lg text-slate-900 dark:text-white placeholder-slate-400 outline-none transition-all text-sm
                                             ${errors.password || passwordError ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 
                                               data.password && !passwordError ? 'border-emerald-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20' :
                                               'border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'}`}
@@ -276,21 +276,21 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                         aria-pressed={showPassword}
                                     >
                                         {showPassword ? (
-                                            <EyeOff className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" />
+                                            <EyeOff className="w-5 h-5 text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-colors" />
                                         ) : (
-                                            <Eye className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" />
+                                            <Eye className="w-5 h-5 text-slate-400 hover:text-slate-600 dark:text-slate-400 transition-colors" />
                                         )}
                                     </button>
                                 </div>
                                 {(errors.password || passwordError) && (
-                                    <p id="password-error" className="text-sm text-rose-600 flex items-center gap-1">
+                                    <p id="password-error" className="text-sm text-rose-600 dark:text-rose-400 flex items-center gap-1">
                                         <AlertCircle className="w-4 h-4" />
                                         {errors.password || passwordError}
                                     </p>
                                 )}
-                                <div className="flex items-center justify-between text-xs text-slate-500">
+                                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                     <span>Must be at least 8 characters</span>
-                                    <span className={`font-medium ${data.password.length >= 8 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                    <span className={`font-medium ${data.password.length >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
                                         {data.password.length}/8
                                     </span>
                                 </div>
@@ -298,19 +298,19 @@ export default function EnhancedLogin({ status, canResetPassword }) {
 
                             {/* CAPTCHA Section */}
                             {showCaptcha && (
-                                <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-slate-700">Security Verification</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Security Verification</span>
                                         <button
                                             type="button"
                                             onClick={generateCaptcha}
-                                            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
                                         >
                                             Refresh CAPTCHA
                                         </button>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <div className="flex-1 bg-white border border-slate-300 rounded-lg p-3 font-mono text-lg tracking-wider text-center select-none">
+                                        <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg p-3 font-mono text-lg tracking-wider text-center select-none">
                                             {generatedCaptcha}
                                         </div>
                                         <input
@@ -323,7 +323,7 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                             maxLength={6}
                                         />
                                     </div>
-                                    <p className="text-xs text-slate-500">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
                                         Type the characters shown above (case-sensitive)
                                     </p>
                                 </div>
@@ -337,9 +337,9 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                     name="remember"
                                     checked={data.remember}
                                     onChange={(e) => setData('remember', e.target.checked)}
-                                    className="w-4 h-4 rounded bg-white border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 transition-all"
+                                    className="w-4 h-4 rounded bg-white dark:bg-slate-900 border-slate-300 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 focus:ring-offset-0 transition-all"
                                 />
-                                <label htmlFor="remember" className="ml-2 text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="remember" className="ml-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
                                     Keep me signed in on this device
                                 </label>
                             </div>
@@ -366,9 +366,9 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                         </form>
 
                         {/* Security Footer */}
-                        <div className="mt-8 pt-6 border-t border-slate-200">
+                        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                             <div className="space-y-3">
-                                <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
+                                <div className="flex items-center justify-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                                     <span className="flex items-center gap-1">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                         HTTPS Secure
@@ -378,9 +378,9 @@ export default function EnhancedLogin({ status, canResetPassword }) {
                                         Encrypted Connection
                                     </span>
                                 </div>
-                                <p className="text-xs text-slate-500 text-center">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
                                     For security assistance, contact:{" "}
-                                    <a href="mailto:it-support@ilink.edu.ph" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                                    <a href="mailto:it-support@ilink.edu.ph" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium">
                                         it-support@ilink.edu.ph
                                     </a>
                                 </p>
@@ -391,11 +391,11 @@ export default function EnhancedLogin({ status, canResetPassword }) {
 
                 {/* Footer */}
                 <div className="mt-8 text-center">
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                         &copy; {new Date().getFullYear()} I-Link College of Science and Technology
                     </p>
-                    <p className="text-xs text-slate-500 mt-2">
-                        Disciplinary System v2.0 • Last updated: June 2026
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                        Violation System v2.0 • Last updated: June 2026
                     </p>
                 </div>
             </div>

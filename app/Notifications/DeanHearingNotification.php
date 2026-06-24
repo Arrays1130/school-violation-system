@@ -44,7 +44,7 @@ class DeanHearingNotification extends Notification
             ->when($this->hearing->notes, function ($mail) {
                 return $mail->line("- **Notes:** {$this->hearing->notes}");
             })
-            ->line('This notification is sent to all Deans for awareness of ongoing disciplinary hearings.')
+            ->line('This notification is sent to all Deans for awareness of ongoing violation hearings.')
             ->action('View Hearing Details', route('hearings.show', $this->hearing->id));
     }
 

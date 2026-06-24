@@ -11,12 +11,17 @@ class MeetingMinuteController extends Controller
     public function index()
     {
         $minutes = MeetingMinute::with('creator')->orderBy('meeting_date', 'desc')->paginate(10);
-        return view('meeting-minutes.index', compact('minutes'));
+        return inertia('Minutes/Index', [
+            'minutes' => $minutes
+        ]);
     }
 
     public function create()
     {
-        return view('meeting-minutes.create');
+        $cases = \App\Models\StudentCase::with('student', 'violation')->latest()->get();
+        return inertia('Minutes/Create', [
+            'cases' => $cases
+        ]);
     }
 
     public function store(Request $request)
@@ -39,12 +44,16 @@ class MeetingMinuteController extends Controller
     public function show(MeetingMinute $meetingMinute)
     {
         $meetingMinute->load(['case.student', 'creator']);
-        return view('meeting-minutes.show', compact('meetingMinute'));
+        return inertia('Minutes/Show', [
+            'meetingMinute' => $meetingMinute
+        ]);
     }
 
     public function edit(MeetingMinute $meetingMinute)
     {
-        return view('meeting-minutes.edit', compact('meetingMinute'));
+        return inertia('Minutes/Edit', [
+            'meetingMinute' => $meetingMinute
+        ]);
     }
 
     public function update(Request $request, MeetingMinute $meetingMinute)

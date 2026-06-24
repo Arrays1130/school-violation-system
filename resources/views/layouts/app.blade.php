@@ -52,7 +52,7 @@
                     <div class="flex items-center gap-3.5">
                         <img class="w-9 h-9 object-contain shrink-0 rounded-lg shadow-sm" 
                              src="{{ asset('brand_logo.png') }}" 
-                             alt="I-Link CST Disciplinary System Logo" 
+                             alt="I-Link CST Violation System Logo" 
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-indigo-500/10 shrink-0" 
                              style="display: none;"
@@ -74,7 +74,7 @@
                 </div>
 
                 <!-- Nav Links -->
-                <nav class="flex-1 overflow-y-auto px-4.5 py-6 no-scrollbar" aria-label="Primary navigation">
+                <nav class="flex-1 overflow-y-auto px-4 py-4" aria-label="Primary navigation">
                     @include('layouts.navigation-links')
                 </nav>
 
@@ -139,6 +139,30 @@
                 lucide.createIcons();
             });
 
+            @if (session('success'))
+                document.addEventListener('DOMContentLoaded', () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: {!! json_encode(session('success')) !!},
+                        confirmButtonColor: '#10b981',
+                        customClass: { popup: 'rounded-2xl border border-slate-100 shadow-xl' }
+                    });
+                });
+            @endif
+
+            @if (session('error'))
+                document.addEventListener('DOMContentLoaded', () => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: {!! json_encode(session('error')) !!},
+                        confirmButtonColor: '#e11d48',
+                        customClass: { popup: 'rounded-2xl border border-slate-100 shadow-xl' }
+                    });
+                });
+            @endif
+
             function confirmDelete(formId, label) {
                 Swal.fire({
                     title: 'Confirm Deletion?',
@@ -152,6 +176,30 @@
                     customClass: {
                         popup: 'rounded-2xl border border-slate-100 shadow-xl',
                         confirmButton: 'px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150',
+                        cancelButton: 'px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150 ml-3',
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = document.getElementById(formId);
+                        if (form) form.submit();
+                    }
+                });
+            }
+
+            function confirmAction(formId, options) {
+                Swal.fire({
+                    title: options.title || 'Are you sure?',
+                    text: options.text || 'This action cannot be undone.',
+                    icon: options.icon || 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: options.confirmButtonColor || '#4f46e5', // indigo-600
+                    cancelButtonColor: '#64748b', // slate-500
+                    confirmButtonText: options.confirmButtonText || 'Yes, proceed',
+                    cancelButtonText: 'Cancel',
+                    customClass: {
+                        popup: 'rounded-2xl border border-slate-100 shadow-xl',
+                        confirmButton: (options.confirmButtonClass || 'bg-indigo-600 hover:bg-indigo-700') + ' px-5 py-2.5 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150',
                         cancelButton: 'px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150 ml-3',
                     },
                     buttonsStyling: false

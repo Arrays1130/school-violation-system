@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
 import '../services/security_service.dart';
@@ -20,6 +22,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isHardwareAvailable = false;
   bool _isLoading = true;
 
+  // User data
+  String _userName = '';
+  String _userEmail = '';
+  String _userRole = '';
+  String _userInitials = '';
+
   @override
   void initState() {
     super.initState();
@@ -29,11 +37,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadSettings() async {
     final bool available = await SecurityService.isBiometricsSupported();
     final bool enabled = await SecurityService.isBiometricLockEnabled();
+
+    // Load real user data from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('user');
+    if (userJson != null) {
+      try {
+        final user = jsonDecode(userJson) as Map<String, dynamic>;
+        final name = (user['name'] ?? user['full_name'] ?? '').toString().trim();
+        final email = (user['email'] ?? '').toString().trim();
+        final role = (user['role'] ?? user['position'] ?? 'Dean of Discipline').toString().trim();
+
+        // Build initials from name
+        final parts = name.split(' ').where((p) => p.isNotEmpty).toList();
+        final initials = parts.length >= 2
+            ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
+            : name.isNotEmpty
+                ? name[0].toUpperCase()
+                : 'D';
+
+        setState(() {
+          _userName = name.isNotEmpty ? name : 'Dean';
+          _userEmail = email;
+          _userRole = _formatRole(role);
+          _userInitials = initials;
+          _isHardwareAvailable = available;
+          _isBiometricEnabled = enabled;
+          _isLoading = false;
+        });
+        return;
+      } catch (_) {}
+    }
+
     setState(() {
+      _userName = 'Dean';
+      _userEmail = '';
+      _userRole = 'Dean of Discipline';
+      _userInitials = 'D';
       _isHardwareAvailable = available;
       _isBiometricEnabled = enabled;
       _isLoading = false;
     });
+  }
+
+  String _formatRole(String role) {
+    if (role.toLowerCase().contains('dean')) return 'Dean of Discipline';
+    if (role.toLowerCase().contains('admin')) return 'Administrator';
+    if (role.toLowerCase().contains('registrar')) return 'Registrar';
+    return role.isNotEmpty ? role : 'Dean of Discipline';
   }
 
   void _toggleBiometric(bool value) async {
@@ -55,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message, style: GoogleFonts.outfit()),
       behavior: SnackBarBehavior.floating,
-      backgroundColor: AppTheme.accentPurple,
+      backgroundColor: AppTheme.accentCyan,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
     ));
@@ -79,51 +130,113 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppTheme.bgLight,
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentPurple))
+              child: CircularProgressIndicator(color: AppTheme.accentCyan))
           : CustomScrollView(
               slivers: [
-                // ── Header ──
                 SliverToBoxAdapter(
                   child: _buildProfileHeader(),
                 ),
-                // ── Settings ──
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+
+                      // ── Account Info Section ──
+                      _buildSectionLabel("ACCOUNT INFO"),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.primarySlate.withOpacity(0.08)),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildInfoTile(
+                              icon: Icons.person_outline_rounded,
+                              iconColor: AppTheme.primaryNavy,
+                              label: "Full Name",
+                              value: _userName,
+                              showBorder: false,
+                            ),
+                            if (_userEmail.isNotEmpty) ...[
+                              Divider(height: 1, color: AppTheme.primarySlate.withOpacity(0.08)),
+                              _buildInfoTile(
+                                icon: Icons.email_outlined,
+                                iconColor: AppTheme.accentCyan,
+                                label: "Email Address",
+                                value: _userEmail,
+                                showBorder: false,
+                              ),
+                            ],
+                            Divider(height: 1, color: AppTheme.primarySlate.withOpacity(0.08)),
+                            _buildInfoTile(
+                              icon: Icons.badge_outlined,
+                              iconColor: AppTheme.accentAmber,
+                              label: "Role / Position",
+                              value: _userRole,
+                              showBorder: false,
+                            ),
+                          ],
+                        ),
+                      ).animate().fadeIn().slideY(begin: 0.1),
+
+                      const SizedBox(height: 28),
+
+                      // ── Security Section ──
                       _buildSectionLabel("SECURITY & PRIVACY"),
                       const SizedBox(height: 10),
-                      _buildSettingTile(
-                        icon: Icons.fingerprint_rounded,
-                        iconColor: AppTheme.accentPurple,
-                        title: "Biometric Login",
-                        subtitle: _isHardwareAvailable
-                            ? "Use Fingerprint or Face ID"
-                            : "Not available on this device",
-                        trailing: Switch(
-                          value: _isBiometricEnabled,
-                          onChanged:
-                              _isHardwareAvailable ? _toggleBiometric : null,
-                          activeThumbColor: AppTheme.accentPurple,
-                          activeTrackColor:
-                              AppTheme.accentPurple.withOpacity(0.25),
-                          inactiveThumbColor: AppTheme.textHint,
-                          inactiveTrackColor:
-                              AppTheme.textHint.withOpacity(0.2),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.primarySlate.withOpacity(0.08)),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionLabel("ACCOUNT"),
-                      const SizedBox(height: 10),
-                      _buildSettingTile(
-                        icon: Icons.logout_rounded,
-                        iconColor: AppTheme.accentRose,
-                        title: "Sign Out",
-                        subtitle: "Ends your current session securely",
-                        titleColor: AppTheme.accentRose,
+                        child: _buildSettingTile(
+                          icon: Icons.fingerprint_rounded,
+                          iconColor: AppTheme.accentCyan,
+                          title: "Biometric Login",
+                          subtitle: _isHardwareAvailable
+                              ? "Use Fingerprint or Face ID"
+                              : "Not available on this device",
+                          trailing: Switch(
+                            value: _isBiometricEnabled,
+                            onChanged:
+                                _isHardwareAvailable ? _toggleBiometric : null,
+                            activeColor: AppTheme.accentCyan,
+                          ),
+                          showBorder: false,
+                        ),
+                      ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1),
+
+                      const SizedBox(height: 40),
+
+                      // ── Sign Out Button ──
+                      GestureDetector(
                         onTap: _showLogoutDialog,
-                      ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentRose.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppTheme.accentRose.withOpacity(0.2)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              "Sign Out",
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.accentRose,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
@@ -139,61 +252,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ],
-            ).animate().fadeIn(duration: 400.ms),
+            ),
     );
   }
 
   Widget _buildProfileHeader() {
     return Container(
-      decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
+      color: AppTheme.bgLight,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 36),
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 36),
           child: Column(
             children: [
-              // Avatar
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppTheme.accentGradient,
-                  boxShadow: [
-                    BoxShadow(
-                        color: AppTheme.accentPurple.withOpacity(0.4),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8)),
-                  ],
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 3),
-                ),
-                child: const Icon(Icons.person_rounded,
-                    color: Colors.white, size: 44),
-              ),
-              const SizedBox(height: 16),
+              // Avatar with initials
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primaryNavy.withOpacity(0.1),
+                    ),
+                  ).animate(onPlay: (c) => c.repeat(reverse: true))
+                   .scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1), duration: 2.seconds, curve: Curves.easeInOutSine)
+                   .fade(begin: 0.3, end: 0.8),
+                  Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primaryNavy,
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryNavy.withOpacity(0.3),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        _userInitials,
+                        style: GoogleFonts.outfit(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ).animate().scale(delay: 100.ms, duration: 600.ms, curve: Curves.easeOutBack),
+              const SizedBox(height: 24),
               Text(
-                "Dean of Discipline",
+                _userName,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white),
-              ),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.primaryNavy,
+                    letterSpacing: -0.5),
+              ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
               const SizedBox(height: 4),
               Text(
-                "Academic Integrity Office",
+                _userRole,
                 style: GoogleFonts.outfit(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.6)),
-              ),
-              const SizedBox(height: 20),
-              // Role badge
+                    color: AppTheme.textSub,
+                    fontWeight: FontWeight.w500),
+              ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.2, end: 0),
+              const SizedBox(height: 18),
+              // Active session badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  color: AppTheme.accentEmerald.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppTheme.accentEmerald.withOpacity(0.2)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -201,31 +341,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       width: 7,
                       height: 7,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppTheme.accentEmerald,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: AppTheme.accentEmerald.withOpacity(0.8),
-                              blurRadius: 4),
-                        ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text("ACTIVE SESSION",
                         style: GoogleFonts.outfit(
                             fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.accentEmerald,
                             letterSpacing: 1.5)),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(delay: 300.ms),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    bool showBorder = true,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: showBorder ? BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primarySlate.withOpacity(0.08)),
+      ) : null,
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.outfit(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textMuted,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textMain,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn().slideX(begin: 0.05, end: 0);
   }
 
   Widget _buildSectionLabel(String label) {
@@ -247,13 +438,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Widget? trailing,
     VoidCallback? onTap,
     Color? titleColor,
+    bool showBorder = true,
   }) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: showBorder ? BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: AppTheme.softShadow,
-      ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primarySlate.withOpacity(0.08)),
+      ) : null,
       child: ListTile(
         onTap: onTap != null
             ? () {
@@ -261,9 +453,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap();
               }
             : null,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         leading: Container(
           width: 42,
           height: 42,
@@ -295,9 +486,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
         title: Text("Sign Out?",
             style:
-                GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+                GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18,
+                color: AppTheme.primaryNavy)),
         content: Text("You'll need to authenticate again to access the system.",
             style: GoogleFonts.outfit(color: AppTheme.textMuted)),
         actions: [
@@ -315,11 +508,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.accentRose,
+              foregroundColor: Colors.white,
               minimumSize: Size.zero,
               padding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
             ),
             child: Text("SIGN OUT",
                 style: GoogleFonts.outfit(

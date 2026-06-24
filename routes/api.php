@@ -3,6 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Railway health check
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'timestamp' => now()]);
+});
+
 Route::prefix('mobile')->group(function () {
     Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])
         ->middleware('throttle:10,1');

@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     @section('header', 'Sanctions Report')
 
     <div class="space-y-6 max-w-7xl mx-auto">
@@ -17,7 +17,7 @@
                     <div>
                         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-2">
                             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                            Disciplinary Outcomes
+                            Violation Outcomes
                         </div>
                         <h1 class="text-3xl font-extrabold text-white tracking-tight">Sanctions Report</h1>
                         <p class="text-emerald-100/60 text-sm mt-1">Track imposed sanctions, compliance status, and sanction outcomes per student.</p>
@@ -50,7 +50,7 @@
                         <i data-lucide="{{ $card['icon'] }}" class="w-4.5 h-4.5 {{ $p['icon'] }}"></i>
                     </div>
                     <div class="text-3xl font-extrabold {{ $p['num'] }} tabular-nums">{{ $card['value'] }}</div>
-                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-1">{{ $card['label'] }}</div>
+                    <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">{{ $card['label'] }}</div>
                 </div>
             @endforeach
         </div>
@@ -65,7 +65,7 @@
                 <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-700"
                      style="width: {{ $complianceRate }}%"></div>
             </div>
-            <div class="flex justify-between text-xs text-gray-400 mt-1.5">
+            <div class="flex justify-between text-xs text-slate-400 mt-1.5">
                 <span>{{ $sanctionsServed }} served</span>
                 <span>{{ $sanctionsPending }} pending</span>
             </div>
@@ -77,8 +77,8 @@
                   class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Department</label>
-                    <select name="department" class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Department</label>
+                    <select name="department" class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
                             <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
@@ -87,8 +87,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Severity</label>
-                    <select name="severity" class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Severity</label>
+                    <select name="severity" class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
                         <option value="">All Severities</option>
                         <option value="Minor"  {{ request('severity') == 'Minor'  ? 'selected' : '' }}>Minor</option>
                         <option value="Major"  {{ request('severity') == 'Major'  ? 'selected' : '' }}>Major</option>
@@ -97,8 +97,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Sanction Status</label>
-                    <select name="sanction_status" class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Sanction Status</label>
+                    <select name="sanction_status" class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none">
                         <option value="">All</option>
                         <option value="served"  {{ request('sanction_status') == 'served'  ? 'selected' : '' }}>✅ Sanction Served</option>
                         <option value="pending" {{ request('sanction_status') == 'pending' ? 'selected' : '' }}>⏳ Pending Sanction</option>
@@ -106,16 +106,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Date From</label>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Date From</label>
                     <input type="date" name="date_from" value="{{ request('date_from') }}"
-                           class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
+                           class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
                 </div>
 
                 <div class="flex gap-2">
                     <div class="flex-1">
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Date To</label>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Date To</label>
                         <input type="date" name="date_to" value="{{ request('date_to') }}"
-                               class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
+                               class="w-full px-3.5 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
                     </div>
                 </div>
 
@@ -126,7 +126,7 @@
                     </button>
                     @if(request()->anyFilled(['department','severity','sanction_status','date_from','date_to']))
                         <a href="{{ route('reports.sanctions') }}"
-                           class="px-4 py-2.5 bg-white text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-200 transition-all text-sm font-medium">
+                           class="px-4 py-2.5 bg-white text-slate-500 hover:text-gray-800 hover:bg-gray-50 rounded-lg flex items-center gap-2 border border-gray-200 transition-all text-sm font-medium">
                             <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Clear
                         </a>
                     @endif
@@ -138,7 +138,7 @@
         <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="list" class="w-4 h-4 text-gray-400"></i>
+                    <i data-lucide="list" class="w-4 h-4 text-slate-400"></i>
                     <span class="text-sm font-bold text-gray-700">
                         {{ number_format($cases->total()) }} record{{ $cases->total() !== 1 ? 's' : '' }} found
                     </span>
@@ -149,13 +149,13 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-100">
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Student</th>
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Violation</th>
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Offense</th>
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sanction Imposed</th>
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center">Status</th>
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Date Closed</th>
-                            <th class="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Violation</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Offense</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sanction Imposed</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Status</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Closed</th>
+                            <th class="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
@@ -173,12 +173,12 @@
                                 {{-- Student --}}
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs border border-indigo-100 shrink-0">
+                                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-indigo-100 shrink-0">
                                             {{ $case->student?->initials ?? '??' }}
                                         </div>
                                         <div>
-                                            <div class="text-sm font-bold text-gray-900">{{ $case->student?->full_name ?? 'Unknown' }}</div>
-                                            <div class="text-[11px] text-gray-400 uppercase tracking-wide">{{ $case->student?->student_id ?? '—' }}</div>
+                                            <div class="text-sm font-bold text-slate-800">{{ $case->student?->full_name ?? 'Unknown' }}</div>
+                                            <div class="text-[11px] text-slate-400 uppercase tracking-wide">{{ $case->student?->student_id ?? '—' }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -216,7 +216,7 @@
                                     @if($case->sanction)
                                         <div class="text-sm text-gray-700 leading-snug">{{ $case->sanction }}</div>
                                     @else
-                                        <span class="text-xs text-gray-400 italic">No sanction recorded</span>
+                                        <span class="text-xs text-slate-400 italic">No sanction recorded</span>
                                     @endif
                                 </td>
 
@@ -237,9 +237,9 @@
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     @if($case->closed_at)
                                         <div class="text-sm font-medium text-gray-700">{{ $case->closed_at->format('M d, Y') }}</div>
-                                        <div class="text-[11px] text-gray-400">by {{ $case->closedByUser?->name ?? '—' }}</div>
+                                        <div class="text-[11px] text-slate-400">by {{ $case->closedByUser?->name ?? '—' }}</div>
                                     @else
-                                        <span class="text-xs text-gray-400 italic">Open</span>
+                                        <span class="text-xs text-slate-400 italic">Open</span>
                                     @endif
                                 </td>
 
@@ -254,12 +254,12 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="px-6 py-16 text-center">
-                                    <div class="flex flex-col items-center text-gray-400">
+                                    <div class="flex flex-col items-center text-slate-400">
                                         <div class="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center mb-3">
                                             <i data-lucide="shield-off" class="w-7 h-7 text-gray-300"></i>
                                         </div>
-                                        <p class="text-sm font-semibold text-gray-500">No sanction records found</p>
-                                        <p class="text-xs text-gray-400 mt-1">Try adjusting your filters.</p>
+                                        <p class="text-sm font-semibold text-slate-500">No sanction records found</p>
+                                        <p class="text-xs text-slate-400 mt-1">Try adjusting your filters.</p>
                                     </div>
                                 </td>
                             </tr>

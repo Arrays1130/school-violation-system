@@ -1,14 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'package:viotrack_flutter/config/api_config.dart';
 
 class ApiService {
-  static const String baseUrl = ApiConfig.baseUrl;
+  static String get baseUrl => ApiConfig.baseUrl;
+  
+  static final ValueNotifier<bool> isOfflineNotifier = ValueNotifier<bool>(false);
   
   // Optimization: In-memory cache for speed
-  final Map<String, dynamic> _cache = {};
-  final Map<String, DateTime> _cacheExpiry = {};
+  static final Map<String, dynamic> _cache = {};
+  static final Map<String, DateTime> _cacheExpiry = {};
   static const Duration cacheDuration = Duration(seconds: 25);
 
   bool _isCacheValid(String key) {
@@ -21,11 +24,25 @@ class ApiService {
     _cacheExpiry.remove(key);
   }
 
+  Future<void> _saveToPersistentCache(String key, dynamic data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('cache_$key', jsonEncode(data));
+  }
+
+  Future<dynamic> getPersistentCache(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedData = prefs.getString('cache_$key');
+    if (cachedData != null) {
+      return jsonDecode(cachedData);
+    }
+    return null;
+  }
+
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/mobile/login'),
-        headers: {'Accept': 'application/json'},
+        headers: {'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true'},
         body: {
           'email': email,
           'password': password,
@@ -40,10 +57,16 @@ class ApiService {
         await prefs.setString('user', jsonEncode(data['user']));
         return {'success': true, 'message': 'Success'};
       } else {
-        return {'success': false, 'message': 'Error Code: ${response.statusCode}'};
+        try {
+          final data = jsonDecode(response.body);
+          final message = data['message'] ?? 'Login failed (${response.statusCode})';
+          return {'success': false, 'message': message};
+        } catch (_) {
+          return {'success': false, 'message': 'Error Code: ${response.statusCode}'};
+        }
       }
     } catch (e) {
-      return {'success': false, 'message': 'Walang connection sa server'};
+      return {'success': false, 'message': 'Connection error: ${e.toString()}'};
     }
   }
 
@@ -57,6 +80,7 @@ class ApiService {
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
         },
       );
     }
@@ -74,40 +98,67 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/mobile/violations'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/mobile/violations'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      _cache[cacheKey] = decoded;
-      _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
-      return decoded;
-    } else {
-      throw Exception('Failed to load violations');
+      if (response.statusCode == 200) {
+        isOfflineNotifier.value = false;
+        final decoded = jsonDecode(response.body);
+        _cache[cacheKey] = decoded;
+        _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
+        _saveToPersistentCache(cacheKey, decoded);
+        return decoded;
+      } else {
+        throw Exception('Failed to load violations');
+      }
+    } catch (e) {
+      isOfflineNotifier.value = true;
+      final cached = await getPersistentCache(cacheKey);
+      if (cached != null) return cached;
+      throw Exception('Walang internet connection at walang naka-save na data.');
     }
   }
 
   Future<dynamic> getCaseDetails(int id) async {
+    final String cacheKey = 'case_$id';
+    if (_isCacheValid(cacheKey)) {
+      return _cache[cacheKey];
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/mobile/violations/$id'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/mobile/violations/$id'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load case details');
+      if (response.statusCode == 200) {
+        isOfflineNotifier.value = false;
+        final decoded = jsonDecode(response.body);
+        _cache[cacheKey] = decoded;
+        _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
+        _saveToPersistentCache(cacheKey, decoded);
+        return decoded;
+      } else {
+        throw Exception('Failed to load case details');
+      }
+    } catch (e) {
+      isOfflineNotifier.value = true;
+      final cached = await getPersistentCache(cacheKey);
+      if (cached != null) return cached;
+      throw Exception('Walang internet connection at walang naka-save na data.');
     }
   }
 
@@ -120,21 +171,30 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/mobile/stats'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/mobile/stats'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      _cache[cacheKey] = decoded;
-      _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
-      return decoded;
-    } else {
-      throw Exception('Failed to load stats');
+      if (response.statusCode == 200) {
+        isOfflineNotifier.value = false;
+        final decoded = jsonDecode(response.body);
+        _cache[cacheKey] = decoded;
+        _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
+        _saveToPersistentCache(cacheKey, decoded);
+        return decoded;
+      } else {
+        throw Exception('Failed to load stats');
+      }
+    } catch (e) {
+      isOfflineNotifier.value = true;
+      final cached = await getPersistentCache(cacheKey);
+      if (cached != null) return cached;
+      throw Exception('Walang internet connection at walang naka-save na data.');
     }
   }
 
@@ -156,22 +216,39 @@ class ApiService {
     return 0;
   }
 
-  Future<dynamic> getNotifications() async {
+  Future<dynamic> getNotifications({bool forcedRefresh = false}) async {
+    const String cacheKey = 'notifications';
+    if (!forcedRefresh && _isCacheValid(cacheKey)) {
+      return _cache[cacheKey];
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/mobile/notifications'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/mobile/notifications'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load notifications');
+      if (response.statusCode == 200) {
+        isOfflineNotifier.value = false;
+        final decoded = jsonDecode(response.body);
+        _cache[cacheKey] = decoded;
+        _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
+        _saveToPersistentCache(cacheKey, decoded);
+        return decoded;
+      } else {
+        throw Exception('Failed to load notifications');
+      }
+    } catch (e) {
+      isOfflineNotifier.value = true;
+      final cached = await getPersistentCache(cacheKey);
+      if (cached != null) return cached;
+      throw Exception('Walang internet connection at walang naka-save na data.');
     }
   }
 

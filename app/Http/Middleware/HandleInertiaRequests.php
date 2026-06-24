@@ -33,6 +33,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'unreadNotifications' => $request->user() ? $request->user()->unreadNotifications()->latest()->take(10)->get() : [],
             ],
             'openCasesCount' => $request->user() ? \App\Models\StudentCase::whereNotIn('status', ['Closed', 'Dismissed'])->count() : 0,
         ];

@@ -200,7 +200,7 @@
         <div class="header">
             <h1>I-Link College of Science and Technology</h1>
             <h2>Office of Student Affairs</h2>
-            <p>Official Student Disciplinary Record</p>
+            <p>Official Student Violation Record</p>
         </div>
 
         <div class="report-title">

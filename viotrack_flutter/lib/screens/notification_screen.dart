@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/empty_state_widget.dart';
 import 'case_details_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -24,9 +25,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchNotifications();
+    _loadInitialData();
     _autoRefreshTimer = Timer.periodic(
-        const Duration(seconds: 30), (_) => _fetchNotifications());
+        const Duration(seconds: 30), (_) => _fetchNotifications(showLoading: false));
+  }
+
+  Future<void> _loadInitialData() async {
+    final cachedData = await _apiService.getPersistentCache('notifications');
+    if (cachedData != null && mounted) {
+      setState(() {
+        if (cachedData is Map && cachedData.containsKey('data')) {
+          _notifications = cachedData['data'] as List<dynamic>;
+        } else if (cachedData is List) {
+          _notifications = cachedData;
+        }
+        _isLoading = false;
+      });
+    }
+    await _fetchNotifications(showLoading: _isLoading);
   }
 
   @override
@@ -35,24 +51,30 @@ class _NotificationScreenState extends State<NotificationScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchNotifications() async {
+  Future<void> _fetchNotifications({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() => _isLoading = true);
+    }
     try {
-      final dynamic result = await _apiService.getNotifications();
-      setState(() {
-        if (result is Map && result.containsKey('data')) {
-          _notifications = result['data'] as List<dynamic>;
-        } else if (result is List) {
-          _notifications = result;
-        }
-        _isLoading = false;
-      });
+      final dynamic result = await _apiService.getNotifications(forcedRefresh: true);
+      if (mounted) {
+        setState(() {
+          if (result is Map && result.containsKey('data')) {
+            _notifications = result['data'] as List<dynamic>;
+          } else if (result is List) {
+            _notifications = result;
+          }
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _handleNotificationTap(dynamic notification) async {
-    final id = notification['id'];
+    HapticFeedback.mediumImpact();
+    final String id = notification['id'].toString();
     final Map<String, dynamic> data = notification['data'] is String
         ? Map<String, dynamic>.from(jsonDecode(notification['data']))
         : Map<String, dynamic>.from(notification['data']);
@@ -64,9 +86,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) =>
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 500),
+          reverseTransitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (context, animation, secondaryAnimation) =>
               CaseDetailsScreen(caseId: int.parse(data['case_id'].toString())),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+            final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+            return FadeTransition(
+              opacity: fadeAnimation,
+              child: ScaleTransition(scale: scaleAnimation, child: child),
+            );
+          },
         ),
       ).then((_) => _fetchNotifications());
     } else {
@@ -106,7 +142,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text("CLOSE",
                 style: GoogleFonts.outfit(
-                    color: AppTheme.accentPurple,
+                    color: AppTheme.accentCyan,
                     fontWeight: FontWeight.bold)),
           ),
         ],
@@ -143,7 +179,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _fetchNotifications,
-              color: AppTheme.accentPurple,
+              color: AppTheme.accentCyan,
               child: _isLoading
                   ? Padding(
                       padding: const EdgeInsets.only(top: 16),
@@ -195,7 +231,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       Text("$unreadCount unread",
                           style: GoogleFonts.outfit(
                               fontSize: 12,
-                              color: AppTheme.accentPurple,
+                              color: AppTheme.accentCyan,
                               fontWeight: FontWeight.w600))
                     else
                       Text("All caught up",
@@ -213,7 +249,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                          color: AppTheme.accentPurple.withOpacity(0.3),
+                          color: AppTheme.accentCyan.withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4)),
                     ],
@@ -233,35 +269,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Lottie.network(
-            'https://lottie.host/956e2900-6f07-45da-ae51-d0cd27850c85/SByH8mZv7e.json',
-            width: 180,
-            height: 180,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                  color: AppTheme.bgLight, shape: BoxShape.circle),
-              child: Icon(Icons.notifications_none_rounded,
-                  size: 52, color: AppTheme.textHint),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text("All caught up!",
-              style: GoogleFonts.outfit(
-                  color: AppTheme.textMain,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18)),
-          const SizedBox(height: 6),
-          Text("No new notifications at the moment.",
-              style:
-                  GoogleFonts.outfit(color: AppTheme.textMuted, fontSize: 13)),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.notifications_off_rounded,
+      title: "All caught up!",
+      message: "You have no new notifications at the moment. We'll alert you when there's an update.",
     );
   }
 
@@ -278,7 +289,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: isUnread ? AppTheme.softShadow : null,
         border: isUnread
-            ? Border.all(color: AppTheme.accentPurple.withOpacity(0.15))
+            ? Border.all(color: AppTheme.accentCyan.withOpacity(0.15))
             : Border.all(color: AppTheme.inputBorder.withOpacity(0.5)),
       ),
       child: Material(
@@ -308,7 +319,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         boxShadow: isUnread
                             ? [
                                 BoxShadow(
-                                    color: AppTheme.accentPurple.withOpacity(0.3),
+                                    color: AppTheme.accentCyan.withOpacity(0.3),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4)),
                               ]
@@ -363,14 +374,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppTheme.accentPurple.withOpacity(0.1),
+                                color: AppTheme.accentCyan.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text("NEW",
                                   style: GoogleFonts.outfit(
                                       fontSize: 8,
                                       fontWeight: FontWeight.w900,
-                                      color: AppTheme.accentPurple,
+                                      color: AppTheme.accentCyan,
                                       letterSpacing: 0.5)),
                             ),
                         ],

@@ -97,7 +97,7 @@
 
     <div class="header">
         <h1>Student Violation Summary Report</h1>
-        <p>Office of Student Affairs - General Disciplinary Record</p>
+        <p>Office of Student Affairs - General Violation Record</p>
     </div>
 
     <div class="report-meta">
@@ -147,7 +147,7 @@
     <div class="footer">
         <div class="sig-box">
             <div class="sig-line">PREPARED BY</div>
-            <small>Disciplinary Officer</small>
+            <small>Violation Officer</small>
         </div>
         <div class="sig-box">
             <div class="sig-line">NOTED BY</div>

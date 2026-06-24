@@ -17,7 +17,7 @@ class ViolationRecorded extends Notification
     {
         //
     }
-
+    /**
      * @return array<int, string>
      */
     public function via(object $notifiable): array

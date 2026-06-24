@@ -1,16 +1,16 @@
-<x-app-layout>
+﻿<x-app-layout>
     @section('header', $meetingMinute->title)
 
     <div class="max-w-4xl mx-auto space-y-8">
         {{-- Modern Header --}}
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
             <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
             
-            <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center gap-5">
-                    <a href="{{ route('meeting-minutes.index') }}" class="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all shadow-sm backdrop-blur-md hover:-translate-x-0.5 shrink-0">
-                        <i data-lucide="arrow-left" class="w-5.5 h-5.5"></i>
+                    <a href="{{ route('meeting-minutes.index') }}" class="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all shadow-sm backdrop-blur-md hover:-translate-x-0.5 shrink-0">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
                     </a>
                     <div>
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-white/80 text-[10px] font-bold uppercase tracking-wider mb-2 backdrop-blur-md">
@@ -45,7 +45,7 @@
         </div>
 
         {{-- Main Content Card --}}
-        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden border-l-4 border-indigo-600">
+        <div class="bg-white/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden border-l-4 border-indigo-600">
             <div class="p-8 space-y-8">
 
                 {{-- Associated Case --}}
@@ -56,7 +56,7 @@
                                 <i data-lucide="user-check" class="w-6 h-6 text-indigo-655 text-indigo-600"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Involved Student</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Involved Student</p>
                                 <h4 class="text-base font-extrabold text-slate-800 capitalize mt-1.5">{{ $meetingMinute->case->student->full_name }}</h4>
                             </div>
                         </div>
@@ -75,7 +75,7 @@
                         <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
                             <i data-lucide="file-text" class="w-4.5 h-4.5"></i>
                         </div>
-                        <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Proceedings & Official Findings</h3>
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proceedings & Official Findings</h3>
                     </div>
                     
                     <div class="bg-slate-50/30 rounded-2xl border border-slate-100 p-8">

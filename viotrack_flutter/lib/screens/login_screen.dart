@@ -31,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isAuthenticating = false;
   bool _obscurePassword = true;
   bool _isBiometricConfigured = false;
+  bool _hasAutoPromptedBiometric = false;
 
   @override
   void initState() {
@@ -55,10 +56,20 @@ class _LoginScreenState extends State<LoginScreen>
       final bool hasCredentials =
           credentials['email'] != null && credentials['password'] != null;
       final bool isEnabled = await SecurityService.isBiometricLockEnabled();
+      
+      final configured = isSupported && hasCredentials && isEnabled;
+
       if (mounted) {
         setState(() {
-          _isBiometricConfigured = isSupported && hasCredentials && isEnabled;
+          _isBiometricConfigured = configured;
         });
+        
+        if (configured && !_hasAutoPromptedBiometric) {
+          _hasAutoPromptedBiometric = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _biometricLogin();
+          });
+        }
       }
     } catch (e) {
       debugPrint("Status check error: $e");
@@ -125,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen>
             child: Text("GOT IT",
                 style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.accentPurple)),
+                    color: AppTheme.accentCyan)),
           ),
         ],
       ),
@@ -182,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppTheme.primaryNavy,
+        backgroundColor: const Color(0xFFFAFBFC),
         body: Stack(
           children: [
             // ── Animated Background ──
@@ -195,31 +206,39 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(height: 24),
                   _buildHeader(),
                   Expanded(
-                    child: Animate(
-                      controller: _shakeController,
-                      autoPlay: false,
-                      effects: [
-                        ShakeEffect(
-                            curve: Curves.easeInOutCubic,
-                            duration: 400.ms,
-                            hz: 4),
-                      ],
-                      child: AnimatedSwitcher(
-                        duration: 350.ms,
-                        transitionBuilder: (child, anim) => SlideTransition(
-                          position: anim.drive(
-                            Tween(
-                                    begin: const Offset(0.15, 0),
-                                    end: Offset.zero)
-                                .chain(CurveTween(
-                                    curve: Curves.easeOutCubic)),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 450),
+                        child: Animate(
+                          controller: _shakeController,
+                          autoPlay: false,
+                          effects: [
+                            ShakeEffect(
+                                curve: Curves.easeInOutCubic,
+                                duration: 400.ms,
+                                hz: 4),
+                          ],
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                            child: AnimatedSwitcher(
+                              duration: 350.ms,
+                            transitionBuilder: (child, anim) => SlideTransition(
+                              position: anim.drive(
+                                Tween(
+                                        begin: const Offset(0.15, 0),
+                                        end: Offset.zero)
+                                    .chain(CurveTween(
+                                        curve: Curves.easeOutCubic)),
+                              ),
+                              child: FadeTransition(
+                                  opacity: anim, child: child),
+                            ),
+                            child: _currentStage == LoginStage.selection
+                                ? _buildSelectionView()
+                                : _buildPasswordView(),
                           ),
-                          child: FadeTransition(
-                              opacity: anim, child: child),
+                          ),
                         ),
-                        child: _currentStage == LoginStage.selection
-                            ? _buildSelectionView()
-                            : _buildPasswordView(),
                       ),
                     ),
                   ),
@@ -238,46 +257,73 @@ class _LoginScreenState extends State<LoginScreen>
     return SizedBox.expand(
       child: Stack(
         children: [
-          // Base gradient
+          // Base background
           Container(
-            decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
+            color: const Color(0xFFFAFBFC), // Ultra clean, slightly cool white
           ),
-          // Glow orb top-right
+          
+          // Liquid Blob 1 (Cyan)
           Positioned(
-            top: -80,
-            right: -80,
+            top: -size.height * 0.1,
+            right: -size.width * 0.1,
             child: Container(
-              width: 300,
-              height: 300,
+              width: size.width * 0.9,
+              height: size.width * 0.9,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  AppTheme.accentPurple.withOpacity(0.5),
-                  Colors.transparent,
-                ]),
+                color: AppTheme.primarySlate.withOpacity(0.25),
               ),
-            ),
+            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+             .moveX(begin: -50, end: 50, duration: 8.seconds, curve: Curves.easeInOutSine)
+             .moveY(begin: -30, end: 40, duration: 6.seconds, curve: Curves.easeInOutSine)
+             .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.2), duration: 7.seconds, curve: Curves.easeInOutSine),
           ),
-          // Glow orb bottom-left
+          
+          // Liquid Blob 2 (Gold)
           Positioned(
-            bottom: -100,
-            left: -60,
+            bottom: -size.height * 0.2,
+            left: -size.width * 0.2,
             child: Container(
-              width: 280,
-              height: 280,
+              width: size.width * 0.85,
+              height: size.width * 0.85,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  AppTheme.accentCyan.withOpacity(0.3),
-                  Colors.transparent,
-                ]),
+                color: AppTheme.accentGold.withOpacity(0.25),
               ),
+            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+             .moveX(begin: 40, end: -40, duration: 7.seconds, curve: Curves.easeInOutSine)
+             .moveY(begin: 50, end: -30, duration: 9.seconds, curve: Curves.easeInOutSine)
+             .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.05), duration: 6.seconds, curve: Curves.easeInOutSine),
+          ),
+
+          // Liquid Blob 3 (Subtle Navy)
+          Positioned(
+            top: size.height * 0.4,
+            left: size.width * 0.1,
+            child: Container(
+              width: size.width * 0.7,
+              height: size.width * 0.7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primaryNavy.withOpacity(0.15),
+              ),
+            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+             .moveX(begin: -30, end: 60, duration: 9.seconds, curve: Curves.easeInOutSine)
+             .moveY(begin: -40, end: 30, duration: 8.seconds, curve: Curves.easeInOutSine),
+          ),
+
+          // Massive Blur Overlay to create the "Liquid Mesh" blending effect
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
+              child: const SizedBox(),
             ),
           ),
+
           // Subtle dot grid (decorative)
           Positioned.fill(
             child: Opacity(
-              opacity: 0.03,
+              opacity: 0.5,
               child: CustomPaint(painter: _DotGridPainter()),
             ),
           ),
@@ -289,16 +335,16 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildHeader() {
     return Column(
       children: [
-        // Logo badge
+        // Logo badge (Clean Light)
         Container(
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.5),
+            border: Border.all(color: AppTheme.primaryNavy.withOpacity(0.04), width: 1),
             boxShadow: [
-              BoxShadow(color: AppTheme.accentPurple.withOpacity(0.4), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(color: const Color(0xFF8B9BB4).withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
             ],
           ),
           child: ClipRRect(
@@ -312,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen>
             TextSpan(
               text: "I-LINK ",
               style: GoogleFonts.outfit(
-                  fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
+                  fontSize: 26, fontWeight: FontWeight.w900, color: AppTheme.primaryNavy, letterSpacing: 1),
             ),
             TextSpan(
               text: "CST",
@@ -320,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen>
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   foreground: Paint()
-                    ..shader = const LinearGradient(colors: [Color(0xFFA78BFA), Color(0xFF06B6D4)])
+                    ..shader = const LinearGradient(colors: [AppTheme.accentGold, AppTheme.accentAmber])
                         .createShader(const Rect.fromLTWH(0, 0, 80, 30))),
             ),
           ]),
@@ -331,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen>
           style: GoogleFonts.outfit(
               fontSize: 9,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withOpacity(0.5),
+              color: AppTheme.textMuted,
               letterSpacing: 3),
         ).animate().fadeIn(delay: 300.ms),
       ],
@@ -341,62 +387,77 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildSelectionView() {
     return SingleChildScrollView(
       key: const ValueKey('selection'),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: Column(
-        children: [
-          Text(
-            "Welcome back, Dean",
-            style: GoogleFonts.outfit(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Colors.white),
-          ).animate().fadeIn(delay: 100.ms),
-          const SizedBox(height: 6),
-          Text(
-            "Choose how you'd like to access the system",
-            style: GoogleFonts.outfit(
-                fontSize: 13, color: Colors.white.withOpacity(0.55)),
-            textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 36),
-
-          // Biometric card
-          _buildGlassCard(
-            icon: Icons.fingerprint_rounded,
-            title: "Biometric Login",
-            subtitle: "Fingerprint or Face ID",
-            gradient: AppTheme.accentGradient,
-            onTap: _biometricLogin,
-            isLocked: !_isBiometricConfigured,
-            isLoading: _isAuthenticating,
-            delay: 300,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Password card
-          _buildGlassCard(
-            icon: Icons.password_rounded,
-            title: "Email & Password",
-            subtitle: "Manual credential entry",
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1E2D3D), Color(0xFF334155)],
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(28, 44, 28, 44),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.55),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF8B9BB4).withOpacity(0.2),
+                    blurRadius: 40,
+                    offset: const Offset(0, 15)),
+              ],
             ),
-            onTap: () =>
-                setState(() => _currentStage = LoginStage.passwordForm),
-            delay: 400,
-          ),
-        ],
+            child: Column(
+          children: [
+            Text(
+              "Welcome back, Dean",
+              style: GoogleFonts.outfit(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primaryNavy),
+            ).animate().fadeIn(delay: 100.ms),
+            const SizedBox(height: 8),
+            Text(
+              "Choose how you'd like to access the system",
+              style: GoogleFonts.outfit(
+                  fontSize: 14, color: AppTheme.textMuted),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 200.ms),
+            const SizedBox(height: 40),
+
+            // Biometric option
+            _buildCleanOption(
+              icon: Icons.fingerprint_rounded,
+              title: "Biometric Login",
+              subtitle: "Fingerprint or Face ID",
+              onTap: _biometricLogin,
+              isPrimary: true,
+              isLocked: !_isBiometricConfigured,
+              isLoading: _isAuthenticating,
+              delay: 300,
+            ),
+            const SizedBox(height: 16),
+            // Password option
+            _buildCleanOption(
+              icon: Icons.password_rounded,
+              title: "Email & Password",
+              subtitle: "Manual credential entry",
+              onTap: () => setState(() => _currentStage = LoginStage.passwordForm),
+              isPrimary: false,
+              delay: 400,
+            ),
+          ],
+        ),
+      ),
+        ),
       ),
     );
   }
 
-  Widget _buildGlassCard({
+  Widget _buildCleanOption({
     required IconData icon,
     required String title,
     required String subtitle,
-    required LinearGradient gradient,
     required VoidCallback onTap,
+    bool isPrimary = false,
     bool isLocked = false,
     bool isLoading = false,
     int delay = 0,
@@ -407,73 +468,62 @@ class _LoginScreenState extends State<LoginScreen>
         HapticFeedback.lightImpact();
         onTap();
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8)),
-              ],
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isPrimary ? AppTheme.bgLight.withOpacity(0.8) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: isPrimary ? AppTheme.primaryNavy.withOpacity(0.08) : AppTheme.inputBorder.withOpacity(0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: isPrimary ? AppTheme.primaryNavy : AppTheme.bgLight,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: isLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      ),
+                    )
+                  : Icon(icon, color: isPrimary ? Colors.white : AppTheme.primaryNavy, size: 26),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: isLoading
-                      ? const Center(
-                          child: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
-                          ),
-                        )
-                      : Icon(icon, color: Colors.white, size: 26),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          style: GoogleFonts.outfit(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white)),
-                      const SizedBox(height: 3),
-                      Text(subtitle,
-                          style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.white.withOpacity(0.6))),
-                    ],
-                  ),
-                ),
-                if (isLocked)
-                  Icon(Icons.lock_outline_rounded,
-                      color: Colors.white.withOpacity(0.5), size: 18)
-                else
-                  Icon(Icons.arrow_forward_ios_rounded,
-                      color: Colors.white.withOpacity(0.6), size: 14),
-              ],
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textMain)),
+                  const SizedBox(height: 3),
+                  Text(subtitle,
+                      style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: AppTheme.textMuted)),
+                ],
+              ),
             ),
-          ),
+            if (isLocked)
+              Icon(Icons.lock_outline_rounded,
+                  color: AppTheme.textMuted.withOpacity(0.5), size: 18)
+            else
+              Icon(Icons.arrow_forward_ios_rounded,
+                  color: AppTheme.textMuted.withOpacity(0.5), size: 14),
+          ],
         ),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: delay)).slideX(begin: 0.08);
+    ).animate().fadeIn(delay: Duration(milliseconds: delay)).slideX(begin: 0.05);
   }
 
   Widget _buildPasswordView() {
@@ -483,180 +533,206 @@ class _LoginScreenState extends State<LoginScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(28, 28, 28, 36),
+            padding: const EdgeInsets.fromLTRB(32, 32, 32, 40),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: Colors.white.withOpacity(0.55),
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: Colors.white.withOpacity(0.6)),
+              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                    color: AppTheme.primaryNavy.withOpacity(0.25),
+                    color: const Color(0xFF8B9BB4).withOpacity(0.2),
                     blurRadius: 40,
-                    offset: const Offset(0, 20)),
+                    offset: const Offset(0, 15)),
               ],
             ),
             child: Column(
-              children: [
-                // Back button row
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () =>
-                        setState(() => _currentStage = LoginStage.selection),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.bgLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+          children: [
+            // Back button row
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _currentStage = LoginStage.selection),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.bgLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 14, color: AppTheme.textMuted),
+                      const SizedBox(width: 6),
+                      Text("Back",
+                          style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textMuted)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Title
+            Text(
+              "Sign In",
+              style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.primaryNavy),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Enter your academic credentials",
+              style: GoogleFonts.outfit(
+                  fontSize: 14, color: AppTheme.textMuted),
+            ),
+            const SizedBox(height: 40),
+
+            // Email
+            _buildLabel("EMAIL ADDRESS"),
+            const SizedBox(height: 8),
+            _buildCleanTextField(
+              controller: _emailController,
+              hintText: "dean@college.edu.ph",
+              icon: Icons.alternate_email_rounded,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 24),
+
+            // Password
+            _buildLabel("PASSWORD"),
+            const SizedBox(height: 8),
+            _buildCleanTextField(
+              controller: _passwordController,
+              hintText: "••••••••",
+              icon: Icons.lock_outline_rounded,
+              obscureText: _obscurePassword,
+              onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
+            ),
+            const SizedBox(height: 36),
+
+            // Sign-in button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryNavy,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppTheme.primaryNavy.withOpacity(0.5),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2.5))
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.arrow_back_ios_new_rounded,
-                              size: 12, color: AppTheme.textMuted),
-                          const SizedBox(width: 4),
-                          Text("Back",
+                          Text("ACCESS DASHBOARD",
                               style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.textMuted)),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2)),
+                          const SizedBox(width: 10),
+                          const Icon(Icons.arrow_forward_rounded, size: 18),
                         ],
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Title
-                Text(
-                  "Sign In",
-                  style: GoogleFonts.outfit(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: AppTheme.textMain),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "Enter your academic credentials",
-                  style: GoogleFonts.outfit(
-                      fontSize: 13, color: AppTheme.textMuted),
-                ),
-                const SizedBox(height: 32),
-
-                // Email
-                _buildLabel("EMAIL ADDRESS"),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: GoogleFonts.outfit(
-                      fontSize: 14, color: AppTheme.textMain),
-                  decoration: const InputDecoration(
-                    hintText: "dean@college.edu.ph",
-                    prefixIcon:
-                        Icon(Icons.alternate_email_rounded, size: 20),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Password
-                _buildLabel("PASSWORD"),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: GoogleFonts.outfit(
-                      fontSize: 14, color: AppTheme.textMain),
-                  decoration: InputDecoration(
-                    hintText: "••••••••",
-                    prefixIcon:
-                        const Icon(Icons.lock_outline_rounded, size: 20),
-                    suffixIcon: IconButton(
-                      onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 20,
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Sign-in button
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: _isLoading
-                          ? null
-                          : AppTheme.accentGradient,
-                      color: _isLoading ? AppTheme.textHint : null,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: _isLoading
-                          ? null
-                          : [
-                              BoxShadow(
-                                  color: AppTheme.accentPurple
-                                      .withOpacity(0.4),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8)),
-                            ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        disabledBackgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 22,
-                              width: 22,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2.5))
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text("ACCESS DASHBOARD",
-                                    style: GoogleFonts.outfit(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 1,
-                                        color: Colors.white)),
-                                const SizedBox(width: 10),
-                                const Icon(Icons.arrow_forward_rounded,
-                                    size: 18, color: Colors.white),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {},
-                  child: Text("FORGOT PASSWORD?",
-                      style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textMuted,
-                          letterSpacing: 1)),
-                ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    title: Text("Forgot Password?",
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: AppTheme.primaryNavy)),
+                    content: Text(
+                        "For security reasons, password resets must be requested through the IT Helpdesk. Please contact them to reset your account credentials.",
+                        style: GoogleFonts.outfit(color: AppTheme.textMain)),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                            child: Text("UNDERSTOOD",
+                                style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primarySlate)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Text("FORGOT PASSWORD?",
+                  style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                      letterSpacing: 1)),
+            ),
+          ],
         ),
+      ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCleanTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    VoidCallback? onToggleObscure,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: GoogleFonts.outfit(fontSize: 15, color: AppTheme.textMain, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: GoogleFonts.outfit(color: AppTheme.textHint),
+        filled: true,
+        fillColor: AppTheme.bgLight.withOpacity(0.7),
+        prefixIcon: Icon(icon, size: 20, color: AppTheme.textMuted),
+        suffixIcon: onToggleObscure != null
+            ? IconButton(
+                onPressed: onToggleObscure,
+                icon: Icon(
+                  obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20,
+                  color: AppTheme.textMuted,
+                ),
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.transparent),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppTheme.primarySlate, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
       ),
     );
   }
@@ -667,8 +743,8 @@ class _LoginScreenState extends State<LoginScreen>
       child: Text(
         text,
         style: GoogleFonts.outfit(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
             color: AppTheme.textMuted,
             letterSpacing: 1.5),
       ),
@@ -681,7 +757,7 @@ class _LoginScreenState extends State<LoginScreen>
       style: GoogleFonts.outfit(
           fontSize: 9,
           fontWeight: FontWeight.w600,
-          color: Colors.white.withOpacity(0.3),
+          color: AppTheme.textMuted.withOpacity(0.5),
           letterSpacing: 1.5),
     );
   }
@@ -693,7 +769,7 @@ class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = AppTheme.primaryNavy.withOpacity(0.04)
       ..strokeWidth = 1.5;
     const double spacing = 28;
     for (double x = 0; x < size.width; x += spacing) {

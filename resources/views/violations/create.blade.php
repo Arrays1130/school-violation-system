@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     @section('header', 'Add Violation Type')
 
     <div class="max-w-3xl mx-auto space-y-6">
@@ -24,35 +24,35 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-white/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden">
             <form action="{{ route('violations.store') }}" method="POST">
                 @csrf
                 <div class="p-8 space-y-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Violation Code</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Violation Code</label>
                             <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     <i data-lucide="hash" class="w-4.5 h-4.5"></i>
                                 </div>
                                 <input type="text" name="code" value="{{ old('code') }}" placeholder="e.g. V-001" required 
-                                    class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
+                                    class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 text-slate-800 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Violation Category</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Violation Category</label>
                             <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     <i data-lucide="layers" class="w-4.5 h-4.5"></i>
                                 </div>
                                 <select name="category" required 
-                                    class="w-full pl-10 pr-10 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none">
+                                    class="w-full pl-10 pr-10 py-3 bg-gray-50/50 border border-gray-200 text-slate-800 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none">
                                     <option value="">Select Category...</option>
                                     @foreach(['Academic', 'Behavioral', 'Administrative', 'Security', 'General'] as $cat)
                                         <option value="{{ $cat }}" {{ old('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                     @endforeach
                                 </select>
-                                <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                                <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
                                     <i data-lucide="chevron-down" class="w-4 h-4"></i>
                                 </div>
                             </div>
@@ -60,24 +60,24 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Violation Title</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Violation Title</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <i data-lucide="type" class="w-4.5 h-4.5"></i>
                             </div>
                             <input type="text" name="title" value="{{ old('title') }}" placeholder="Official violation title..." required 
-                                class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
+                                class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 text-slate-800 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Standard Sanction</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Standard Sanction</label>
                         <textarea name="description" rows="4" placeholder="Define the standard sanction for this violation..." required 
-                            class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder-gray-400">{{ old('description') }}</textarea>
+                            class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 text-slate-800 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder-gray-400">{{ old('description') }}</textarea>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Severity Level</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Severity Level</label>
                         <div class="grid grid-cols-2 gap-4">
                             @foreach(['Minor', 'Major'] as $level)
                                 <label class="cursor-pointer group">
@@ -99,7 +99,7 @@
                 </div>
 
                 <div class="px-8 py-5 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                    <a href="{{ route('violations.index') }}" class="text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">Cancel</a>
+                    <a href="{{ route('violations.index') }}" class="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancel</a>
                     <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 hover:-translate-y-0.5">
                         <i data-lucide="save" class="w-4.5 h-4.5"></i>
                         Add Violation Type

@@ -90,7 +90,7 @@ class CaseSeeder extends Seeder
             $violation = $violations->random();
             
             // Pick a realistic scenario description based on the violation code
-            $scenarioList = $scenarios[$violation->code] ?? ['Official disciplinary case recorded by the Dean of Discipline.'];
+            $scenarioList = $scenarios[$violation->code] ?? ['Official violation case recorded by the Dean of Discipline.'];
             $scenario = fake()->randomElement($scenarioList);
 
             $date = fake()->dateTimeBetween('-3 months', 'now');

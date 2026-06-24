@@ -67,7 +67,7 @@
         <div class="header">
             <h1>I-LINK COLLEGE OF SCIENCE AND TECHNOLOGY</h1>
             <h2>Office of Student Affairs</h2>
-            <p><strong>DISCIPLINARY HEARING RECORD</strong></p>
+            <p><strong>HEARING RECORD</strong></p>
         </div>
         
         <div class="line-separator"></div>

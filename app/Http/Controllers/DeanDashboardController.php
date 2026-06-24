@@ -33,18 +33,18 @@ class DeanDashboardController extends Controller
 
             // --- Stats & Trends ---
             $stats = [
-                'total' => StudentCase::whereIn('student_id', $studentIds)->count(),
-                'pending' => StudentCase::whereIn('student_id', $studentIds)->where('status', 'Pending')->count(),
-                'in_progress' => StudentCase::whereIn('student_id', $studentIds)->whereIn('status', ['Hearing Scheduled', 'Hearing'])->count(),
-                'closed' => StudentCase::whereIn('student_id', $studentIds)->where('status', 'Closed')->count(),
+                'total' => StudentCase::active()->whereIn('student_id', $studentIds)->count(),
+                'pending' => StudentCase::active()->whereIn('student_id', $studentIds)->where('status', 'Pending')->count(),
+                'in_progress' => StudentCase::active()->whereIn('student_id', $studentIds)->whereIn('status', ['Hearing Scheduled', 'Hearing'])->count(),
+                'closed' => StudentCase::active()->whereIn('student_id', $studentIds)->where('status', 'Closed')->count(),
             ];
 
             // Previous month stats for trend
             $lastMonthEnd = now()->subMonth()->endOfMonth();
             $prevStats = [
-                'total' => StudentCase::whereIn('student_id', $studentIds)->where('created_at', '<=', $lastMonthEnd)->count(),
-                'pending' => StudentCase::whereIn('student_id', $studentIds)->where('status', 'Pending')->where('created_at', '<=', $lastMonthEnd)->count(),
-                'closed' => StudentCase::whereIn('student_id', $studentIds)->where('status', 'Closed')->where('created_at', '<=', $lastMonthEnd)->count(),
+                'total' => StudentCase::active()->whereIn('student_id', $studentIds)->where('created_at', '<=', $lastMonthEnd)->count(),
+                'pending' => StudentCase::active()->whereIn('student_id', $studentIds)->where('status', 'Pending')->where('created_at', '<=', $lastMonthEnd)->count(),
+                'closed' => StudentCase::active()->whereIn('student_id', $studentIds)->where('status', 'Closed')->where('created_at', '<=', $lastMonthEnd)->count(),
             ];
 
             $trends = [];
@@ -62,7 +62,7 @@ class DeanDashboardController extends Controller
 
             // --- Chart Data ---
             // 1. Monthly Trend (Last 6 Months)
-            $rawMonthlyTrend = StudentCase::whereIn('student_id', $studentIds)
+            $rawMonthlyTrend = StudentCase::active()->whereIn('student_id', $studentIds)
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
                 ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->groupBy('month')
@@ -75,7 +75,7 @@ class DeanDashboardController extends Controller
             }
 
             // 2. Most Common Violations
-            $topViolations = StudentCase::whereIn('student_id', $studentIds)
+            $topViolations = StudentCase::active()->whereIn('student_id', $studentIds)
                 ->join('violations', 'cases.violation_id', '=', 'violations.id')
                 ->selectRaw('violations.title, COUNT(*) as count')
                 ->groupBy('violations.title')
@@ -84,14 +84,14 @@ class DeanDashboardController extends Controller
                 ->get();
 
             // 3. Severity Breakdown
-            $severityBreakdown = StudentCase::whereIn('student_id', $studentIds)
+            $severityBreakdown = StudentCase::active()->whereIn('student_id', $studentIds)
                 ->join('violations', 'cases.violation_id', '=', 'violations.id')
                 ->selectRaw('violations.severity, COUNT(*) as count')
                 ->groupBy('violations.severity')
                 ->pluck('count', 'severity');
 
             // --- Recent Activity & Notifications ---
-            $recentCases = StudentCase::with(['student', 'violation', 'attachments', 'creator'])
+            $recentCases = StudentCase::active()->with(['student', 'violation', 'attachments', 'creator'])
                 ->whereIn('student_id', $studentIds)
                 ->orderBy('created_at', 'desc')
                 ->take(8)
@@ -107,7 +107,9 @@ class DeanDashboardController extends Controller
                 ->get();
 
             $topRepeaters = \App\Models\Student::whereIn('id', $studentIds)
-                ->withCount(['cases'])
+                ->withCount(['cases' => function ($query) {
+                    $query->active();
+                }])
                 ->having('cases_count', '>', 0)
                 ->orderByDesc('cases_count')
                 ->take(5)

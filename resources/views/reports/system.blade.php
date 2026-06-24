@@ -1,253 +1,322 @@
 <x-app-layout>
     @section('header', 'System Reports')
 
-    <div class="space-y-6 max-w-7xl mx-auto">
+    <div class="space-y-6 max-w-[1400px] mx-auto pb-12">
+
+        {{-- Sub-header background element --}}
+        <div class="absolute top-0 left-0 w-full h-[40vh] bg-slate-50 -z-10 border-b border-slate-200/50"></div>
 
         {{-- Header --}}
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-violet-950 p-8 shadow-xl border border-violet-900/20">
-            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(139,92,246,0.18),_transparent_55%)]"></div>
-            <div class="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl"></div>
-
-            <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('reports.index') }}"
-                       class="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all">
-                        <i data-lucide="arrow-left" class="w-4.5 h-4.5"></i>
-                    </a>
-                    <div>
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-2">
-                            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-                            System Overview
-                        </div>
-                        <h1 class="text-3xl font-extrabold text-white tracking-tight">System Reports</h1>
-                        <p class="text-violet-100/60 text-sm mt-1">Overview statistics — total cases, status breakdown & department analysis.</p>
+        <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('reports.index') }}"
+                   class="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
+                    <i data-lucide="arrow-left" class="w-4.5 h-4.5"></i>
+                </a>
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-widest mb-2">
+                        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                        System Overview
                     </div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tight">System Reports</h1>
+                    <p class="text-slate-500 mt-1 font-medium">Overview statistics — total cases, status breakdown & department analysis.</p>
                 </div>
-                <div class="text-sm text-white/50 font-medium shrink-0">
-                    As of {{ now()->format('F d, Y') }}
-                </div>
+            </div>
+            <div class="text-sm px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm text-slate-500 font-bold shrink-0">
+                As of {{ now()->format('F d, Y') }}
             </div>
         </div>
 
         {{-- ─── Stat Cards ─── --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             @php
                 $cards = [
-                    ['label' => 'Total Cases',    'value' => $total,    'icon' => 'folder-open',  'color' => 'indigo'],
-                    ['label' => 'Pending',         'value' => $pending,  'icon' => 'clock',        'color' => 'amber'],
-                    ['label' => 'Hearing',         'value' => $hearing,  'icon' => 'gavel',        'color' => 'blue'],
-                    ['label' => 'Endorsed',        'value' => $endorsed, 'icon' => 'send',         'color' => 'rose'],
-                    ['label' => 'Closed',          'value' => $closed,   'icon' => 'check-circle', 'color' => 'emerald'],
-                ];
-                $palette = [
-                    'indigo'  => ['bg' => 'bg-indigo-50',  'text' => 'text-indigo-600',  'border' => 'border-indigo-100',  'num' => 'text-indigo-700'],
-                    'amber'   => ['bg' => 'bg-amber-50',   'text' => 'text-amber-600',   'border' => 'border-amber-100',   'num' => 'text-amber-700'],
-                    'blue'    => ['bg' => 'bg-blue-50',    'text' => 'text-blue-600',    'border' => 'border-blue-100',    'num' => 'text-blue-700'],
-                    'rose'    => ['bg' => 'bg-rose-50',    'text' => 'text-rose-600',    'border' => 'border-rose-100',    'num' => 'text-rose-700'],
-                    'emerald' => ['bg' => 'bg-emerald-50', 'text' => 'text-emerald-600', 'border' => 'border-emerald-100', 'num' => 'text-emerald-700'],
+                    ['label' => 'Total Cases',    'value' => $total,    'icon' => 'folder-open',  'gradient' => 'from-blue-500 to-indigo-600', 'color' => 'text-blue-500'],
+                    ['label' => 'Pending',         'value' => $pending,  'icon' => 'clock',        'gradient' => 'from-amber-500 to-orange-600', 'color' => 'text-amber-500'],
+                    ['label' => 'Hearing',         'value' => $hearing,  'icon' => 'gavel',        'gradient' => 'from-indigo-500 to-violet-600', 'color' => 'text-indigo-500'],
+                    ['label' => 'Endorsed',        'value' => $endorsed, 'icon' => 'send',         'gradient' => 'from-rose-500 to-pink-600', 'color' => 'text-rose-500'],
+                    ['label' => 'Closed',          'value' => $closed,   'icon' => 'check-circle', 'gradient' => 'from-emerald-500 to-teal-600', 'color' => 'text-emerald-500'],
                 ];
             @endphp
 
             @foreach($cards as $card)
-                @php $p = $palette[$card['color']]; @endphp
-                <div class="bg-white border {{ $p['border'] }} rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-9 h-9 rounded-xl {{ $p['bg'] }} flex items-center justify-center">
-                            <i data-lucide="{{ $card['icon'] }}" class="w-4.5 h-4.5 {{ $p['text'] }}"></i>
+                <div class="group relative bg-white rounded-3xl p-6 ring-1 ring-slate-200/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[140px]">
+                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br {{ $card['gradient'] }} opacity-[0.08] group-hover:opacity-[0.15] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150"></div>
+                    
+                    <div class="flex items-start justify-between relative z-10 mb-4">
+                        <div class="p-3.5 rounded-2xl bg-slate-50 ring-1 ring-slate-100 {{ $card['color'] }} group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                            <i data-lucide="{{ $card['icon'] }}" class="w-5 h-5 stroke-[2.5]"></i>
                         </div>
                     </div>
-                    <div class="text-3xl font-extrabold {{ $p['num'] }} tabular-nums">{{ number_format($card['value']) }}</div>
-                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-1">{{ $card['label'] }}</div>
+                    
+                    <div class="relative z-10">
+                        <p class="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1">{{ $card['label'] }}</p>
+                        <p class="text-4xl font-black text-slate-900 tracking-tighter tabular-nums">{{ number_format($card['value']) }}</p>
+                    </div>
                 </div>
             @endforeach
         </div>
 
-        {{-- ─── Two-column layout: Department Breakdown + Top Violations ─── --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {{-- ─── Bento Grid Layout ─── --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {{-- Department Breakdown --}}
-            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-                <div class="flex items-center gap-2 mb-5">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <i data-lucide="building-2" class="w-4 h-4 text-indigo-600"></i>
+            {{-- 1. Monthly Trend Chart (Spans 2 Cols) --}}
+            <div class="lg:col-span-2 bg-white rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900 tracking-tight">Comparative Monthly Cases</h3>
+                        <p class="text-sm font-medium text-slate-500">Minor vs Major infractions for {{ $currentYear }}</p>
                     </div>
-                    <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Cases by Department</h2>
+                    <div class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </div>
                 </div>
-
-                @if($byDepartment->isEmpty())
-                    <p class="text-sm text-gray-400 text-center py-8">No data available.</p>
-                @else
-                    @php $maxDept = $byDepartment->max('total'); @endphp
-                    <div class="space-y-3">
-                        @foreach($byDepartment as $row)
-                            @php $pct = $maxDept > 0 ? round(($row->total / $maxDept) * 100) : 0; @endphp
-                            <div>
-                                <div class="flex justify-between text-xs font-semibold text-gray-700 mb-1">
-                                    <span class="truncate max-w-[70%]">{{ $row->department ?: 'Unassigned' }}</span>
-                                    <span class="text-indigo-600">{{ $row->total }}</span>
-                                </div>
-                                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-indigo-500 rounded-full transition-all duration-700"
-                                         style="width: {{ $pct }}%"></div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
+                <div class="flex-1 min-h-0 w-full relative">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
             </div>
 
-            {{-- Top Violations --}}
-            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-                <div class="flex items-center gap-2 mb-5">
-                    <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+            {{-- 2. Status Donut (Spans 1 Col) --}}
+            <div class="bg-white rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900 tracking-tight">Status Distribution</h3>
+                        <p class="text-sm font-medium text-slate-500">Lifecycle of current cases</p>
                     </div>
-                    <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Top 5 Violations</h2>
+                    <div class="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+                        <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                    </div>
                 </div>
+                <div class="flex-1 min-h-0 w-full flex items-center justify-center relative mt-4">
+                    <canvas id="statusChart"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-30px]">
+                        <p class="text-4xl font-black text-slate-900 tracking-tighter">{{ $total }}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total</p>
+                    </div>
+                </div>
+            </div>
 
-                @if($topViolations->isEmpty())
-                    <p class="text-sm text-gray-400 text-center py-8">No violations recorded yet.</p>
-                @else
-                    <div class="space-y-3">
+            {{-- 3. Department Breakdown (Spans 2 Cols) --}}
+            <div class="lg:col-span-2 bg-white rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
+                <div class="p-8 pb-4 flex items-center justify-between bg-white z-10 border-b border-slate-50 flex-none">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900 tracking-tight">Cases by Department</h3>
+                        <p class="text-sm font-medium text-slate-500">Volume per college</p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                        <i data-lucide="building-2" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto no-scrollbar p-8 pt-4">
+                    @if($byDepartment->isEmpty())
+                        <div class="h-full flex items-center justify-center">
+                            <p class="text-sm text-slate-400 font-bold uppercase tracking-widest">No data available</p>
+                        </div>
+                    @else
+                        @php $maxDept = $byDepartment->max('total'); @endphp
+                        <div class="space-y-6">
+                            @foreach($byDepartment as $row)
+                                @php $pct = $maxDept > 0 ? round(($row->total / $maxDept) * 100) : 0; @endphp
+                                <div class="group">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-bold text-slate-800">{{ $row->department ?: 'Unassigned' }}</span>
+                                        <span class="text-sm font-black text-slate-900">{{ $row->total }} <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">cases</span></span>
+                                    </div>
+                                    <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-indigo-500 rounded-full transition-all duration-1000 group-hover:bg-indigo-600"
+                                             style="width: {{ $pct }}%"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- 4. Top Violations (Spans 1 Col) --}}
+            <div class="bg-white rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
+                <div class="p-8 pb-4 flex items-center justify-between border-b border-slate-50 flex-none">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900 tracking-tight">Top Violations</h3>
+                        <p class="text-sm font-medium text-slate-500">Most frequent infractions</p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-rose-50 text-rose-600">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto no-scrollbar p-6 pt-4 space-y-3">
+                    @if($topViolations->isEmpty())
+                        <div class="h-full flex items-center justify-center">
+                            <p class="text-sm text-slate-400 font-bold uppercase tracking-widest">No violations</p>
+                        </div>
+                    @else
                         @foreach($topViolations as $i => $v)
                             @php
                                 $sevMap = [
                                     'Minor'    => 'bg-blue-50 text-blue-700 border-blue-100',
                                     'Major'    => 'bg-amber-50 text-amber-700 border-amber-100',
-                                    'Critical' => 'bg-red-50 text-red-700 border-red-100',
+                                    'Critical' => 'bg-rose-50 text-rose-700 border-rose-100',
                                 ];
-                                $sc = $sevMap[$v->severity] ?? 'bg-gray-50 text-gray-600 border-gray-200';
+                                $sc = $sevMap[$v->severity] ?? 'bg-slate-50 text-slate-600 border-slate-200';
                             @endphp
-                            <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                <div class="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xs font-extrabold text-gray-400 shrink-0">
+                            <div class="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
+                                <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-black text-slate-400 shrink-0 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                                     {{ $i + 1 }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="text-sm font-semibold text-gray-800 truncate">{{ $v->title }}</div>
+                                    <div class="text-sm font-bold text-slate-900 truncate">{{ $v->title }}</div>
                                     <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="text-[10px] font-bold uppercase tracking-wide text-gray-400">{{ $v->code }}</span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold border {{ $sc }}">{{ $v->severity }}</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border {{ $sc }} tracking-wider uppercase">{{ $v->severity }}</span>
                                     </div>
                                 </div>
-                                <div class="text-lg font-extrabold text-gray-700 tabular-nums shrink-0">{{ $v->total }}</div>
+                                <div class="text-right">
+                                    <span class="text-sm font-black text-slate-800">{{ $v->total }}</span>
+                                </div>
                             </div>
                         @endforeach
-                    </div>
-                @endif
+                    @endif
+                </div>
             </div>
-        </div>
 
-        {{-- ─── Monthly Trend Chart ─── --}}
-        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-            <div class="flex items-center gap-2 mb-5">
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                    <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
-                </div>
-                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Comparative Monthly Cases (Minor vs Major) — {{ $currentYear }}</h2>
-            </div>
-            <canvas id="monthlyChart" height="90"></canvas>
         </div>
-
-        {{-- ─── Status Donut ─── --}}
-        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-            <div class="flex items-center gap-2 mb-5">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
-                </div>
-                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Status Distribution</h2>
-            </div>
-            <div class="flex flex-col sm:flex-row items-center gap-8">
-                <div class="w-48 h-48 shrink-0">
-                    <canvas id="statusChart"></canvas>
-                </div>
-                <div class="space-y-3 flex-1">
-                    @php
-                        $statusRows = [
-                            ['label' => 'Pending',   'value' => $pending,  'color' => '#f59e0b'],
-                            ['label' => 'Hearing',   'value' => $hearing,  'color' => '#3b82f6'],
-                            ['label' => 'Endorsed',  'value' => $endorsed, 'color' => '#f43f5e'],
-                            ['label' => 'Closed',    'value' => $closed,   'color' => '#10b981'],
-                        ];
-                    @endphp
-                    @foreach($statusRows as $row)
-                        @php $pct2 = $total > 0 ? round(($row['value'] / $total) * 100) : 0; @endphp
-                        <div class="flex items-center gap-3">
-                            <div class="w-3 h-3 rounded-full shrink-0" style="background:{{ $row['color'] }}"></div>
-                            <span class="text-sm font-semibold text-gray-700 w-24">{{ $row['label'] }}</span>
-                            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full" style="width:{{ $pct2 }}%; background:{{ $row['color'] }}"></div>
-                            </div>
-                            <span class="text-sm font-bold text-gray-600 tabular-nums w-8 text-right">{{ $row['value'] }}</span>
-                            <span class="text-xs text-gray-400 w-8 text-right">({{ $pct2 }}%)</span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-
     </div>
 
     {{-- Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const monthlyMinorData = @json(array_values($monthlyMinorData));
-        const monthlyMajorData = @json(array_values($monthlyMajorData));
+        document.addEventListener("DOMContentLoaded", () => {
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const monthlyMinorData = @json(array_values($monthlyMinorData));
+            const monthlyMajorData = @json(array_values($monthlyMajorData));
 
-        // Monthly bar chart (Stacked Minor vs Major)
-        new Chart(document.getElementById('monthlyChart'), {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [
-                    {
-                        label: 'Minor Cases',
-                        data: monthlyMinorData,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    },
-                    {
-                        label: 'Major Cases',
-                        data: monthlyMajorData,
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)', // Red
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                    }
-                ]
-            },
-            options: {
+            // Chart base options for premium look
+            const chartBaseOptions = {
                 responsive: true,
-                plugins: { legend: { display: true, position: 'top' } },
-                scales: {
-                    x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
-                    y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }
-                }
-            }
-        });
-
-        // Status donut chart
-        new Chart(document.getElementById('statusChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Pending','Hearing','Endorsed','Closed'],
-                datasets: [{
-                    data: [{{ $pending }}, {{ $hearing }}, {{ $endorsed }}, {{ $closed }}],
-                    backgroundColor: ['#f59e0b','#3b82f6','#f43f5e','#10b981'],
-                    borderWidth: 0,
-                    hoverOffset: 6,
-                }]
-            },
-            options: {
-                cutout: '72%',
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } }
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        titleFont: { size: 13, weight: 'bold', family: "'Inter', sans-serif" },
+                        bodyFont: { size: 13, weight: 'normal', family: "'Inter', sans-serif" },
+                        padding: 12,
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 12,
+                        displayColors: true,
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        boxPadding: 6,
+                    }
                 }
-            }
+            };
+
+            const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+            
+            // Create Gradients for Bar Chart
+            const minorGradient = ctxMonthly.createLinearGradient(0, 400, 0, 0);
+            minorGradient.addColorStop(0, '#818cf8'); // indigo-400
+            minorGradient.addColorStop(1, '#4f46e5'); // indigo-600
+
+            const majorGradient = ctxMonthly.createLinearGradient(0, 400, 0, 0);
+            majorGradient.addColorStop(0, '#fb7185'); // rose-400
+            majorGradient.addColorStop(1, '#e11d48'); // rose-600
+
+            // Monthly bar chart (Stacked Minor vs Major)
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Minor Cases',
+                            data: monthlyMinorData,
+                            backgroundColor: minorGradient,
+                            borderWidth: 0,
+                            borderRadius: 6,
+                            barPercentage: 0.6,
+                        },
+                        {
+                            label: 'Major Cases',
+                            data: monthlyMajorData,
+                            backgroundColor: majorGradient,
+                            borderWidth: 0,
+                            borderRadius: 6,
+                            barPercentage: 0.6,
+                        }
+                    ]
+                },
+                options: {
+                    ...chartBaseOptions,
+                    plugins: {
+                        ...chartBaseOptions.plugins,
+                        legend: { 
+                            display: true, 
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                font: { size: 12, weight: 'bold', family: "'Inter', sans-serif" },
+                                color: '#64748b',
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            stacked: true, 
+                            grid: { display: false }, 
+                            ticks: { font: { size: 11, weight: 'bold', family: "'Inter', sans-serif" }, color: '#94a3b8' },
+                            border: { display: false }
+                        },
+                        y: { 
+                            stacked: true, 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(241, 245, 249, 0.5)', drawBorder: false, borderDash: [5, 5] }, 
+                            ticks: { stepSize: 1, font: { size: 11, weight: 'bold', family: "'Inter', sans-serif" }, color: '#94a3b8' },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Status donut chart
+            new Chart(document.getElementById('statusChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending','Hearing','Endorsed','Closed'],
+                    datasets: [{
+                        data: [{{ $pending }}, {{ $hearing }}, {{ $endorsed }}, {{ $closed }}],
+                        backgroundColor: ['#f59e0b', '#4f46e5', '#e11d48', '#10b981'], // amber, indigo, rose, emerald
+                        borderWidth: 6,
+                        borderColor: '#ffffff',
+                        borderRadius: 8,
+                        hoverOffset: 8,
+                    }]
+                },
+                options: {
+                    ...chartBaseOptions,
+                    cutout: '75%',
+                    plugins: {
+                        ...chartBaseOptions.plugins,
+                        legend: { 
+                            display: true, 
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                font: { size: 12, weight: 'bold', family: "'Inter', sans-serif" },
+                                color: '#64748b',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
         });
     </script>
 </x-app-layout>

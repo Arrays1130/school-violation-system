@@ -12,6 +12,7 @@ class AiService
     /**
      * Common school-related synonyms to improve search accuracy.
      */
+    protected $respondInTagalog = false;
     protected $synonyms = [
         'fight' => ['assault', 'brawl', 'physical injury', 'violence', 'hitting', 'punching', 'harm', 'sanction', 'penalty'],
         'fighting' => ['assault', 'brawl', 'physical injury', 'violence', 'hitting', 'punching', 'harm', 'sanction', 'penalty'],
@@ -65,12 +66,14 @@ class AiService
         set_time_limit(150); 
         Log::info("AiService: High-Intelligence processing for: '$message'");
         
+        // Detect if the user message is in Tagalog
+        $this->respondInTagalog = $this->isTagalog($message);
         $relevantHandbooks = $this->searchHandbooks($message);
 
         $institutionalContext = [
             'current_date' => now()->format('l, F j, Y'),
             'school_name' => 'I-Link CST',
-            'assistant_role' => 'Principal Disciplinary Consultant',
+            'assistant_role' => 'Principal Violation Consultant',
         ];
 
         $conversationHistory = [];
@@ -111,74 +114,122 @@ class AiService
     private function executeTool($name, $arg) {
         try {
             switch ($name) {
+
                 case 'analyze_student_incident':
-                    $student = \App\Models\Student::where('student_id', $arg)->orWhere('full_name', 'LIKE', "%$arg%")->first();
-                    if (!$student) return "Error: Student not found.";
-                    
+                    $student = \App\Models\Student::where('full_name', 'LIKE', "%$arg%")
+                        ->orWhere('id', $arg)
+                        ->first();
+                    if (!$student) return "Error: Student '$arg' not found in the database.";
+
                     $casesCount = \App\Models\StudentCase::where('student_id', $student->id)->count();
-                    $lastCase = \App\Models\StudentCase::where('student_id', $student->id)->with('violation')->latest()->first();
-                    
+                    $lastCase   = \App\Models\StudentCase::where('student_id', $student->id)
+                        ->with('violation')->latest()->first();
+
                     return json_encode([
-                        'analysis_for' => $student->full_name,
-                        'id' => $student->student_id,
-                        'department' => $student->department,
-                        'year_level' => $student->year_level,
+                        'analysis_for'              => $student->full_name,
+                        'system_id'                 => $student->id,
+                        'department'                => $student->department,
+                        'year_level'                => $student->year_level,
                         'total_violations_recorded' => $casesCount,
-                        'recidivism_level' => $this->calculateRisk($casesCount),
-                        'last_offense' => $lastCase ? $lastCase->violation->title : 'No record',
-                        'recommendation' => 'Check Chapter 4 Section 2 of Handbook for severity Escalation.'
+                        'recidivism_level'          => $this->calculateRisk($casesCount),
+                        'last_offense'              => $lastCase ? ($lastCase->violation->title ?? 'Unknown') : 'No record',
+                        'recommendation'            => $casesCount >= 3
+                            ? 'URGENT: Recommend endorsement to Dean for disciplinary hearing.'
+                            : 'Monitor. Refer to Chapter 4 of Handbook for escalation thresholds.',
                     ]);
 
                 case 'search_students':
                     $students = \App\Models\Student::where('full_name', 'LIKE', "%$arg%")
-                        ->orWhere('student_id', 'LIKE', "%$arg%")
+                        ->orWhere('id', 'LIKE', "%$arg%")
+                        ->withCount('cases')
                         ->limit(5)
-                        ->get(['id', 'full_name', 'student_id', 'department', 'year_level']);
-                    return $students->isEmpty() ? "No students found." : $students->toJson();
+                        ->get(['id', 'full_name', 'department', 'year_level', 'section']);
+                    if ($students->isEmpty()) return "No students found matching '$arg'.";
+                    return $students->map(fn($s) => [
+                        'id'         => $s->id,
+                        'name'       => $s->full_name,
+                        'department' => $s->department,
+                        'year'       => $s->year_level,
+                        'section'    => $s->section,
+                        'case_count' => $s->cases_count,
+                    ])->toJson();
 
                 case 'get_student_cases':
-                    $student = \App\Models\Student::where('student_id', $arg)
-                        ->orWhere('full_name', 'LIKE', "%$arg%")
+                    $student = \App\Models\Student::where('full_name', 'LIKE', "%$arg%")
+                        ->orWhere('id', $arg)
                         ->first();
-                    if (!$student) return "Student $arg not found.";
+                    if (!$student) return "Student '$arg' not found.";
+
                     $cases = \App\Models\StudentCase::where('student_id', $student->id)
                         ->with('violation')
                         ->latest('occurred_at')
                         ->get();
-                    return $cases->isEmpty() ? "Clean record. No cases found." : $cases->map(fn($c) => [
-                        'date' => $c->occurred_at ? $c->occurred_at->format('M d, Y') : $c->created_at->format('M d, Y'),
-                        'violation' => "[{$c->violation->code}] {$c->violation->title}",
-                        'severity' => $c->violation->severity,
-                        'status' => $c->status,
-                        'sanction' => $c->sanction ?? 'TBD'
-                    ])->toJson();
+
+                    if ($cases->isEmpty()) return "✅ Clean record. No cases found for {$student->full_name}.";
+
+                    return json_encode([
+                        'student'     => $student->full_name,
+                        'department'  => $student->department,
+                        'total_cases' => $cases->count(),
+                        'risk_level'  => $this->calculateRisk($cases->count()),
+                        'cases'       => $cases->map(fn($c) => [
+                            'date'      => $c->occurred_at
+                                ? $c->occurred_at->format('M d, Y')
+                                : $c->created_at->format('M d, Y'),
+                            'violation' => $c->violation
+                                ? "[{$c->violation->code}] {$c->violation->title}"
+                                : 'Unknown violation',
+                            'severity'  => $c->violation->severity ?? 'N/A',
+                            'status'    => $c->status,
+                            'sanction'  => $c->sanction ?? 'TBD',
+                        ])->toArray(),
+                    ]);
 
                 case 'get_system_stats':
-                    $totalCases = \App\Models\StudentCase::count();
-                    $activeViolators = \App\Models\StudentCase::selectRaw('student_id, COUNT(*) as count')
+                    $totalCases     = \App\Models\StudentCase::count();
+                    $totalStudents  = \App\Models\Student::count();
+                    $openCases      = \App\Models\StudentCase::where('status', 'open')->count();
+                    $topViolators   = \App\Models\StudentCase::selectRaw('student_id, COUNT(*) as count')
                         ->with('student')
                         ->groupBy('student_id')
                         ->orderByDesc('count')
-                        ->limit(3)
+                        ->limit(5)
                         ->get();
+                    $recentCases    = \App\Models\StudentCase::with(['student', 'violation'])
+                        ->latest('occurred_at')
+                        ->limit(5)
+                        ->get();
+
                     return json_encode([
-                        'total_system_records' => $totalCases,
-                        'top_frequent_violators' => $activeViolators->map(fn($v) => [
-                            'name' => $v->student->full_name,
-                            'department' => $v->student->department,
-                            'dept_code' => $v->student->department_shortcut, // CEE, CCJE, etc
-                            'violation_count' => $v->count
-                        ])
+                        'total_cases_recorded'  => $totalCases,
+                        'total_students'        => $totalStudents,
+                        'open_cases'            => $openCases,
+                        'recent_incidents'      => $recentCases->map(fn($c) => [
+                            'student'   => $c->student->full_name ?? 'Unknown',
+                            'violation' => $c->violation ? "[{$c->violation->code}] {$c->violation->title}" : 'Unknown',
+                            'date'      => $c->occurred_at ? $c->occurred_at->format('M d, Y') : ($c->created_at ? $c->created_at->format('M d, Y') : 'Unknown'),
+                            'status'    => $c->status,
+                        ])->toArray(),
+                        'top_frequent_violators'=> $topViolators->map(fn($v) => [
+                            'name'            => $v->student->full_name ?? 'Unknown',
+                            'department'      => $v->student->department ?? 'N/A',
+                            'violation_count' => $v->count,
+                            'risk_level'      => $this->calculateRisk($v->count),
+                        ])->toArray(),
                     ]);
 
                 case 'get_all_violations':
-                    return \App\Models\Violation::all(['code', 'title', 'severity'])->toJson();
+                    $violations = \App\Models\Violation::all(['code', 'title', 'severity']);
+                    return $violations->isEmpty()
+                        ? "No violations defined in the system."
+                        : $violations->toJson();
 
                 default:
-                    return "Tool $name not found.";
+                    return "Tool '$name' not found. Available: search_students, get_student_cases, analyze_student_incident, get_system_stats, get_all_violations.";
             }
         } catch (\Exception $e) {
-            return "Error in tool $name: " . $e->getMessage();
+            Log::error("Tool '$name' error: " . $e->getMessage());
+            return "Error in tool '$name': " . $e->getMessage();
         }
     }
 
@@ -192,7 +243,7 @@ class AiService
     private function findSanctionChapter() {
         return Handbook::where('title', 'LIKE', '%Sanction%')
                        ->orWhere('title', 'LIKE', '%Penalty%')
-                       ->orWhere('title', 'LIKE', '%Disciplinary%')
+                       ->orWhere('title', 'LIKE', '%Conduct%')
                        ->orWhere('title', 'LIKE', '%Offense%')
                        ->first();
     }
@@ -265,60 +316,237 @@ class AiService
         return array_slice($scored, 0, 3);
     }
 
-    public function streamChat(string $message, \Closure $onChunk): void
+    /**
+     * Detect if the user is asking about a specific student by name.
+     * Returns the student name extracted from the message, or null.
+     */
+    private function extractStudentName(string $message): ?string
     {
-        set_time_limit(150);
-        $relevantHandbooks = $this->searchHandbooks($message);
-        
-        $institutionalContext = [
-            'current_date' => now()->format('l, F j, Y'),
-            'school_name' => 'I-Link CST',
-            'assistant_role' => 'Principal Disciplinary Consultant',
-        ];
+        // Tagalog patterns: "ni <name>", "si <name>", "kay <name>"
+        if (preg_match('/\b(?:ni|si|kay)\s+([A-Za-z][A-Za-z\s]{2,30}?)(?:\?|$|\s+ang|\s+ay|\s+na|\s+ba)/ui', $message, $m)) {
+            return trim($m[1]);
+        }
+        // English patterns: "of <name>", "for <name>", "<name>'s violations/cases/record"
+        if (preg_match('/\b(?:of|for|about)\s+([A-Za-z][A-Za-z\s]{2,30}?)(?:\?|$|\s+violations|\s+cases|\s+record)/ui', $message, $m)) {
+            return trim($m[1]);
+        }
+        if (preg_match('/\b([A-Za-z][A-Za-z\s]{2,30?})(?:\'s\s+(?:violation|case|record))/ui', $message, $m)) {
+            return trim($m[1]);
+        }
+        return null;
+    }
 
-        $history = [];
-        $currentMessage = $message;
+    /**
+     * PHP-side automatic tool detection — runs BEFORE calling the LLM.
+     * Returns pre-fetched tool data to inject into the LLM context.
+     */
+    private function autoDetectAndRunTools(string $message): array
+    {
+        $toolResults = [];
+        $lower       = mb_strtolower($message);
 
-        // Tool Pre-processing (Synchronous)
-        for ($i = 0; $i < 3; $i++) {
-            $response = $this->callOllamaApi($currentMessage, $relevantHandbooks, $history, false, null, $institutionalContext);
-            
-            if (preg_match('/\[TOOL:\s*(\w+)\s*,\s*(.*?)\]/', $response, $matches)) {
-                $toolName = trim($matches[1]);
-                $toolArg = trim($matches[2]);
-                $toolResult = $this->executeTool($toolName, $toolArg);
-                
-                $history[] = ['role' => 'assistant', 'content' => $response];
-                $history[] = ['role' => 'system', 'content' => "CRITICAL SYSTEM DATA ($toolName): " . $toolResult];
-                $currentMessage = "SYSTEM DATA RETRIEVED: $toolResult. Now provide the final authoritative answer. Do not hallucinate.";
-                continue;
+        // ── Student lookup ──
+        $studentName = $this->extractStudentName($message);
+        if ($studentName) {
+            $student = \App\Models\Student::where('full_name', 'LIKE', "%{$studentName}%")->first();
+            if ($student) {
+                $cases = \App\Models\StudentCase::where('student_id', $student->id)
+                    ->with('violation')->latest('occurred_at')->get();
+                $toolResults[] = [
+                    'tool'   => 'get_student_cases',
+                    'result' => json_encode([
+                        'student'     => $student->full_name,
+                        'department'  => $student->department,
+                        'year_level'  => $student->year_level,
+                        'section'     => $student->section,
+                        'total_cases' => $cases->count(),
+                        'risk_level'  => $this->calculateRisk($cases->count()),
+                        'cases'       => $cases->map(fn($c) => [
+                            'date'      => $c->occurred_at
+                                ? $c->occurred_at->format('M d, Y')
+                                : $c->created_at->format('M d, Y'),
+                            'violation' => $c->violation
+                                ? "[{$c->violation->code}] {$c->violation->title}"
+                                : 'Unknown violation',
+                            'severity'  => $c->violation->severity ?? 'N/A',
+                            'status'    => $c->status,
+                            'sanction'  => $c->sanction ?? 'TBD',
+                        ])->toArray(),
+                    ]),
+                ];
             }
-            break; 
         }
 
-        // Final Streaming Response
-        $this->callOllamaApi($currentMessage, $relevantHandbooks, $history, true, $onChunk, $institutionalContext);
+        // ── ALWAYS INCLUDE GLOBAL SYSTEM CONTEXT ──
+        $toolResults[] = [
+            'tool'   => 'get_system_stats',
+            'result' => $this->executeTool('get_system_stats', 'current'),
+        ];
+
+        // ── Department queries ──
+        if (preg_match('/\b(stats|statistics|system|top violator|most violation|overview|lahat|buod|total|how many|active case|open case|department|dept|CCE|CCJE|CBA|BSIT|CEE)\b/ui', $message)) {
+            // If asking about a specific department, also get per-dept breakdown
+            if (preg_match('/\b(CCE|CCJE|CBA|BSIT|CEE|[A-Z]{2,5})\b/', $message, $deptMatch)) {
+                $dept = $deptMatch[1];
+                $deptCases = \App\Models\StudentCase::whereHas('student', fn($q) => $q->where('department', 'LIKE', "%$dept%"))
+                    ->where('status', '!=', 'closed')
+                    ->count();
+                $totalDeptCases = \App\Models\StudentCase::whereHas('student', fn($q) => $q->where('department', 'LIKE', "%$dept%"))->count();
+                $toolResults[] = [
+                    'tool'   => 'department_stats',
+                    'result' => json_encode([
+                        'department'    => $dept,
+                        'active_cases'  => $deptCases,
+                        'total_cases'   => $totalDeptCases,
+                    ]),
+                ];
+            }
+        }
+
+        // ── All violations list ──
+        if (preg_match('/\b(list.*violation|all.*violation|violation.*list|lahat.*violation|violations.*available)\b/ui', $message)) {
+            $toolResults[] = [
+                'tool'   => 'get_all_violations',
+                'result' => $this->executeTool('get_all_violations', 'all'),
+            ];
+        }
+
+        return $toolResults;
+    }
+
+    public function streamChat(string $message, \Closure $onChunk): void
+    {
+        set_time_limit(180);
+        $this->respondInTagalog = $this->isTagalog($message);
+        $relevantHandbooks      = $this->searchHandbooks($message);
+
+        $institutionalContext = [
+            'current_date'   => now()->format('l, F j, Y'),
+            'school_name'    => 'I-Link CST',
+            'assistant_role' => 'Principal Violation Consultant',
+        ];
+
+        $history        = [];
+        $currentMessage = $message;
+        $ollamaWorking  = false;
+
+        // ── Phase 0: PHP auto-detects & fetches tool data BEFORE calling LLM ──
+        $autoToolResults = $this->autoDetectAndRunTools($message);
+        if (!empty($autoToolResults)) {
+            $toolContext = '';
+            foreach ($autoToolResults as $tr) {
+                $toolContext .= "\n\n[AUTO TOOL: {$tr['tool']}]\n{$tr['result']}";
+            }
+            $currentMessage = "LIVE DATABASE DATA (retrieved automatically):{$toolContext}\n\n"
+                . "USER QUESTION: {$message}\n\n"
+                . "INSTRUCTIONS: You are a genius-level AI assistant. Using ONLY the LIVE DATABASE DATA above, provide a brilliant, fast, and natural response to the user's question. NEVER show or mention the raw JSON data, 'LIVE DATABASE DATA', or '[AUTO TOOL]' markers. Present the numbers and facts beautifully and conversationally. Do NOT say you cannot access the database.";
+            Log::info("Auto-tool triggered for: $message");
+        }
+
+        try {
+            // ── Phase 1+2 combined: stream directly from Ollama ──
+            // This avoids a slow non-stream call that can timeout (60s+).
+            // Auto-tool data is already injected into $currentMessage above.
+            $this->callOllamaApi(
+                $currentMessage, $relevantHandbooks, $history, true, $onChunk, $institutionalContext
+            );
+            return;
+
+        } catch (\Throwable $e) {
+            Log::error('streamChat Ollama error: ' . $e->getMessage());
+        }
+
+        // ── Fallback: Local handbook search ──
+        $fallback = $this->formatLocalResponse($relevantHandbooks, $message);
+        $reply    = strip_tags($fallback['reply'] ?? '');
+
+        if (!empty($reply)) {
+            // Stream the local answer word-by-word so it feels natural
+            $words = explode(' ', $reply);
+            foreach ($words as $word) {
+                $onChunk($word . ' ');
+                usleep(15000); // 15ms per word
+            }
+        } else {
+            $msg = $this->respondInTagalog
+                ? "Paumanhin, hindi pa available ang AI ngayon. Pakisuri ang iyong Ollama server at subukan muli."
+                : "The AI core is temporarily unavailable. Please ensure Ollama is running and try again.";
+            $onChunk($msg);
+        }
     }
 
     private function callOllamaApi(string $message, array $relevantHandbooks, array $history = [], bool $stream = false, ?\Closure $onChunk = null, array $institutionalContext = []): string
     {
         try {
-            $model = env('OLLAMA_MODEL', 'llama3.1:latest');
-            $baseUrl = env('OLLAMA_API_URL', 'http://127.0.0.1:11434');
+            $model   = config('ai.model', 'llama3.1:latest');
+            $baseUrl = config('ai.api_url', 'http://127.0.0.1:11434');
+            $connectTimeout = config('ai.connect_timeout', 5);
+            $readTimeout    = config('ai.timeout', 120);
 
+            $today        = $institutionalContext['current_date'] ?? now()->format('l, F j, Y');
+            $school       = $institutionalContext['school_name'] ?? 'I-Link CST';
+            $role         = $institutionalContext['assistant_role'] ?? 'Principal Violation Consultant';
+            $lang         = $this->respondInTagalog
+                ? "LANGUAGE: The user's query is in Filipino/Tagalog. Respond entirely in Filipino/Tagalog, but keep technical terms (e.g., violation codes, department names) in their original form."
+                : "LANGUAGE: Respond in clear, professional English.";
+
+            // Build handbook context string
             if (empty($relevantHandbooks)) {
-                $contextString = "No specific handbook sections found.";
+                $contextString = "No specific handbook sections found for this query.";
             } else {
-                $contextData = array_map(fn($item) => "TITLE: {$item['handbook']->title}\nCONTENT: {$item['handbook']->content}", $relevantHandbooks);
+                $contextData   = array_map(
+                    fn($item) => "📌 " . $item['handbook']->title . "\n" . $item['handbook']->content,
+                    $relevantHandbooks
+                );
                 $contextString = implode("\n\n", $contextData);
             }
 
-            $systemPrompt = "You are the Senior OSA Dean's Data-Driven AI Assistant for I-Link CST.\n" .
-                          "Handbook Regulations Context:\n{$contextString}\n\n" .
-                          "OPERATIONAL RULES (STRICT):\n" .
-                          "1. DATA ACCURACY IS MANDATORY. Include Name, ID, Department, and Violation Count.\n" .
-                          "2. If 'dept_code' is present (e.g. CEE, CCJE), USE IT in your response.\n" .
-                          "3. Use [TOOL: get_system_stats, arg: current] for top violators.\n";
+
+            $systemPrompt = <<<PROMPT
+You are the **Senior OSA Guidance AI** of {$school} — an elite, data-driven institutional intelligence system acting as a {$role}.
+
+Today is {$today}.
+
+━━━ YOUR CAPABILITIES ━━━
+You have access to:
+1. The official **Student Handbook** (regulatory context below).
+2. **Live student records** and **violation case data** via tools.
+3. **System-wide statistics** on incidents, trends, and high-risk students.
+
+━━━ HANDBOOK CONTEXT ━━━
+{$contextString}
+
+━━━ AVAILABLE TOOLS ━━━
+Call tools by emitting EXACTLY this format on its own line:
+  [TOOL: tool_name, arg: argument]
+
+Available tools:
+• [TOOL: search_students, arg: <name or ID>]  — Find a student
+• [TOOL: get_student_cases, arg: <name or ID>] — Get full case history of a student
+• [TOOL: analyze_student_incident, arg: <name or ID>] — Risk analysis + recommendations
+• [TOOL: get_system_stats, arg: current]        — Top violators + system-wide totals
+• [TOOL: get_all_violations, arg: all]          — Full violation reference table
+
+━━━ BEHAVIORAL RULES (STRICT) ━━━
+1. **BE ACCURATE**: Never fabricate names, IDs, numbers, or policies. If uncertain, say so.
+2. **BE SPECIFIC**: Always include student Name, ID, Department, Violation Count when available.
+3. **USE DEPT CODES**: If dept_code (e.g. CEE, CCJE, CBA, BSIT) is in the data, use it.
+4. **USE TOOLS PROACTIVELY**: If a query is about a specific student or system data, ALWAYS call the appropriate tool first.
+5. **FORMAT BEAUTIFULLY**: Use markdown — **bold**, bullet lists, numbered steps, `code` for IDs, and ### headings for sections.
+6. **STEP-BY-STEP REASONING**: For procedural questions (hearings, sanctions, escalations), enumerate every step clearly.
+7. **CITE HANDBOOK**: When referencing policies, name the section (e.g., "Chapter 3, Section 2 of the Student Handbook").
+8. **SAFETY FIRST**: For urgent or violent incidents, always recommend immediate OSA escalation.
+9. **TAGALOG SUPPORT**: {$lang}
+10. **BE A GENIUS & CONCISE**: Respond instantly and smartly. Never say "Here is the data". Get straight to the answer.
+11. **NEVER EXPOSE JSON/TOOLS**: Never echo raw JSON, `[AUTO TOOL...]`, or "LIVE DATABASE DATA" to the user. Integrate facts naturally.
+
+━━━ RESPONSE STYLE ━━━
+- Use **headers** (###) to organize multi-part answers
+- Use **bullet points** for lists
+- Use **numbered steps** for procedures
+- Highlight key info in **bold**
+- End complex answers with a short "**📋 Summary**" section
+PROMPT;
 
             // Messages array construction
             $messages = [['role' => 'system', 'content' => $systemPrompt]];
@@ -326,49 +554,119 @@ class AiService
             $messages[] = ['role' => 'user', 'content' => $message];
 
             if ($stream) {
-                $client = new \GuzzleHttp\Client(['connect_timeout' => 2, 'timeout' => 300]);
+                $client = new \GuzzleHttp\Client([
+                    'connect_timeout' => $connectTimeout,
+                    'timeout'         => 300,
+                ]);
                 $response = $client->post("{$baseUrl}/api/chat", [
                     'json' => [
-                        'model' => $model,
+                        'model'    => $model,
                         'messages' => $messages,
-                        'stream' => true,
+                        'stream'   => true,
+                        'options'  => [
+                            'num_predict' => 512,
+                            'temperature' => 0.5,
+                        ],
+                        'keep_alive' => '10m',
                     ],
                     'stream' => true,
                 ]);
 
-                $body = $response->getBody();
-                $fullResponse = "";
+                $body         = $response->getBody();
+                $fullResponse = '';
+                $inThinkBlock = false;
 
                 while (!$body->eof()) {
                     $line = $this->readLine($body);
                     if (empty($line)) continue;
-                    
-                    $data = json_decode($line, true);
-                    $chunk = $data['message']['content'] ?? "";
+
+                    $data  = json_decode($line, true);
+                    $chunk = $data['message']['content'] ?? '';
+
+                    // Strip deepseek-r1 <think>...</think> reasoning blocks
+                    $chunk = $this->stripThinkingBlocks($chunk, $inThinkBlock);
+
                     $fullResponse .= $chunk;
-                    
-                    if ($onChunk) $onChunk($chunk);
+                    if ($onChunk && $chunk !== '') $onChunk($chunk);
                 }
                 return $fullResponse;
             }
 
-            $response = Http::connectTimeout(2)->timeout(30)->post("{$baseUrl}/api/chat", [
-                'model' => $model,
-                'messages' => $messages,
-                'stream' => false,
-            ]);
+            // Non-stream call
+            $response = Http::connectTimeout($connectTimeout)
+                ->timeout($readTimeout)
+                ->post("{$baseUrl}/api/chat", [
+                    'model'    => $model,
+                    'messages' => $messages,
+                    'stream'   => false,
+                ]);
 
             if ($response->successful()) {
-                $data = $response->json();
-                return $data['message']['content'] ?? "Sorry, I couldn't generate a response.";
+                $data    = $response->json();
+                $content = $data['message']['content'] ?? "Sorry, I couldn't generate a response.";
+                // Strip any thinking blocks from non-stream response too
+                $dummy = false;
+                return $this->stripThinkingBlocks($content, $dummy);
             }
 
-            return "Error: Ollama API Request failed.";
+            // Try fallback model if primary fails
+            $fallback = config('ai.fallback_model', 'llama3.1:latest');
+            if ($fallback && $fallback !== $model) {
+                Log::warning("Primary model '{$model}' failed. Trying fallback '{$fallback}'.");
+                $response = Http::connectTimeout($connectTimeout)
+                    ->timeout($readTimeout)
+                    ->post("{$baseUrl}/api/chat", [
+                        'model'    => $fallback,
+                        'messages' => $messages,
+                        'stream'   => false,
+                    ]);
+                if ($response->successful()) {
+                    $data    = $response->json();
+                    $content = $data['message']['content'] ?? "Sorry, I couldn't generate a response.";
+                    $dummy   = false;
+                    return $this->stripThinkingBlocks($content, $dummy);
+                }
+            }
+
+            return 'Error: Ollama API Request failed (Status: ' . ($response->status() ?? 'unknown') . ').';
 
         } catch (\Exception $e) {
-            Log::error("Ollama Error: " . $e->getMessage());
-            return "Error: " . $e->getMessage();
+            Log::error('Ollama Error: ' . $e->getMessage());
+            return 'Error: ' . $e->getMessage();
         }
+    }
+
+    /**
+     * Strip <think>...</think> blocks emitted by deepseek-r1 and similar reasoning models.
+     * Handles streaming (partial blocks across chunks) via the $inBlock reference.
+     */
+    private function stripThinkingBlocks(string $text, bool &$inBlock): string
+    {
+        $result = '';
+        $i      = 0;
+        $len    = strlen($text);
+
+        while ($i < $len) {
+            if (!$inBlock) {
+                $open = strpos($text, '<think>', $i);
+                if ($open === false) {
+                    $result .= substr($text, $i);
+                    break;
+                }
+                $result .= substr($text, $i, $open - $i);
+                $inBlock = true;
+                $i       = $open + 7; // skip '<think>'
+            } else {
+                $close = strpos($text, '</think>', $i);
+                if ($close === false) {
+                    break; // rest of chunk is inside think block — discard
+                }
+                $inBlock = false;
+                $i       = $close + 8; // skip '</think>'
+            }
+        }
+
+        return $result;
     }
 
     private function readLine($stream) {
@@ -384,8 +682,13 @@ class AiService
     private function formatLocalResponse(array $relevantHandbooks, string $originalMessage): array
     {
         if (empty($relevantHandbooks)) {
+            $reply = "I couldn't find a specific rule regarding that in the student handbook. Please try using different keywords.";
+            // If the request likely in Tagalog, provide Tagalog fallback
+            if ($this->isTagalog($originalMessage)) {
+                $reply = "Hindi ko mahanap ang partikular na alituntunin tungkol diyan sa handbook ng mag-aaral. Pakisubukang gumamit ng ibang mga salita.";
+            }
             return [
-                'reply' => (string) Str::markdown("I couldn't find a specific rule regarding that in the student handbook. Please try using different keywords."),
+                'reply' => (string) Str::markdown($reply),
                 'sources' => []
             ];
         }
@@ -419,7 +722,9 @@ class AiService
     private function createSmartSnippet(string $content, array $matches): string
     {
          if (empty($matches)) {
-             return Str::limit($content, 500);
+            // Return longer snippet for better context when no matches, and consider Tagalog if needed
+            $limit = $this->respondInTagalog ? 800 : 500;
+            return Str::limit($content, $limit);
          }
 
          $contentLower = strtolower($content);
@@ -478,6 +783,29 @@ class AiService
              $safeWord = preg_quote($word, '/');
              $text = preg_replace("/($safeWord)/i", "**$1**", $text);
         }
+        // If responding in Tagalog, ensure any English terms are also highlighted for clarity
+        if ($this->respondInTagalog) {
+            $text = preg_replace('/\b(\w{2,})\b/u', '**$1**', $text);
+        }
         return $text;
+    }
+
+    /**
+     * Simple heuristic to detect Tagalog language in the user message.
+     */
+    private function isTagalog(string $message): bool
+    {
+        $tagalogWords = ['ano', 'paano', 'sino', 'kung', 'bakit', 'kapag', 'kailan', 'gusto', 'tawag', 'magtanong', 'tulungan', 'paalam', 'salamat', 'paki', 'pakisabi'];
+        $lower = strtolower($message);
+        foreach ($tagalogWords as $word) {
+            if (strpos($lower, $word) !== false) {
+                return true;
+            }
+        }
+        // Additional detection: presence of 'ng' or 'sa' as common Tagalog particles
+        if (preg_match('/\b(ng|sa|ay)\b/', $lower)) {
+            return true;
+        }
+        return false;
     }
 }

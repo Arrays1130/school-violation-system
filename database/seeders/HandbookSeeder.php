@@ -60,12 +60,12 @@ Cutting Classes shall be treated as an unexcused absence and will be recorded ac
 I.2.6. Student Suspension and Its Impact on Attendance Records
 Students who are officially suspended from attending classes or participating in other official school activities as a result of sanctions for violations of the Student Handbook policies or the Student Code of Conduct and Discipline shall be considered unexcused absences for the duration of the suspension. The following stipulations apply:
 1. All days missed during the suspension period will be recorded as unexcused absences and counted towards the allowable absence limit.
-2. Suspensions are deemed part of the disciplinary process, and as such, missed classes or activities are not eligible for exemptions or considerations for excused absences.
+2. Suspensions are deemed part of the conduct process, and as such, missed classes or activities are not eligible for exemptions or considerations for excused absences.
 3. During suspension, students remain responsible for any academic requirements, assignments, and examinations. They are also responsible for coordinating with instructors for missed lessons or activities.
 The institution upholds the importance of accountability and discipline, ensuring that attendance policies are strictly enforced to maintain academic integrity and institutional standards.
 
 I.2.7. Sanctions for Accumulated Violations of the School ID Policy
-Any student who consistently violates institutional policies, including Mandatory Wearing of School ID, Unauthorized Use of Lanyards, or other related infractions, shall face progressive disciplinary measures. These accumulated violations, if reaching three (3) counts within a semester, Year, or Term, shall be considered equivalent to one (1) officially unexcused absence. For each subsequent set of three (3) violations, an additional one (1) unexcused absence shall be recorded. The institution upholds this policy to instill accountability and adherence to school regulations.
+Any student who consistently violates institutional policies, including Mandatory Wearing of School ID, Unauthorized Use of Lanyards, or other related infractions, shall face progressive measures. These accumulated violations, if reaching three (3) counts within a semester, Year, or Term, shall be considered equivalent to one (1) officially unexcused absence. For each subsequent set of three (3) violations, an additional one (1) unexcused absence shall be recorded. The institution upholds this policy to instill accountability and adherence to school regulations.
 ',
             'attachment' => null,
         ]);
@@ -85,7 +85,7 @@ To further enhance the learning environment, students are also expected to maint
 
 Compliance with these policies is always expected to maintain the institution\'s positive image and academic integrity. Students are encouraged to take pride in their appearance, recognizing that they represent both the institution and the values it upholds. By adhering to the prescribed dress code, proper grooming, and carrying valid identification, students demonstrate respect for themselves, their peers, and the i-Link CST community.
 
-This collective adherence fosters an environment that supports learning, reinforces a culture of professionalism, and prepares students for their roles as future leaders and professionals in their respective fields. Non-compliance with these policies may result in appropriate disciplinary measures to uphold the integrity and values of the institution.
+This collective adherence fosters an environment that supports learning, reinforces a culture of professionalism, and prepares students for their roles as future leaders and professionals in their respective fields. Non-compliance with these policies may result in appropriate measures to uphold the integrity and values of the institution.
 
 II.1. The School Identification Card
 The School Identification Card (ID) primarily identifies enrolled students at i-Link CST. It is an essential part of campus security and student accountability. All students are required to secure their ID upon enrollment, as it grants access to school facilities and participation in various institutional activities. Students are expected to adhere to the following regulations:
@@ -102,7 +102,7 @@ b. For damaged or defaced IDs, a Damage Report signed by the student and verifie
 3. Filing of Re-issuance Request Form.
 4. Processing and Release.
 5. Verification and Confirmation. Upon release, the student must verify the details on the new ID and confirm receipt by signing the ID Re-issuance Logbook at the Office of Student Affairs.
-The re-issued School ID is considered an official document of the institution. Any tampering, unauthorized lending, or misuse is subject to disciplinary action as per the Student’s Code of Conduct and Discipline.
+The re-issued School ID is considered an official document of the institution. Any tampering, unauthorized lending, or misuse is subject to sanctions as per the Student’s Code of Conduct and Discipline.
 
 II.1.3. No ID, No Entry Policy
 The institution strictly enforces a "No ID, No Entry Policy." All students are required to present their valid School Identification Card (ID) upon entering the school premises and during official activities both inside and outside the campus. This measure ensures the security and safety of all academic community members and reinforces the institution\'s commitment to proper identification and accountability.
@@ -114,7 +114,7 @@ Failure to wear the School ID will be recorded and monitored. Any student caught
 II.1.5. Non-Transferability and Prohibited Acts
 The School Identification Card (ID) is strictly non-transferable. Tampering, defacement, unauthorized use, or lending the ID to others, whether to students or non-students, is considered a violation of the Student Code of Conduct and Discipline and an act of dishonesty. Such actions compromise the security and integrity of the school community and are therefore strictly prohibited.
 Additionally, ID Lanyards must strictly adhere to the school\'s issued design and branding. Lanyards from other schools, institutions, or non-official sources are not permitted.
-Violations shall be subject to disciplinary action as outlined in the Student Code of Conduct and Discipline.
+Violations shall be subject to sanctions as outlined in the Student Code of Conduct and Discipline.
 
 II.1.6. Confiscation of School ID
 The School ID may be confiscated by persons in authority when a student is found violating school rules and regulations in flagrante delicto (caught in the act). This includes, but is not limited to:

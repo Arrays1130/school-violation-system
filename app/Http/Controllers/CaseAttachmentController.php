@@ -92,13 +92,13 @@ class CaseAttachmentController extends Controller
 
         $cases = StudentCase::with('student', 'violation')->latest()->get();
 
-        return view('meeting-minutes.index', compact(
-            'records', 
-            'totalFiles', 
-            'pdfFiles', 
-            'totalSizeMB',
-            'cases'
-        ));
+        return inertia('Minutes/Index', [
+            'records' => $records, 
+            'totalFiles' => $totalFiles, 
+            'pdfFiles' => $pdfFiles, 
+            'totalSizeMB' => $totalSizeMB,
+            'cases' => $cases
+        ]);
     }
 
     public function create()

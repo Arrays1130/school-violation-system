@@ -1,4 +1,4 @@
-@if(session()->has('success') || session()->has('error'))
+﻿@if(session()->has('success') || session()->has('error'))
     <div x-data="{ show: true }"
          x-init="setTimeout(() => show = false, 4000)"
          x-show="show"
@@ -19,12 +19,12 @@
                     @endif
                 </div>
                 <div class="ml-3 w-0 flex-1 pt-0.5">
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    <p class="text-sm font-medium text-slate-800 dark:text-white">
                         {{ session('success') ?? session('error') }}
                     </p>
                 </div>
                 <div class="ml-4 flex-shrink-0 flex">
-                    <button @click="show = false" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <button @click="show = false" class="bg-white dark:bg-gray-800 rounded-md inline-flex text-slate-400 hover:text-slate-500 focus:outline-none">
                         <span class="sr-only">Close</span>
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>

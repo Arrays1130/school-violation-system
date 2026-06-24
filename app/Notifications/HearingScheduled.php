@@ -48,7 +48,7 @@ class HearingScheduled extends Notification
             ->when($this->hearing->notes, function ($mail) {
                 return $mail->line("- **Notes:** {$this->hearing->notes}");
             })
-            ->line('Your presence is required. Failure to appear may result in further disciplinary action.')
+            ->line('Your presence is required. Failure to appear may result in further sanctions.')
             ->line('Please contact the Guidance Office if you have any questions.');
     }
 

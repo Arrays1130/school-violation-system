@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     @section('header', 'User Management')
 
     <div class="space-y-6">
@@ -44,26 +44,26 @@
         <div class="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
             <form action="{{ route('users.index') }}" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
                 <div class="flex-1">
-                    <label class="block text-xs font-medium text-gray-700 mb-1.5">Search Users</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Search Users</label>
                     <div class="relative">
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Name or email address..."
-                               class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200">
-                        <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                               class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200">
+                        <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                             <i data-lucide="search" class="w-4 h-4"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="sm:w-52">
-                    <label class="block text-xs font-medium text-gray-700 mb-1.5">Filter by Role</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Filter by Role</label>
                     <div class="relative">
-                        <select name="role" class="w-full pl-3.5 pr-10 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 appearance-none">
+                        <select name="role" class="w-full pl-3.5 pr-10 py-2.5 bg-white border border-gray-200 text-slate-800 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 appearance-none">
                             <option value="">All Roles</option>
                             <option value="super_admin" {{ request('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                             <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                             <option value="dean" {{ request('role') === 'dean' ? 'selected' : '' }}>Dean</option>
                         </select>
-                        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                             <i data-lucide="chevron-down" class="w-4 h-4"></i>
                         </div>
                     </div>
@@ -74,7 +74,7 @@
                         <i data-lucide="filter" class="w-4 h-4"></i>
                         Filter
                     </button>
-                    <a href="{{ route('users.index') }}" class="px-4 py-2.5 bg-white text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 transition-all duration-200" title="Clear Filters">
+                    <a href="{{ route('users.index') }}" class="px-4 py-2.5 bg-white text-slate-500 hover:text-gray-800 hover:bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 transition-all duration-200" title="Clear Filters">
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                     </a>
                 </div>
@@ -87,11 +87,11 @@
                 <table class="min-w-full divide-y divide-gray-150 text-left">
                     <thead>
                         <tr class="bg-gray-50/60">
-                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">User</th>
-                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Role</th>
-                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Department</th>
-                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Created</th>
-                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">User</th>
+                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role</th>
+                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Department</th>
+                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Created</th>
+                            <th scope="col" class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
@@ -104,14 +104,14 @@
 
                                 $roleConfig = match($user->role) {
                                     'super_admin' => ['label' => 'Super Admin', 'class' => 'bg-purple-100 text-purple-700 border-purple-200'],
-                                    'admin'       => ['label' => 'Admin',       'class' => 'bg-indigo-100 text-indigo-700 border-indigo-200'],
+                                    'admin'       => ['label' => 'Admin',       'class' => 'bg-blue-100 text-indigo-700 border-indigo-200'],
                                     'dean'        => ['label' => 'Dean',        'class' => 'bg-blue-100 text-blue-700 border-blue-200'],
                                     default       => ['label' => ucfirst($user->role), 'class' => 'bg-gray-100 text-gray-700 border-gray-200'],
                                 };
 
                                 $avatarColor = match($user->role) {
                                     'super_admin' => 'bg-purple-50 text-purple-600 border-purple-100',
-                                    'admin'       => 'bg-indigo-50 text-indigo-600 border-indigo-100',
+                                    'admin'       => 'bg-blue-50 text-blue-600 border-indigo-100',
                                     'dean'        => 'bg-blue-50 text-blue-600 border-blue-100',
                                     default       => 'bg-gray-50 text-gray-600 border-gray-100',
                                 };
@@ -138,13 +138,13 @@
                                     @if($user->department)
                                         <span class="text-sm text-gray-700">{{ $user->department }}</span>
                                     @else
-                                        <span class="text-xs text-gray-400 italic">No department</span>
+                                        <span class="text-xs text-slate-400 italic">No department</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-semibold text-gray-700">{{ $user->created_at->format('M d, Y') }}</span>
-                                        <span class="text-[11px] text-gray-400 mt-0.5">{{ $user->created_at->format('h:i A') }}</span>
+                                        <span class="text-[11px] text-slate-400 mt-0.5">{{ $user->created_at->format('h:i A') }}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
@@ -162,7 +162,7 @@
                                                 @method('DELETE')
                                                 <button type="submit"
                                                         onclick="return confirm('Are you sure you want to delete {{ addslashes($user->name) }}? This action cannot be undone.')"
-                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-500 rounded-xl text-xs font-semibold hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200 shadow-sm"
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-slate-500 rounded-xl text-xs font-semibold hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200 shadow-sm"
                                                         title="Delete User">
                                                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                                     Delete
@@ -180,12 +180,12 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="px-6 py-16 text-center">
-                                    <div class="flex flex-col items-center justify-center text-gray-400 max-w-sm mx-auto">
-                                        <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 mb-3 shadow-inner">
+                                    <div class="flex flex-col items-center justify-center text-slate-400 max-w-sm mx-auto">
+                                        <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-slate-400 mb-3 shadow-inner">
                                             <i data-lucide="users-x" class="w-5 h-5"></i>
                                         </div>
-                                        <h3 class="text-sm font-bold text-gray-900">No Users Found</h3>
-                                        <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">Try adjusting your search or filters, or add a new user account.</p>
+                                        <h3 class="text-sm font-bold text-slate-800">No Users Found</h3>
+                                        <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Try adjusting your search or filters, or add a new user account.</p>
                                         <a href="{{ route('users.create') }}" class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-500 transition-all">
                                             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
                                             Add New User

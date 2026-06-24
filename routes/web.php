@@ -1,34 +1,35 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\CaseActionController;
 // Root redirect is handled below inside auth group
 
+use App\Http\Controllers\CaseAttachmentController;
+use App\Http\Controllers\CaseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeanDashboardController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\ViolationController;
-use App\Http\Controllers\CaseController;
-use App\Http\Controllers\HearingController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\CaseActionController;
-use App\Http\Controllers\CaseAttachmentController;
-use App\Http\Controllers\MeetingMinuteController;
 use App\Http\Controllers\EmailLogController;
+use App\Http\Controllers\HearingController;
+use App\Http\Controllers\MeetingMinuteController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\ViolationController;
+use App\Http\Controllers\PublicStudentRegistrationController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dean/dashboard', [DeanDashboardController::class, 'index'])->name('dean.dashboard');
-    Route::post('/notifications/{id}/mark-as-read', [DeanDashboardController::class, 'markAsRead'])->name('notifications.mark-as-read');
-    Route::post('/notifications/mark-all-as-read', [DeanDashboardController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+    Route::post('/notifications/{id}/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('/notifications/mark-all-as-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
 
     // Profile
     // Profile
@@ -36,7 +37,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Students
+    Route::post('/students/{student}/send-custom-message', [StudentController::class, 'sendCustomMessage'])->name('students.sendCustomMessage');
+    Route::post('/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote');
+    Route::post('/students/graduate-fourth-years', [StudentController::class, 'graduateFourthYears'])->name('students.graduate_fourth_years');
     Route::get('/students/trash', [StudentController::class, 'trash'])->name('students.trash');
     Route::post('/students/{id}/restore', [StudentController::class, 'restore'])->name('students.restore');
     Route::delete('/students/{id}/force-delete', [StudentController::class, 'forceDelete'])->name('students.force-delete');
@@ -44,6 +47,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
     Route::get('/students/{student}/print', [StudentController::class, 'printReport'])->name('students.print');
     Route::resource('students', StudentController::class);
+
+    // Message Templates
+    Route::resource('message-templates', \App\Http\Controllers\MessageTemplateController::class)->except(['create', 'edit', 'show']);
 
     // Cases (Violations Recordings)
     // Create route: supports both /cases/create?student_id=X and /students/{student}/cases/create
@@ -84,13 +90,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/attachments/{attachment}/download', [CaseAttachmentController::class, 'download'])->name('attachments.download');
     Route::delete('/attachments/{attachment}', [CaseAttachmentController::class, 'destroy'])->name('attachments.destroy');
 
-
-
     Route::get('/ai-assistant', [App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant.index');
     Route::post('/ai-assistant/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])->name('ai-assistant.chat');
     Route::post('/api/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])->name('api.chat');
-    Route::get('/ai-assistant/stream', [App\Http\Controllers\AiAssistantController::class, 'stream'])->name('ai-assistant.stream');
-
+    Route::post('/ai-assistant/stream', [App\Http\Controllers\AiAssistantController::class, 'stream'])->name('ai-assistant.stream');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -100,6 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reports/email-logs', [EmailLogController::class, 'index'])->name('reports.email-logs');
     Route::delete('/reports/email-logs/{emailLog}', [EmailLogController::class, 'destroy'])->name('reports.email-logs.destroy');
     Route::get('/reports/audit-logs', [AuditLogController::class, 'index'])->name('reports.audit-logs');
+    Route::get('/reports/audit-logs/export', [AuditLogController::class, 'export'])->name('reports.audit-logs.export');
     Route::get('/reports/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/reports/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/csv', [ReportController::class, 'csv'])->name('reports.csv');
@@ -107,7 +111,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Case Actions (OSA interventions)
     Route::post('/cases/{case}/actions', [CaseActionController::class, 'store'])->name('cases.actions.store');
     Route::post('/cases/{case}/endorse', [CaseActionController::class, 'endorse'])->name('cases.endorse');
-
 
     // User Management
     Route::resource('users', UserController::class);
@@ -117,9 +120,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Student Search API (popup with violation history)
     Route::get('/api/students/search', [StudentController::class, 'searchWithHistory'])->name('api.students.search');
+
+    // Fetch graduated students by academic year
+    Route::get('/api/graduated-students', [StudentController::class, 'getGraduatedStudents'])->name('api.graduated-students');
 });
 
-
+// Settings (Admin & Dean only handled in controller)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/archive-cases', [App\Http\Controllers\SettingsController::class, 'archiveClosedCases'])->name('settings.archive-cases');
+});
 
 require __DIR__.'/auth.php';
 
+use Illuminate\Support\Facades\Http;
+
+Route::get('/test-sms', function () {
+    $apiUrl = env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message');
+    $username = env('SMS_GATEWAY_USERNAME', 'IG8TFT');
+    $password = env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al');
+
+    // Pinalitan ko ng +63 format ang number mo dahil yun ang required ng Android app
+    $phoneNumber = '+639660249726';
+
+    try {
+        $response = Http::withBasicAuth($username, $password)
+            ->post($apiUrl, [
+                'textMessage' => [
+                    'text' => 'Hello! Test SMS ito galing sa School Violation System Capstone!',
+                ],
+                'phoneNumbers' => [$phoneNumber],
+            ]);
+
+        if ($response->successful()) {
+            return 'SUCCESS! Na-send ang message. Check mo yung phone mo kung nag-text.';
+        } else {
+            return 'FAILED (Status: '.$response->status().')<br>Error Message: '.$response->body();
+        }
+    } catch (\Exception $e) {
+        return 'ERROR: Hindi ma-contact ang Android Phone. Make sure nasa parehas na Wi-Fi ang laptop at phone. <br>Error Details: '.$e->getMessage();
+    }
+});

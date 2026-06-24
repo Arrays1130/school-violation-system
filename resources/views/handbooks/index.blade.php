@@ -1,18 +1,18 @@
-<x-app-layout>
+﻿<x-app-layout>
     <div class="space-y-8 max-w-7xl mx-auto">
         {{-- Modern Header --}}
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
             <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
             
-            <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-white/80 text-[10px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
                         <i data-lucide="book-open" class="w-3.5 h-3.5 text-indigo-400 animate-pulse"></i>
                         University Guidelines
                     </div>
-                    <h2 class="text-3xl font-bold text-white tracking-tight">Handbooks & Policies</h2>
-                    <p class="text-indigo-100/70 text-sm mt-1.5 leading-relaxed">Manage institutional guidelines and student conduct protocols.</p>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Handbooks & Policies</h2>
+                    <p class="text-indigo-100/70 text-xs mt-1.5 leading-relaxed">Manage institutional guidelines and student conduct protocols.</p>
                 </div>
                 <a href="{{ route('handbooks.create') }}" class="inline-flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 rounded-xl text-sm font-bold text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 self-start md:self-auto shrink-0">
                     <i data-lucide="plus" class="w-4.5 h-4.5"></i>
@@ -25,13 +25,13 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200/80">
             <form method="GET" action="{{ route('handbooks.index') }}" class="flex flex-col md:flex-row gap-3 items-center">
                 <div class="flex-1 relative w-full">
-                    <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400"></i>
+                    <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400"></i>
                     <input
                         type="text"
                         name="search"
                         value="{{ request('search') }}"
                         placeholder="Search regulation titles, codes or contents..."
-                        class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400"
+                        class="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400"
                     >
                 </div>
                 
@@ -47,7 +47,7 @@
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md hover:border-indigo-200 transition-all duration-250 group">
                     <div class="p-6 space-y-4">
                         <div class="flex items-start justify-between gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-inner">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-inner">
                                 <i data-lucide="book-open" class="w-5 h-5"></i>
                             </div>
                             
@@ -57,7 +57,7 @@
                                     PDF Attachment
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold border border-gray-200 uppercase tracking-wide">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-slate-500 rounded-xl text-[10px] font-bold border border-gray-200 uppercase tracking-wide">
                                     Text Only
                                 </span>
                             @endif
@@ -67,7 +67,7 @@
                             <h3 class="text-sm font-bold text-slate-850 group-hover:text-indigo-600 transition-all duration-200 line-clamp-2">
                                 <a href="{{ route('handbooks.show', $handbook) }}">{{ $handbook->title }}</a>
                             </h3>
-                            <p class="text-[10px] font-bold text-gray-400 flex items-center gap-1 uppercase tracking-wider">
+                            <p class="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
                                 <i data-lucide="clock" class="w-3.5 h-3.5 text-gray-300"></i>
                                 Updated {{ $handbook->updated_at->diffForHumans() }}
                             </p>
@@ -110,7 +110,7 @@
                     </div>
                     <h4 class="text-sm font-bold text-slate-800">No Handbooks Found</h4>
                     <p class="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">We couldn't find any policies matching your search criteria. Try a different query or add a new handbook.</p>
-                    <a href="{{ route('handbooks.create') }}" class="mt-5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-600/25 transition-all duration-200">
+                    <a href="{{ route('handbooks.create') }}" class="mt-5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-600/25 transition-all duration-200">
                         Add Document
                     </a>
                 </div>

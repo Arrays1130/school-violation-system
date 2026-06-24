@@ -19,7 +19,7 @@
             @endif
         </div>
 
-        <p>Your presence is required. Failure to appear may result in further disciplinary action.</p>
+        <p>Your presence is required. Failure to appear may result in further sanctions.</p>
         
         <p style="margin-top: 30px; font-size: 12px; color: #777;">
             This is an automated message from the I-Link CST Violation System.<br>

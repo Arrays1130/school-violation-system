@@ -15,7 +15,7 @@
                     <div>
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
                             <i data-lucide="folder-open" class="w-3.5 h-3.5"></i>
-                            Disciplinary Record
+                            Violation Record
                         </div>
                         <h2 class="text-3xl font-bold text-white tracking-tight">Violation Case #{{ str_pad($case->id, 4, '0', STR_PAD_LEFT) }}</h2>
                         <p class="text-indigo-100/70 text-sm mt-1">Student Respondent: <span class="text-white font-medium">{{ $case->student->full_name }}</span></p>
@@ -89,8 +89,8 @@
             {{-- Left Column: Summary --}}
             <div class="lg:col-span-2 space-y-6">
                 {{-- Status & Violation Card --}}
-                <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
-                    <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/40">
+                <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center shadow-sm">
                                 <i data-lucide="file-warning" class="w-5 h-5 text-red-500"></i>
@@ -118,7 +118,7 @@
                     <div class="p-6 space-y-6">
                         <div>
                             <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Incident Description</h4>
-                            <div class="bg-gray-50 rounded-xl p-4 text-gray-700 text-sm leading-relaxed border border-gray-100">
+                            <div class="bg-gray-50 rounded-lg p-4 text-gray-700 text-sm leading-relaxed border border-gray-100">
                                 {{ $case->description }}
                             </div>
                         </div>
@@ -146,11 +146,11 @@
                 </div>
 
                 {{-- Hearing Protocol Hub --}}
-                <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6">
+                <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-lg font-semibold text-gray-900">Case Hearings</h3>
                         @if($case->status !== 'Closed')
-                            <a href="{{ route('hearings.create', ['case' => $case->id]) }}" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-sm shadow-indigo-600/20 hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                            <a href="{{ route('hearings.create', ['case' => $case->id]) }}" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium shadow-sm hover:bg-gray-800 transition-colors flex items-center gap-2">
                                 <i data-lucide="gavel" class="w-4 h-4"></i>
                                 Schedule Hearing
                             </a>
@@ -159,7 +159,7 @@
 
                     <div class="space-y-3">
                         @forelse($case->hearings as $hearing)
-                            <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-indigo-200 transition-colors">
+                            <div class="bg-gray-50 rounded-lg border border-gray-200 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-blue-200 transition-colors">
                                 <div class="flex items-center gap-4">
                                     <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
                                         {{ $loop->iteration }}
@@ -173,18 +173,18 @@
                                     <span class="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600">
                                         {{ $hearing->location ?? "Dean's Office" }}
                                     </span>
-                                    <a href="{{ route('hearings.show', $hearing) }}" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="View Hearing">
+                                    <a href="{{ route('hearings.show', $hearing) }}" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View Hearing">
                                         <i data-lucide="chevron-right" class="w-5 h-5"></i>
                                     </a>
                                 </div>
                             </div>
                         @empty
-                            <div class="bg-gray-50 rounded-xl border border-dashed border-gray-300 p-10 text-center">
+                            <div class="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-10 text-center">
                                 <div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mx-auto mb-3">
                                     <i data-lucide="calendar-x" class="w-6 h-6 text-gray-400"></i>
                                 </div>
                                 <p class="text-gray-500 text-sm font-medium">No Hearings Scheduled</p>
-                                <p class="text-gray-400 text-xs mt-1">Schedule a hearing to begin the disciplinary process.</p>
+                                <p class="text-gray-400 text-xs mt-1">Schedule a hearing to begin the violation process.</p>
                             </div>
                         @endforelse
                     </div>
@@ -224,7 +224,7 @@
                 @endif
 
                 {{-- Student Info --}}
-                <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6">
+                <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-6">Student Information</h3>
                     <div class="flex items-center gap-4 mb-6">
                         <div class="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-lg border border-blue-100">
@@ -251,14 +251,14 @@
                         </div>
                     </div>
 
-                    <a href="{{ route('students.show', $case->student) }}" class="mt-6 w-full py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                    <a href="{{ route('students.show', $case->student) }}" class="mt-6 w-full py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
                         View Student Profile
                         <i data-lucide="external-link" class="w-4 h-4"></i>
                     </a>
                 </div>
 
                 {{-- Severity --}}
-                <div class="bg-red-50 rounded-2xl border border-red-100 p-6">
+                <div class="bg-red-50 rounded-lg border border-red-100 p-6">
                     <h3 class="text-xs font-semibold text-red-800 uppercase tracking-wider mb-4">Violation Severity</h3>
                     <div class="space-y-4">
                         <div>

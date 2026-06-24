@@ -101,7 +101,7 @@
                             title: 'System Notification',
                             html: `
                                 <div class="text-left mt-2">
-                                    <p class="text-sm text-slate-500 mb-3 text-center">A new disciplinary record has been added to your profile.</p>
+                                    <p class="text-sm text-slate-500 mb-3 text-center">A new violation record has been added to your profile.</p>
                                     <div class="p-4 bg-red-50 rounded-xl border border-red-100">
                                         <div class="flex items-center gap-2 mb-2">
                                             <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>

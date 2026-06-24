@@ -35,6 +35,7 @@ class Student extends Authenticatable
         'full_name',
         'section',
         'year_level',
+        'academic_year',
         'department',
         'phone',
         'email',
@@ -43,6 +44,7 @@ class Student extends Authenticatable
         'guardian_phone',
         'password',
         'password_changed_at',
+        'academic_year_graduated',
     ];
 
     protected $hidden = [
@@ -77,6 +79,11 @@ class Student extends Authenticatable
             if (strlen($initials) >= 2) break;
         }
         return $initials ?: strtoupper(substr($this->full_name, 0, 2));
+    }
+
+    public function setFullNameAttribute($value)
+    {
+        $this->attributes['full_name'] = strtoupper($value);
     }
 
     public function getDepartmentShortcutAttribute()

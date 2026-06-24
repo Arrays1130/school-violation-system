@@ -1,33 +1,24 @@
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Base URL for the Laravel API (no trailing slash).
-///
-/// Override at build time:
-/// `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api`
+/// Currently using ngrok tunnel for public access.
 class ApiConfig {
-  static const String _rawBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000/api',
-  );
+  // 🌐 ngrok public URL — update this when ngrok URL changes
+  static const String _ngrokUrl =
+      'https://barbell-thesaurus-bulgur.ngrok-free.dev/school%20violation%20system/public/api';
+
+  // Local fallback (Laragon)
+  static const String _laragonDefault =
+      'http://127.0.0.1/school%20violation%20system/public/api';
 
   static String get baseUrl {
-    if (kIsWeb) {
-      return _rawBaseUrl;
-    }
-    try {
-      if (Platform.isAndroid) {
-        if (_rawBaseUrl.contains('127.0.0.1')) {
-          return _rawBaseUrl.replaceAll('127.0.0.1', '10.0.2.2');
-        }
-        if (_rawBaseUrl.contains('localhost')) {
-          return _rawBaseUrl.replaceAll('localhost', '10.0.2.2');
-        }
-      }
-    } catch (_) {
-      // Fallback
-    }
-    return _rawBaseUrl;
+    if (kIsWeb) return _laragonDefault;
+    return _ngrokUrl;
+  }
+
+  /// Host for WebSocket / Reverb (port 8080).
+  static String get wsHost {
+    final uri = Uri.parse(baseUrl);
+    return uri.host;
   }
 }
-

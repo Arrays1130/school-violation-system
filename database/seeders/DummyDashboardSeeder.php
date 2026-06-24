@@ -23,7 +23,7 @@ class DummyDashboardSeeder extends Seeder
                 'name' => 'System Admin',
                 'password' => Hash::make('password'),
                 'role' => 'admin',
-                'department' => 'Disciplinary Office'
+                'department' => 'Student Affairs Office'
             ]
         );
 

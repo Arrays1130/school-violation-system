@@ -69,12 +69,14 @@ class StudentCase extends Model
         'endorsed_at',
         'closed_at',
         'closed_by',
+        'is_archived',
     ];
 
     protected $casts = [
         'occurred_at'  => 'datetime',
         'endorsed_at'  => 'datetime',
         'closed_at'    => 'datetime',
+        'is_archived'  => 'boolean',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -83,6 +85,11 @@ class StudentCase extends Model
             ->logFillable()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_archived', false);
     }
 
     public function scopeForUser(Builder $query, User $user): Builder

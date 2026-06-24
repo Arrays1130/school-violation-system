@@ -12,7 +12,9 @@ import 'case_details_screen.dart';
 import 'notification_screen.dart';
 import 'analytics_screen.dart';
 import 'main_layout.dart';
+import '../providers/api_service_provider.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/empty_state_widget.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -34,9 +36,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshData();
+    _loadInitialData();
     _autoRefreshTimer =
-        Timer.periodic(const Duration(seconds: 30), (_) => _refreshData());
+        Timer.periodic(const Duration(seconds: 30), (_) => _refreshData(showLoading: false));
+  }
+
+  Future<void> _loadInitialData() async {
+    final api = ref.read(apiServiceProvider);
+    final cachedViolations = await api.getPersistentCache('violations');
+    final cachedStats = await api.getPersistentCache('stats');
+    
+    if (cachedViolations != null || cachedStats != null) {
+      if (mounted) {
+        setState(() {
+          if (cachedViolations != null) {
+            if (cachedViolations is Map) {
+              _violations = (cachedViolations['data'] ?? []) as List<dynamic>;
+            } else if (cachedViolations is List) {
+              _violations = cachedViolations;
+            }
+          }
+          if (cachedStats != null) {
+            _stats = cachedStats['summary'] ?? {};
+            _topOffenses = cachedStats['top_offenses'] ?? [];
+            _alerts = cachedStats['upcoming_hearings'] ?? [];
+          }
+          _isLoading = false;
+        });
+      }
+    }
+    
+    await _refreshData(showLoading: _isLoading);
   }
 
   @override
@@ -45,29 +75,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.dispose();
   }
 
-  Future<void> _refreshData() async {
-    setState(() => _isLoading = true);
+  Future<void> _refreshData({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() => _isLoading = true);
+    }
     try {
       final api = ref.read(apiServiceProvider);
       final dynamic vResult =
           await api.getViolations(forcedRefresh: true);
       final dynamic sResult =
           await api.getStats(forcedRefresh: true);
-      final int uCount = await ref.read(apiServiceProvider).getUnreadCount();
-      setState(() {
-        if (vResult is Map) {
-          _violations = (vResult['data'] ?? []) as List<dynamic>;
-        } else if (vResult is List) {
-          _violations = vResult;
-        }
-        _stats = sResult['summary'] ?? {};
-        _topOffenses = sResult['top_offenses'] ?? [];
-        _alerts = sResult['upcoming_hearings'] ?? [];
-        _unreadCount = uCount;
-        _isLoading = false;
-      });
+      final int uCount = await api.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          if (vResult is Map) {
+            _violations = (vResult['data'] ?? []) as List<dynamic>;
+          } else if (vResult is List) {
+            _violations = vResult;
+          }
+          _stats = sResult['summary'] ?? {};
+          _topOffenses = sResult['top_offenses'] ?? [];
+          _alerts = sResult['upcoming_hearings'] ?? [];
+          _unreadCount = uCount;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -83,12 +119,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       backgroundColor: AppTheme.bgLight,
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: AppTheme.accentPurple,
+        color: AppTheme.accentCyan,
         child: CustomScrollView(
           slivers: [
             // ── Hero App Bar ──
             SliverAppBar(
-              expandedHeight: 200,
+              expandedHeight: 220,
               floating: false,
               pinned: true,
               elevation: 0,
@@ -96,48 +132,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               backgroundColor: Colors.transparent,
               flexibleSpace: ClipRect(
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
                   child: FlexibleSpaceBar(
                     collapseMode: CollapseMode.pin,
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // Gradient base
+                        // Clean minimalist white background
                         Container(
-                          decoration: const BoxDecoration(
-                              gradient: AppTheme.heroGradient),
-                        ),
-                        // Glow orb top-right
-                        Positioned(
-                          top: -60,
-                          right: -40,
-                          child: Container(
-                            width: 220,
-                            height: 220,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(colors: [
-                                AppTheme.accentPurple.withOpacity(0.6),
-                                Colors.transparent
-                              ]),
-                            ),
-                          ),
-                        ),
-                        // Glow orb bottom-left
-                        Positioned(
-                          bottom: -30,
-                          left: -20,
-                          child: Container(
-                            width: 160,
-                            height: 160,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(colors: [
-                                AppTheme.accentCyan.withOpacity(0.4),
-                                Colors.transparent
-                              ]),
-                            ),
-                          ),
+                          color: AppTheme.bgLight,
                         ),
                         // Content
                         Padding(
@@ -149,60 +152,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               Text(
                                 "Welcome back,",
                                 style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    color: Colors.white.withOpacity(0.65),
-                                    fontWeight: FontWeight.w500),
-                              ),
+                                    fontSize: 16,
+                                    color: AppTheme.textSub,
+                                    letterSpacing: 0.5,
+                                    fontWeight: FontWeight.w600),
+                              ).animate().fadeIn().slideY(begin: 0.2, end: 0),
                               Text(
                                 "Dean Dashboard",
                                 style: GoogleFonts.outfit(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 0.3),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.white.withOpacity(0.15),
-                                      borderRadius:
-                                          BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 6,
-                                          height: 6,
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.accentEmerald,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                  color: AppTheme
-                                                      .accentEmerald
-                                                      .withOpacity(0.8),
-                                                  blurRadius: 4)
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Text("LIVE",
-                                            style: GoogleFonts.outfit(
-                                                fontSize: 9,
-                                                fontWeight:
-                                                    FontWeight.w900,
-                                                color: Colors.white,
-                                                letterSpacing: 1.5)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w800, // Slightly less heavy, modern look
+                                  color: AppTheme.primaryNavy,
+                                  letterSpacing: -1.0,
+                                ),
+                              ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
+
                             ],
                           ),
                         ),
@@ -216,7 +180,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 _buildNotificationBell(),
                 IconButton(
                   icon: const Icon(Icons.logout_rounded,
-                      color: Colors.white, size: 20),
+                      color: AppTheme.primaryNavy, size: 20),
                   onPressed: () {
                     HapticFeedback.heavyImpact();
                     _logout();
@@ -239,30 +203,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 13),
+                        horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: AppTheme.softShadow,
                       border: Border.all(
                           color:
-                              AppTheme.inputBorder.withOpacity(0.6)),
+                              Colors.white),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentPurple.withOpacity(0.1),
+                            color: AppTheme.accentCyan.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(Icons.search_rounded,
-                              color: AppTheme.accentPurple, size: 16),
+                              color: AppTheme.accentCyan, size: 16),
                         ),
                         const SizedBox(width: 12),
                         Text("Search student or case...",
                             style: GoogleFonts.outfit(
-                                color: AppTheme.textHint, fontSize: 14)),
+                                color: AppTheme.textHint, fontSize: 15, fontWeight: FontWeight.w500)),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -389,22 +353,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 : SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                     sliver: _violations.isEmpty
-                        ? SliverFillRemaining(
+                        ? const SliverFillRemaining(
                             child: Center(
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.description_outlined,
-                                      size: 72,
-                                      color: AppTheme.textHint
-                                          .withOpacity(0.5)),
-                                  const SizedBox(height: 12),
-                                  Text("No records found",
-                                      style: GoogleFonts.outfit(
-                                          color: AppTheme.textMuted,
-                                          fontSize: 14)),
-                                ],
+                              child: EmptyStateWidget(
+                                icon: Icons.check_circle_outline_rounded,
+                                title: "All Clear!",
+                                message: "There are no recent violations in your records.",
                               ),
                             ),
                           )
@@ -429,8 +383,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       alignment: Alignment.center,
       children: [
         IconButton(
-          icon: const Icon(Icons.notifications_rounded,
-              color: Colors.white, size: 22),
+          icon: const Icon(Icons.notifications_outlined, color: AppTheme.primaryNavy, size: 22),
           onPressed: () {
             HapticFeedback.lightImpact();
             Navigator.push(
@@ -482,7 +435,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                    color: AppTheme.accentPurple.withOpacity(0.3),
+                    color: AppTheme.accentCyan.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4)),
               ],
@@ -507,18 +460,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentPurple.withOpacity(0.08),
+                  color: AppTheme.accentCyan.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                       color:
-                          AppTheme.accentPurple.withOpacity(0.2)),
+                          AppTheme.accentCyan.withOpacity(0.2)),
                 ),
                 child: Text(
                   (actionLabel ?? "View All").toUpperCase(),
                   style: GoogleFonts.outfit(
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
-                      color: AppTheme.accentPurple,
+                      color: AppTheme.accentCyan,
                       letterSpacing: 0.5),
                 ),
               ),
@@ -533,21 +486,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildStatCard(String label, String count, IconData icon,
       LinearGradient gradient, VoidCallback onTap) {
+    Color baseColor = gradient.colors.first;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          HapticFeedback.mediumImpact();
+          HapticFeedback.lightImpact();
           onTap();
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 10),
           decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(22),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: baseColor.withOpacity(0.3), width: 2),
             boxShadow: [
               BoxShadow(
-                  color: gradient.colors.first.withOpacity(0.3),
+                  color: AppTheme.primaryNavy.withOpacity(0.04),
                   blurRadius: 16,
                   offset: const Offset(0, 8)),
             ],
@@ -555,25 +510,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: baseColor.withOpacity(0.1),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: baseColor.withOpacity(0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 18),
+                child: Center(
+                  child: Icon(icon, color: baseColor, size: 22),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               Text(count,
                   style: GoogleFonts.outfit(
-                      fontSize: 24,
+                      fontSize: 30,
+                      height: 1.0,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white)),
+                      letterSpacing: -1.0,
+                      color: AppTheme.textMain)),
+              const SizedBox(height: 4),
               Text(label,
                   style: GoogleFonts.outfit(
-                      color: Colors.white.withOpacity(0.75),
+                      color: AppTheme.textSub,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6)),
+                      letterSpacing: 1.5)),
             ],
           ),
         ),
@@ -587,11 +555,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Container(
       width: 240,
       margin: const EdgeInsets.only(right: 14),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppTheme.accentGradient,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: AppTheme.glassShadow,
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -645,8 +614,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildTopOffenseItem(dynamic offense, int index) {
     final colors = [
-      AppTheme.accentPurple,
-      AppTheme.accentIndigo,
+      AppTheme.accentCyan,
+      AppTheme.primaryNavy,
       AppTheme.accentCyan,
       AppTheme.accentEmerald,
       AppTheme.accentAmber,
@@ -655,11 +624,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: AppTheme.softShadow,
+        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.5)),
       ),
       child: Row(
         children: [
@@ -723,20 +693,56 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: AppTheme.softShadow,
+        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.3), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           onTap: () {
             HapticFeedback.mediumImpact();
             Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        CaseDetailsScreen(caseId: violation['id'])));
+                PageRouteBuilder(
+                  transitionDuration: const Duration(milliseconds: 500),
+                  reverseTransitionDuration: const Duration(milliseconds: 400),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    final fadeAnimation =
+                        Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    );
+                    final scaleAnimation =
+                        Tween<double>(begin: 0.95, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    );
+                    return FadeTransition(
+                      opacity: fadeAnimation,
+                      child: ScaleTransition(
+                        scale: scaleAnimation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      CaseDetailsScreen(
+                        caseId: violation['id'],
+                        initialData: {
+                          'id': violation['id'],
+                          'student': violation['student'],
+                          'violation': violation['violation'],
+                          'status': violation['status'],
+                        },
+                      ),
+                ));
           },
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -745,22 +751,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        gradient: _getSeverityGradient(severity),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                              color: _getSeverityColor(severity)
-                                  .withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4)),
-                        ],
+                    Hero(
+                      tag: 'case_${violation['id']}_avatar',
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: _getSeverityGradient(severity),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                                color: _getSeverityColor(severity)
+                                    .withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4)),
+                          ],
+                        ),
+                        child: Icon(_getSeverityIcon(severity),
+                            color: Colors.white, size: 20),
                       ),
-                      child: Icon(_getSeverityIcon(severity),
-                          color: Colors.white, size: 20),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -833,7 +842,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (status == 'Resolved' || status == 'Closed') {
       color = AppTheme.accentEmerald;
     }
-    if (status == 'Hearing Scheduled') color = AppTheme.accentPurple;
+    if (status == 'Hearing Scheduled') color = AppTheme.accentCyan;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -850,7 +859,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Color _getSeverityColor(String severity) {
     if (severity == 'Major') return AppTheme.accentAmber;
-    return AppTheme.accentIndigo;
+    return AppTheme.primaryNavy;
   }
 
   LinearGradient _getSeverityGradient(String severity) {

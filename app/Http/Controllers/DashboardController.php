@@ -8,20 +8,34 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         if (auth()->user()->isDean()) {
             return redirect()->route('dean.dashboard');
         }
 
-        // Helper to apply role-based filtering
-        $applyFilter = function ($query) {
+        $systemAcademicYear = \App\Models\SystemSetting::where('key', 'current_academic_year')->value('value') ?? 'SY 2024-2025';
+        $selectedAcademicYear = $request->query('academic_year', $systemAcademicYear);
+
+        // Helper to apply role-based filtering and academic year filtering
+        $applyFilter = function ($query) use ($selectedAcademicYear) {
             // Both Super Admin and Admin (Dean) can see all severities on the dashboard
-            // If we want to restrict other roles later, we can add logic here
+            // Filter cases by the student's academic year and exclude archived cases
+            if ($query->getModel() instanceof \App\Models\StudentCase) {
+                $query->active();
+                
+                if ($selectedAcademicYear !== 'All') {
+                    $query->whereHas('student', function ($q) use ($selectedAcademicYear) {
+                        $q->where('academic_year', $selectedAcademicYear);
+                    });
+                }
+            }
         };
 
+        $cacheKey = 'dashboard.data.' . auth()->id() . '.' . ($selectedAcademicYear === 'All' ? 'all' : md5($selectedAcademicYear));
+
         // Cache all heavy DB aggregation metrics for lightning-fast capstone dashboard loading
-        $cachedData = Cache::remember('dashboard.data', now()->addMinutes(5), function () use ($applyFilter) {
+        $cachedData = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($applyFilter, $selectedAcademicYear) {
             // Current stats
             $stats = [
                 'total_students' => \App\Models\Student::count(),
@@ -151,10 +165,23 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
 
-            return compact('stats', 'trends', 'casesPerDept', 'casesPerSeverity', 'studentsWithViolations', 'recentCases', 'monthlyTrend', 'topViolations');
+            // Academic Years for Graduation dropdown
+            $academicYears = \App\Models\Student::onlyTrashed()
+                ->whereNotNull('academic_year_graduated')
+                ->select('academic_year_graduated')
+                ->distinct()
+                ->pluck('academic_year_graduated');
+
+            return compact('stats', 'trends', 'casesPerDept', 'casesPerSeverity', 'studentsWithViolations', 'recentCases', 'monthlyTrend', 'topViolations', 'academicYears');
         });
 
-        return Inertia::render('Dashboard', $cachedData);
+        // Get unique academic years for filtering (active students only)
+        $filterAcademicYears = \App\Models\Student::select('academic_year')->distinct()->pluck('academic_year')->filter()->values()->all();
+
+        return Inertia::render('Dashboard', array_merge($cachedData, [
+            'selectedAcademicYear' => $selectedAcademicYear,
+            'filterAcademicYears' => $filterAcademicYears
+        ]));
     }
 }
 

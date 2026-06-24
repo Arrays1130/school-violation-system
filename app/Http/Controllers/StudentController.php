@@ -38,7 +38,29 @@ class StudentController extends Controller
             $query->whereRaw('TRIM(department) = ?', [trim($request->department)]);
         }
 
-        $students = $query->withCount('cases')
+        // Year Level filter
+        if ($request->has('yearLevel') && !empty($request->yearLevel)) {
+            $query->where('year_level', $request->yearLevel);
+        }
+
+        // Academic Year filter
+        if ($request->has('academicYear') && !empty($request->academicYear) && $request->academicYear !== 'All') {
+            $query->where('academic_year', $request->academicYear);
+        }
+
+        $students = $query->withCount([
+            'cases',
+            'cases as minor_cases_count' => function ($query) {
+                $query->whereHas('violation', function ($q) {
+                    $q->where('severity', 'Minor');
+                });
+            },
+            'cases as major_cases_count' => function ($query) {
+                $query->whereHas('violation', function ($q) {
+                    $q->where('severity', '!=', 'Minor');
+                });
+            }
+        ])
             ->orderBy('year_level', 'asc')
             ->orderBy('section', 'asc')
             ->orderBy('full_name', 'asc')
@@ -63,12 +85,27 @@ class StudentController extends Controller
             'clean'       => $totalStudents - $withCases,
         ];
 
-        return view('students.index', compact('students', 'departments', 'summary'));
+        // Get academic years for filtering
+        $filterAcademicYears = \App\Models\Student::select('academic_year')
+            ->distinct()
+            ->orderBy('academic_year', 'desc')
+            ->pluck('academic_year')
+            ->filter()
+            ->values();
+
+        return \Inertia\Inertia::render('Students/Index', [
+            'students' => $students,
+            'departments' => $departments,
+            'filterAcademicYears' => $filterAcademicYears,
+            'summary' => $summary,
+            'filters' => request()->all('search', 'department', 'yearLevel', 'academicYear')
+        ]);
     }
 
     public function create()
     {
-        return view('students.create');
+        $currentAcademicYear = \App\Models\SystemSetting::where('key', 'current_academic_year')->value('value') ?? 'SY 2024-2025';
+        return view('students.create', compact('currentAcademicYear'));
     }
 
     public function store(Request $request)
@@ -79,6 +116,7 @@ class StudentController extends Controller
             'email' => 'required|email|unique:students,email',
             'section' => 'required|string|max:255',
             'year_level' => 'required|string|max:255',
+            'academic_year' => 'nullable|string|max:255',
             'department' => 'required|string|max:255',
             'guardian_name' => 'nullable|string|max:255',
             'guardian_email' => 'nullable|email',
@@ -107,7 +145,9 @@ class StudentController extends Controller
             'major' => $student->cases->filter(fn($case) => $case->violation?->severity === 'Major')->count(),
         ];
         
-        return view('students.show', compact('student', 'offenseSummary'));
+        $messageTemplates = \App\Models\MessageTemplate::latest()->get();
+        
+        return view('students.show', compact('student', 'offenseSummary', 'messageTemplates'));
     }
 
     public function edit(\App\Models\Student $student)
@@ -123,6 +163,7 @@ class StudentController extends Controller
             'email' => 'required|email|unique:students,email,' . $student->id,
             'section' => 'required|string|max:255',
             'year_level' => 'required|string|max:255',
+            'academic_year' => 'nullable|string|max:255',
             'department' => 'required|string|max:255',
             'guardian_name' => 'nullable|string|max:255',
             'guardian_email' => 'nullable|email',
@@ -138,6 +179,67 @@ class StudentController extends Controller
     {
         $student->delete();
         return redirect()->route('students.index')->with('success', 'Student moved to trash.');
+    }
+
+    /**
+     * Bulk promote 1st-3rd year students to the next year level
+     */
+    public function promoteStudents()
+    {
+        abort_if(auth()->user()->isDean(), 403);
+
+        $students = \App\Models\Student::whereIn('year_level', ['1st Year', '2nd Year', '3rd Year'])->get();
+        $count = $students->count();
+
+        if ($count === 0) {
+            return redirect()->back()->with('error', 'No students found to promote.');
+        }
+
+        foreach ($students as $student) {
+            if ($student->year_level === '3rd Year') {
+                $student->update(['year_level' => '4th Year']);
+            } elseif ($student->year_level === '2nd Year') {
+                $student->update(['year_level' => '3rd Year']);
+            } elseif ($student->year_level === '1st Year') {
+                $student->update(['year_level' => '2nd Year']);
+            }
+        }
+
+        return redirect()->route('students.index')->with('success', "Successfully promoted {$count} students to the next year level.");
+    }
+
+    /**
+     * Bulk graduate and archive 4th-year students
+     */
+    public function graduateFourthYears(Request $request)
+    {
+        // Check if user is dean, maybe abort (Deans typically shouldn't do bulk deletes if they can't access trash)
+        abort_if(auth()->user()->isDean(), 403);
+
+        $request->validate([
+            'academic_year' => 'required|string|max:255'
+        ]);
+
+        $students = \App\Models\Student::where('year_level', '4th Year')->get();
+        $count = $students->count();
+
+        if ($count === 0) {
+            return redirect()->back()->with('error', 'No 4th-year students found to graduate.');
+        }
+
+        $academicYear = $request->input('academic_year');
+
+        // Bulk update the academic_year_graduated directly (doesn't trigger model events individually)
+        \App\Models\Student::where('year_level', '4th Year')->update(['academic_year_graduated' => $academicYear]);
+        
+        // Bulk delete (soft delete)
+        \App\Models\Student::where('year_level', '4th Year')->delete();
+
+        // Clear dashboard cache and dispatch event once after bulk operation
+        \App\Models\StudentCase::clearDashboardCache();
+        try { event(new \App\Events\DashboardUpdated('Bulk graduated 4th-year students')); } catch (\Exception $e) {}
+
+        return redirect()->route('students.index')->with('success', "Successfully graduated and archived {$count} 4th-year students for {$academicYear}.");
     }
 
     /**
@@ -197,6 +299,24 @@ class StudentController extends Controller
 
         return response()->json($students);
     }
+
+    /**
+     * Get graduated students by academic year for Admin Dashboard
+     */
+    public function getGraduatedStudents(Request $request)
+    {
+        $academicYear = $request->get('academic_year');
+
+        if (!$academicYear) {
+            return response()->json([]);
+        }
+
+        $students = \App\Models\Student::onlyTrashed()
+            ->where('academic_year_graduated', $academicYear)
+            ->get(['id', 'full_name', 'department', 'section', 'year_level', 'deleted_at', 'academic_year_graduated']);
+
+        return response()->json($students);
+    }
     /**
      * Print student violation report
      */
@@ -230,5 +350,88 @@ class StudentController extends Controller
             \Illuminate\Support\Facades\Log::error('Student Import Failure: ' . $e->getMessage());
             return back()->with('error', 'Error importing students: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Send Custom Message (SMS and/or Email)
+     */
+    public function sendCustomMessage(Request $request, \App\Models\Student $student)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
+            'delivery_method' => 'required|array',
+            'delivery_method.*' => 'in:sms,email'
+        ]);
+
+        $methods = $request->input('delivery_method', []);
+        $successMessages = [];
+        $errorMessages = [];
+
+        // 1. Send SMS
+        if (in_array('sms', $methods)) {
+            $guardianPhone = $student->guardian_phone;
+
+
+            if ($guardianPhone) {
+                // Ensure number is in +639 format for the SMS gateway
+                $cleanPhone = preg_replace('/\D/', '', $guardianPhone);
+                if (preg_match('/^09\d{9}$/', $cleanPhone)) {
+                    $formattedPhone = '+63' . substr($cleanPhone, 1);
+                } else {
+                    $formattedPhone = $guardianPhone; // Use as-is if already formatted
+                }
+
+                try {
+                    $response = \Illuminate\Support\Facades\Http::timeout(5)
+                        ->withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
+                        ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                            'textMessage' => [
+                                'text' => $request->message
+                            ],
+                            'phoneNumbers' => [$formattedPhone]
+                        ]);
+                    
+                    if ($response->successful()) {
+                        $successMessages[] = 'SMS sent successfully.';
+                    } else {
+                        throw new \Exception("Gateway returned status: " . $response->status());
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('SMS Sending Failed: ' . $e->getMessage());
+                    $errorMessages[] = 'Failed to send SMS (Gateway unreachable/Error). Please check if your SMS Gateway app is running and the IP address is correct.';
+                }
+            } else {
+                $errorMessages[] = 'No valid guardian phone number found for SMS.';
+            }
+        }
+
+        // 2. Send Email
+        if (in_array('email', $methods)) {
+            if ($student->guardian_email) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($student->guardian_email)
+                        ->send(new \App\Mail\CustomMessage('SVS Notification: Message from School', $request->message));
+                    $successMessages[] = 'Email sent successfully.';
+                } catch (\Exception $e) {
+                    $errorMessages[] = 'Failed to send Email. Check SMTP settings.';
+                }
+            } else {
+                $errorMessages[] = 'No guardian email found.';
+            }
+        }
+
+        if (empty($methods)) {
+            return back()->with('error', 'Please select at least one delivery method.');
+        }
+
+        if (!empty($errorMessages)) {
+            // If there are both success and errors, show a warning, else error
+            if (!empty($successMessages)) {
+                return back()->with('warning', implode(' ', $successMessages) . ' ' . implode(' ', $errorMessages));
+            }
+            return back()->with('error', implode(' ', $errorMessages));
+        }
+
+        return back()->with('success', implode(' ', $successMessages));
     }
 }

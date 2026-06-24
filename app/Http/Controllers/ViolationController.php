@@ -36,7 +36,11 @@ class ViolationController extends Controller
         $violations = $query->latest()->paginate(10);
         $categories = \App\Models\Violation::distinct()->whereNotNull('category')->pluck('category');
 
-        return view('violations.index', compact('violations', 'categories'));
+        return \Inertia\Inertia::render('Violations/Index', [
+            'violations' => $violations,
+            'categories' => $categories,
+            'filters' => request()->all('search', 'category', 'severity')
+        ]);
     }
 
     public function create()

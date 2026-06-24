@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     @section('header', 'Violations')
 
     <div class="space-y-6">
@@ -11,10 +11,10 @@
                 <div>
                     <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-3 backdrop-blur-md" aria-hidden="true">
                         <i data-lucide="shield-alert" class="w-3.5 h-3.5" aria-hidden="true"></i>
-                        Student Disciplinary Board
+                        Student Violation Board
                     </div>
                     <h1 class="text-3xl font-bold text-white tracking-tight" id="page-title">Violation Records</h1>
-                    <p class="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">Manage and track student violation cases, monitor disciplinary actions, and streamline institutional resolution processes.</p>
+                    <p class="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">Manage and track student violation cases, monitor violation actions, and streamline institutional resolution processes.</p>
                 </div>
                 
                 <div class="flex items-center gap-3">
@@ -41,8 +41,8 @@
                     <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">Total</span>
                 </div>
                 <div>
-                    <h3 class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($summary['total']) }}</h3>
-                    <p class="text-xs text-gray-500 font-medium mt-1">All recorded cases</p>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight">{{ number_format($summary['total']) }}</h3>
+                    <p class="text-xs text-slate-500 font-medium mt-1">All recorded cases</p>
                 </div>
             </div>
             
@@ -56,8 +56,8 @@
                     <span class="text-[10px] font-extrabold text-amber-500 uppercase tracking-widest bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">Pending</span>
                 </div>
                 <div>
-                    <h3 class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($summary['pending']) }}</h3>
-                    <p class="text-xs text-gray-500 font-medium mt-1">Awaiting action</p>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight">{{ number_format($summary['pending']) }}</h3>
+                    <p class="text-xs text-slate-500 font-medium mt-1">Awaiting action</p>
                 </div>
             </div>
 
@@ -71,8 +71,8 @@
                     <span class="text-[10px] font-extrabold text-blue-500 uppercase tracking-widest bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">Hearing</span>
                 </div>
                 <div>
-                    <h3 class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($summary['hearing']) }}</h3>
-                    <p class="text-xs text-gray-500 font-medium mt-1">Scheduled hearings</p>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight">{{ number_format($summary['hearing']) }}</h3>
+                    <p class="text-xs text-slate-500 font-medium mt-1">Scheduled hearings</p>
                 </div>
             </div>
 
@@ -86,8 +86,8 @@
                     <span class="text-[10px] font-extrabold text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">Resolved</span>
                 </div>
                 <div>
-                    <h3 class="text-3xl font-black text-gray-900 tracking-tight">{{ number_format($summary['closed']) }}</h3>
-                    <p class="text-xs text-gray-500 font-medium mt-1">Cases closed</p>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight">{{ number_format($summary['closed']) }}</h3>
+                    <p class="text-xs text-slate-500 font-medium mt-1">Cases closed</p>
                 </div>
             </div>
         </div>
@@ -96,24 +96,24 @@
         <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-gray-200/80 shadow-sm mb-6">
             <form method="GET" action="{{ route('cases.index') }}" class="flex flex-col sm:flex-row gap-3">
                 <div class="flex-1 relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <i data-lucide="search" class="w-4.5 h-4.5"></i>
                     </div>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search student name or violation..." 
-                           class="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
+                           class="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 text-slate-800 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400">
                 </div>
                 
                 <div class="sm:w-56 relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <i data-lucide="layers" class="w-4.5 h-4.5"></i>
                     </div>
-                    <select name="status" class="w-full pl-10 pr-10 py-2.5 bg-gray-50/50 border border-gray-200 text-gray-900 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none">
+                    <select name="status" class="w-full pl-10 pr-10 py-2.5 bg-gray-50/50 border border-gray-200 text-slate-800 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none">
                         <option value="">All Statuses</option>
                         @foreach(\App\Models\StudentCase::STATUSES as $status)
                             <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>{{ $status }}</option>
                         @endforeach
                     </select>
-                    <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                    <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
                         <i data-lucide="chevron-down" class="w-4 h-4"></i>
                     </div>
                 </div>
@@ -133,7 +133,7 @@
         </div>
 
         {{-- Records List --}}
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative" role="region" aria-labelledby="page-title">
+        <div class="bg-white/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden relative" role="region" aria-labelledby="page-title">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-left border-collapse accessible-table" 
                        role="table"
@@ -141,11 +141,11 @@
                     <caption class="sr-only">List of student violation cases with date, student details, violation type, status, and actions</caption>
                     <thead>
                         <tr class="bg-gray-50/80 border-b border-gray-200" role="row">
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Date & Time</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Student Details</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Violation Type</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-center whitespace-nowrap" role="columnheader">Current Status</th>
-                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-gray-500 uppercase tracking-wider text-right whitespace-nowrap" role="columnheader">Actions</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Date & Time</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Student Details</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap" role="columnheader">Violation Type</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap" role="columnheader">Current Status</th>
+                            <th scope="col" class="px-6 py-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right whitespace-nowrap" role="columnheader">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
@@ -160,8 +160,8 @@
                                             <i data-lucide="calendar" class="w-4.5 h-4.5"></i>
                                         </div>
                                         <div class="flex flex-col">
-                                            <span class="text-sm font-bold text-gray-900">{{ $case->occurred_at->format('M d, Y') }}</span>
-                                            <span class="text-[11px] font-semibold text-gray-500 mt-0.5">{{ $case->occurred_at->format('h:i A') }}</span>
+                                            <span class="text-sm font-bold text-slate-800">{{ $case->occurred_at->format('M d, Y') }}</span>
+                                            <span class="text-[11px] font-semibold text-slate-500 mt-0.5">{{ $case->occurred_at->format('h:i A') }}</span>
                                         </div>
                                     </div>
                                 </td>
@@ -171,15 +171,15 @@
                                             {{ $case->student?->initials }}
                                         </div>
                                         <div>
-                                            <p class="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ $case->student->full_name ?? 'Anonymous' }}</p>
-                                            <p class="text-[11px] font-medium text-gray-500">{{ $case->student->department ?? 'Unassigned' }}</p>
+                                            <p class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{{ $case->student->full_name ?? 'Anonymous' }}</p>
+                                            <p class="text-[11px] font-medium text-slate-500">{{ $case->student->department ?? 'Unassigned' }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-5">
                                     <div class="flex flex-col max-w-xs">
-                                        <span class="text-sm font-bold text-gray-900 truncate">{{ $case->violation->title ?? 'Undefined Infraction' }}</span>
-                                        <span class="text-[11px] font-medium text-gray-500 mt-0.5 truncate">{{ $case->violation->category ?? 'General' }}</span>
+                                        <span class="text-sm font-bold text-slate-800 truncate">{{ $case->violation->title ?? 'Undefined Infraction' }}</span>
+                                        <span class="text-[11px] font-medium text-slate-500 mt-0.5 truncate">{{ $case->violation->category ?? 'General' }}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-5 whitespace-nowrap text-center">
@@ -208,15 +208,15 @@
                                 <td class="px-6 py-5 whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <a href="{{ route('cases.show', $case) }}" 
-                                           class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-sm transition-all duration-200" title="View Details">
+                                           class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-sm transition-all duration-200" title="View Details">
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                         </a>
                                         <a href="{{ route('cases.edit', $case) }}" 
-                                           class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:shadow-sm transition-all duration-200" title="Edit Case">
+                                           class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:shadow-sm transition-all duration-200" title="Edit Case">
                                             <i data-lucide="edit-3" class="w-4 h-4"></i>
                                         </a>
-                                        <button onclick="confirmDelete('delete-case-{{ $case->id }}', 'disciplinary record')" 
-                                                class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:shadow-sm transition-all duration-200" title="Delete Case">
+                                        <button onclick="confirmDelete('delete-case-{{ $case->id }}', 'violation record')" 
+                                                class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:shadow-sm transition-all duration-200" title="Delete Case">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
                                         <form id="delete-case-{{ $case->id }}" action="{{ route('cases.destroy', $case) }}" method="POST" class="hidden">
@@ -229,12 +229,12 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="px-6 py-16 text-center">
-                                    <div class="flex flex-col items-center justify-center text-gray-400 max-w-sm mx-auto">
-                                        <div class="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 mb-4 shadow-inner">
+                                    <div class="flex flex-col items-center justify-center text-slate-400 max-w-sm mx-auto">
+                                        <div class="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-slate-400 mb-4 shadow-inner">
                                             <i data-lucide="clipboard-list" class="w-7 h-7"></i>
                                         </div>
-                                        <h3 class="text-base font-bold text-gray-900">No Records Found</h3>
-                                        <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">No disciplinary records match your criteria. Adjust your filters or log a new case.</p>
+                                        <h3 class="text-base font-bold text-slate-800">No Records Found</h3>
+                                        <p class="text-sm text-slate-500 mt-1.5 leading-relaxed">No violation records match your criteria. Adjust your filters or log a new case.</p>
                                         <a href="{{ route('cases.create') }}" class="mt-5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm shadow-indigo-600/20 hover:shadow-md transition-all duration-200 flex items-center gap-2">
                                             <i data-lucide="plus" class="w-4 h-4"></i>
                                             Log First Case

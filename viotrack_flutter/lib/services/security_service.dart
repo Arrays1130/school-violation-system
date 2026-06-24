@@ -34,7 +34,7 @@ class SecurityService {
   static Future<bool> canCheckBiometrics() async {
     try {
       return await _auth.canCheckBiometrics;
-    } on PlatformException catch (_) {
+    } catch (_) {
       return false;
     }
   }
@@ -45,7 +45,7 @@ class SecurityService {
       final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
       final bool canAuthenticate = canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
       return canAuthenticate;
-    } on PlatformException catch (_) {
+    } catch (_) {
       return false;
     }
   }
@@ -61,7 +61,7 @@ class SecurityService {
           useErrorDialogs: true,
         ),
       );
-    } on PlatformException catch (e) {
+    } catch (e) {
       print("Auth error: $e");
       return false;
     }

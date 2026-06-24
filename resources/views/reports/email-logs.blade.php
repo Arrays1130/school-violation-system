@@ -1,21 +1,21 @@
-<x-app-layout>
+﻿<x-app-layout>
     <div class="px-8 py-8">
         {{-- Modern Header --}}
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
             <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
             
             <div class="relative flex items-center gap-5">
-                <a href="{{ route('reports.index') }}" class="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all shadow-sm backdrop-blur-md hover:-translate-x-0.5">
-                    <i data-lucide="arrow-left" class="w-5.5 h-5.5"></i>
+                <a href="{{ route('reports.index') }}" class="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all shadow-sm backdrop-blur-md hover:-translate-x-0.5">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 </a>
                 <div>
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-white/80 text-[10px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
                         <i data-lucide="mail" class="w-3.5 h-3.5"></i>
                         System Activity
                     </div>
-                    <h2 class="text-3xl font-bold text-white tracking-tight">Email Logs</h2>
-                    <p class="text-indigo-100/70 text-sm mt-1.5">Monitor and audit outgoing automated notifications and institutional correspondence.</p>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Email Logs</h2>
+                    <p class="text-indigo-100/70 text-xs mt-1.5">Monitor and audit outgoing automated notifications and institutional correspondence.</p>
                 </div>
             </div>
         </div>
@@ -26,7 +26,7 @@
                 <div class="flex-1 w-full">
                     <label class="block text-xs font-semibold text-gray-700 uppercase mb-2">Search Recipient</label>
                     <div class="relative">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
                         <input 
                             type="text" 
                             name="search" 
@@ -39,7 +39,7 @@
                 </div>
                 
                 <div class="w-full md:w-auto flex gap-3">
-                    <button type="submit" class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors shadow-sm">
+                    <button type="submit" class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors shadow-sm">
                         <i data-lucide="search" class="w-4 h-4"></i>
                         Execute Search
                     </button>
@@ -58,26 +58,26 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-50 border-b border-gray-200">
-                            <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date & Time</th>
-                            <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Recipient</th>
-                            <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
-                            <th class="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date & Time</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Recipient</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject</th>
+                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         @forelse($logs as $log)
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4">
-                                    <div class="text-sm font-semibold text-gray-900">{{ $log->created_at->format('M d, Y') }}</div>
-                                    <div class="text-xs text-gray-500 mt-0.5">{{ $log->created_at->format('h:i A') }}</div>
+                                    <div class="text-sm font-semibold text-slate-800">{{ $log->created_at->format('M d, Y') }}</div>
+                                    <div class="text-xs text-slate-500 mt-0.5">{{ $log->created_at->format('h:i A') }}</div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
                                             <i data-lucide="mail" class="w-4 h-4"></i>
                                         </div>
-                                        <div class="text-sm font-medium text-gray-900">
+                                        <div class="text-sm font-medium text-slate-800">
                                             {{ $log->recipient }}
                                         </div>
                                     </div>
@@ -100,7 +100,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-12 text-center text-slate-500">
                                     <div class="flex flex-col items-center justify-center">
                                         <i data-lucide="inbox" class="w-8 h-8 text-gray-300 mb-3"></i>
                                         <p>No email logs found.</p>
@@ -127,23 +127,23 @@
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-200">
                     <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900" id="modal-title">Email Contents</h3>
-                        <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <h3 class="text-lg font-bold text-slate-800" id="modal-title">Email Contents</h3>
+                        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-gray-600 transition-colors">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
                     <div class="px-6 py-6">
                         <div class="space-y-4">
                             <div>
-                                <h4 class="text-xs font-semibold text-gray-500 uppercase mb-1">To</h4>
-                                <p id="modal-recipient" class="text-sm font-medium text-gray-900"></p>
+                                <h4 class="text-xs font-semibold text-slate-500 uppercase mb-1">To</h4>
+                                <p id="modal-recipient" class="text-sm font-medium text-slate-800"></p>
                             </div>
                             <div>
-                                <h4 class="text-xs font-semibold text-gray-500 uppercase mb-1">Subject</h4>
-                                <p id="modal-subject" class="text-sm font-medium text-gray-900"></p>
+                                <h4 class="text-xs font-semibold text-slate-500 uppercase mb-1">Subject</h4>
+                                <p id="modal-subject" class="text-sm font-medium text-slate-800"></p>
                             </div>
                             <div>
-                                <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Message Body</h4>
+                                <h4 class="text-xs font-semibold text-slate-500 uppercase mb-2">Message Body</h4>
                                 <div id="modal-body" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-700 whitespace-pre-wrap font-mono"></div>
                             </div>
                         </div>

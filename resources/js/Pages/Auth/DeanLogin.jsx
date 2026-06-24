@@ -19,26 +19,26 @@ export default function DeanLogin({ status }) {
         <div className="min-h-screen bg-gray-100 flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
             <Head title="Dean Log in" />
 
-            <div className="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-xl overflow-hidden sm:rounded-xl border border-gray-200">
+            <div className="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-slate-900 shadow-xl overflow-hidden sm:rounded-xl border border-gray-200 dark:border-slate-700">
                 <div className="mb-8 text-center flex flex-col items-center">
-                    <div className="bg-gray-50 p-3 rounded-full mb-4 border border-gray-100">
+                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-full mb-4 border border-gray-100 dark:border-slate-800">
                         <img className="w-16 h-16 object-contain" src={window.assetUrl ? `${window.assetUrl}brand_logo.png` : "/brand_logo.png"} alt="School Logo" onError={(e) => { e.target.src='https://ui-avatars.com/api/?name=Dean+Portal&background=4338ca&color=fff&rounded=true'; }} />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-tight">Dean Portal</h1>
-                    <p className="text-sm text-gray-500 mt-1">College Department Access</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">Dean Portal</h1>
+                    <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">College Department Access</p>
                 </div>
 
                 {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
 
                 <form onSubmit={submit}>
                     <div>
-                        <label className="block font-medium text-sm text-gray-700" htmlFor="email">Academic Email</label>
+                        <label className="block font-medium text-sm text-gray-700 dark:text-slate-300" htmlFor="email">Academic Email</label>
                         <input
                             id="email"
                             type="email"
                             name="email"
                             value={data.email}
-                            className="mt-1 block w-full bg-white border border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm px-4 py-2.5 transition-all"
+                            className="mt-1 block w-full bg-white dark:bg-slate-900 border border-gray-300 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm px-4 py-2.5 transition-all"
                             autoComplete="username"
                             isFocused={true}
                             onChange={(e) => setData('email', e.target.value)}
@@ -47,13 +47,13 @@ export default function DeanLogin({ status }) {
                     </div>
 
                     <div className="mt-4">
-                        <label className="block font-medium text-sm text-gray-700" htmlFor="password">Password</label>
+                        <label className="block font-medium text-sm text-gray-700 dark:text-slate-300" htmlFor="password">Password</label>
                         <input
                             id="password"
                             type="password"
                             name="password"
                             value={data.password}
-                            className="mt-1 block w-full bg-white border border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm px-4 py-2.5 transition-all"
+                            className="mt-1 block w-full bg-white dark:bg-slate-900 border border-gray-300 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm px-4 py-2.5 transition-all"
                             autoComplete="current-password"
                             onChange={(e) => setData('password', e.target.value)}
                         />
@@ -67,14 +67,14 @@ export default function DeanLogin({ status }) {
                                 name="remember"
                                 checked={data.remember}
                                 onChange={(e) => setData('remember', e.target.checked)}
-                                className="rounded bg-white border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                                className="rounded bg-white dark:bg-slate-900 border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
                             />
-                            <span className="ml-2 text-sm text-gray-600">Stay signed in</span>
+                            <span className="ml-2 text-sm text-gray-600 dark:text-slate-400">Stay signed in</span>
                         </label>
 
                         <Link
                             href={route('password.request')}
-                            className="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="underline text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             Forgot password?
                         </Link>
