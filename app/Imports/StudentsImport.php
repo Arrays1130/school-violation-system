@@ -6,10 +6,12 @@ use App\Models\Student;
 use App\Support\DepartmentResolver;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-class StudentsImport implements ToCollection, WithHeadingRow
+
+class StudentsImport implements ToCollection, WithHeadingRow, WithChunkReading
 {
     /**
     * @param \Illuminate\Support\Collection $collection
@@ -98,5 +100,10 @@ class StudentsImport implements ToCollection, WithHeadingRow
 
         // Manually clear cache
         \App\Models\StudentCase::clearDashboardCache();
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
     }
 }
