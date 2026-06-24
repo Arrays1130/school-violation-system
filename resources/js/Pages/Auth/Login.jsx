@@ -20,7 +20,7 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <div className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center relative" 
-             style={{ backgroundImage: "url('/school violation system/public/images/bg_user.jpg')" }}>
+             style={{ backgroundImage: `url('${window.assetUrl ? window.assetUrl + "images/bg_user.jpg" : "/images/bg_user.jpg"}')` }}>
             
             <Head title="Log in" />
 
@@ -30,7 +30,7 @@ export default function Login({ status, canResetPassword }) {
             <div className="z-10 w-full sm:max-w-md px-8 py-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/40">
                 <div className="mb-6 flex flex-col items-center">
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-2 border-white shadow-sm">
-                        <img src="/school violation system/public/brand_logo.png" alt="Logo" className="w-16 h-16 object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                        <img src={window.assetUrl ? window.assetUrl + "brand_logo.png" : "/brand_logo.png"} alt="Logo" className="w-16 h-16 object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
                         <span className="hidden text-xl font-bold text-blue-600">Logo</span>
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
