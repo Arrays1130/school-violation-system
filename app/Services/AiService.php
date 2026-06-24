@@ -80,10 +80,10 @@ class AiService
         $currentMessage = $message;
 
         for ($i = 0; $i < 3; $i++) {
-            $response = $this->callOllamaApi($currentMessage, $relevantHandbooks, $conversationHistory, false, null, $institutionalContext);
+            $response = $this->callGeminiApi($currentMessage, $relevantHandbooks, $conversationHistory, false, null, $institutionalContext);
             
             if (str_starts_with($response, 'Error:')) {
-                Log::warning("Ollama API failed or unavailable. Falling back to local handbook search. Details: " . $response);
+                Log::warning("Gemini API failed or unavailable. Falling back to local handbook search. Details: " . $response);
                 break; // Fall back to local database handbook search
             }
 
@@ -447,7 +447,7 @@ class AiService
             // ── Phase 1+2 combined: stream directly from Ollama ──
             // This avoids a slow non-stream call that can timeout (60s+).
             // Auto-tool data is already injected into $currentMessage above.
-            $this->callOllamaApi(
+            $this->callGeminiApi(
                 $currentMessage, $relevantHandbooks, $history, true, $onChunk, $institutionalContext
             );
             return;
@@ -469,19 +469,20 @@ class AiService
             }
         } else {
             $msg = $this->respondInTagalog
-                ? "Paumanhin, hindi pa available ang AI ngayon. Pakisuri ang iyong Ollama server at subukan muli."
+                ? "Paumanhin, hindi pa available ang AI ngayon. Pakisuri ang iyong Gemini API at subukan muli."
                 : "The AI core is temporarily unavailable. Please ensure Ollama is running and try again.";
             $onChunk($msg);
         }
     }
 
-    private function callOllamaApi(string $message, array $relevantHandbooks, array $history = [], bool $stream = false, ?\Closure $onChunk = null, array $institutionalContext = []): string
+    private function callGeminiApi(string $message, array $relevantHandbooks, array $history = [], bool $stream = false, ?\Closure $onChunk = null, array $institutionalContext = []): string
     {
         try {
-            $model   = config('ai.model', 'llama3.1:latest');
-            $baseUrl = config('ai.api_url', 'http://127.0.0.1:11434');
-            $connectTimeout = config('ai.connect_timeout', 5);
-            $readTimeout    = config('ai.timeout', 120);
+            $model   = config('ai.model', 'gemini-2.5-flash');
+            $apiKey  = config('ai.api_key');
+            if (empty($apiKey)) {
+                return "Error: Gemini API key is missing. Please set GEMINI_API_KEY in .env.";
+            }
 
             $today        = $institutionalContext['current_date'] ?? now()->format('l, F j, Y');
             $school       = $institutionalContext['school_name'] ?? 'I-Link CST';
@@ -490,7 +491,6 @@ class AiService
                 ? "LANGUAGE: The user's query is in Filipino/Tagalog. Respond entirely in Filipino/Tagalog, but keep technical terms (e.g., violation codes, department names) in their original form."
                 : "LANGUAGE: Respond in clear, professional English.";
 
-            // Build handbook context string
             if (empty($relevantHandbooks)) {
                 $contextString = "No specific handbook sections found for this query.";
             } else {
@@ -500,7 +500,6 @@ class AiService
                 );
                 $contextString = implode("\n\n", $contextData);
             }
-
 
             $systemPrompt = <<<PROMPT
 You are the **Senior OSA Guidance AI** of {$school} — an elite, data-driven institutional intelligence system acting as a {$role}.
@@ -548,94 +547,53 @@ Available tools:
 - End complex answers with a short "**📋 Summary**" section
 PROMPT;
 
-            // Messages array construction
-            $messages = [['role' => 'system', 'content' => $systemPrompt]];
-            foreach ($history as $h) $messages[] = $h;
-            $messages[] = ['role' => 'user', 'content' => $message];
-
-            if ($stream) {
-                $client = new \GuzzleHttp\Client([
-                    'connect_timeout' => $connectTimeout,
-                    'timeout'         => 300,
-                ]);
-                $response = $client->post("{$baseUrl}/api/chat", [
-                    'json' => [
-                        'model'    => $model,
-                        'messages' => $messages,
-                        'stream'   => true,
-                        'options'  => [
-                            'num_predict' => 512,
-                            'temperature' => 0.5,
-                        ],
-                        'keep_alive' => '10m',
-                    ],
-                    'stream' => true,
-                ]);
-
-                $body         = $response->getBody();
-                $fullResponse = '';
-                $inThinkBlock = false;
-
-                while (!$body->eof()) {
-                    $line = $this->readLine($body);
-                    if (empty($line)) continue;
-
-                    $data  = json_decode($line, true);
-                    $chunk = $data['message']['content'] ?? '';
-
-                    // Strip deepseek-r1 <think>...</think> reasoning blocks
-                    $chunk = $this->stripThinkingBlocks($chunk, $inThinkBlock);
-
-                    $fullResponse .= $chunk;
-                    if ($onChunk && $chunk !== '') $onChunk($chunk);
-                }
-                return $fullResponse;
+            $contents = [];
+            foreach ($history as $h) {
+                $contents[] = [
+                    'role' => $h['role'] === 'assistant' ? 'model' : 'user',
+                    'parts' => [['text' => $h['content']]]
+                ];
             }
+            $contents[] = [
+                'role' => 'user',
+                'parts' => [['text' => $message]]
+            ];
 
-            // Non-stream call
-            $response = Http::connectTimeout($connectTimeout)
-                ->timeout($readTimeout)
-                ->post("{$baseUrl}/api/chat", [
-                    'model'    => $model,
-                    'messages' => $messages,
-                    'stream'   => false,
-                ]);
+            $payload = [
+                'systemInstruction' => [
+                    'parts' => [['text' => $systemPrompt]]
+                ],
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.5,
+                    'maxOutputTokens' => 1024,
+                ]
+            ];
+
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            
+            // For now, even if $stream is requested, we'll just do a standard call for simplicity,
+            // as true SSE streaming with Gemini in PHP is more complex. We simulate it by calling the callback once.
+            
+            $response = Http::timeout(30)->post($url, $payload);
 
             if ($response->successful()) {
-                $data    = $response->json();
-                $content = $data['message']['content'] ?? "Sorry, I couldn't generate a response.";
-                // Strip any thinking blocks from non-stream response too
-                $dummy = false;
-                return $this->stripThinkingBlocks($content, $dummy);
-            }
-
-            // Try fallback model if primary fails
-            $fallback = config('ai.fallback_model', 'llama3.1:latest');
-            if ($fallback && $fallback !== $model) {
-                Log::warning("Primary model '{$model}' failed. Trying fallback '{$fallback}'.");
-                $response = Http::connectTimeout($connectTimeout)
-                    ->timeout($readTimeout)
-                    ->post("{$baseUrl}/api/chat", [
-                        'model'    => $fallback,
-                        'messages' => $messages,
-                        'stream'   => false,
-                    ]);
-                if ($response->successful()) {
-                    $data    = $response->json();
-                    $content = $data['message']['content'] ?? "Sorry, I couldn't generate a response.";
-                    $dummy   = false;
-                    return $this->stripThinkingBlocks($content, $dummy);
+                $data = $response->json();
+                $content = $data['candidates'][0]['content']['parts'][0]['text'] ?? "Sorry, I couldn't generate a response.";
+                
+                if ($stream && $onChunk) {
+                    $onChunk($content);
                 }
+                return $content;
             }
 
-            return 'Error: Ollama API Request failed (Status: ' . ($response->status() ?? 'unknown') . ').';
+            return 'Error: Gemini API Request failed (Status: ' . ($response->status() ?? 'unknown') . '). Response: ' . $response->body();
 
         } catch (\Exception $e) {
-            Log::error('Ollama Error: ' . $e->getMessage());
+            Log::error('Gemini Error: ' . $e->getMessage());
             return 'Error: ' . $e->getMessage();
         }
     }
-
     /**
      * Strip <think>...</think> blocks emitted by deepseek-r1 and similar reasoning models.
      * Handles streaming (partial blocks across chunks) via the $inBlock reference.
