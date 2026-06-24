@@ -23,15 +23,13 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/seed-db-now', function () {
+Route::get('/wipe-students-now', function () {
     try {
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        return 'SUCCESS! Database seeded! You can now login with admin@ilinkCST.edu and password.';
+        \App\Models\Student::withTrashed()->forceDelete();
+        \App\Models\StudentCase::clearDashboardCache();
+        return 'SUCCESS! All students have been completely deleted from the database.';
     } catch (\Throwable $e) {
-        if (str_contains($e->getMessage(), 'Duplicate entry')) {
-            return 'Database is already seeded! You can login now.';
-        }
-        return 'Error: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine();
+        return 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
     }
 });
 
