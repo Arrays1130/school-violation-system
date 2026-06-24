@@ -29,6 +29,8 @@ class StudentsImport implements ToCollection, WithHeadingRow
         $hashedPassword = Hash::make($defaultPassword);
 
         try {
+            $studentsToInsert = [];
+            
             foreach ($collection as $row) {
                 $rowArr = $row->toArray();
                 
@@ -56,21 +58,11 @@ class StudentsImport implements ToCollection, WithHeadingRow
      
                 // Skip if required fields are missing
                 if (empty($fullName) || empty($email)) {
-                    Log::warning('Skipping row due to missing required fields:', ['row' => $rowArr]);
                     continue;
                 }
      
-                // Check if student already exists by email
-                $student = Student::where('email', $email)->first();
-     
-                if ($student) {
-                    // Log::info('Skipping duplicate student:', ['email' => $email]);
-                    continue;
-                }
-     
-                // Log::info('Creating new student:', ['email' => $email]);
-     
-                Student::create([
+                $studentsToInsert[] = [
+                    'id'            => (string) Str::uuid(),
                     'full_name'     => $fullName,
                     'section'       => $section,
                     'year_level'    => $yearLevel,
@@ -80,9 +72,23 @@ class StudentsImport implements ToCollection, WithHeadingRow
                     'guardian_email'=> $rowArr['guardian_email'] ?? null,
                     'guardian_phone'=> $rowArr['guardian_phone'] ?? null,
                     'password'      => $hashedPassword,
-                    'password_changed_at' => null, // force reset if student auth is enabled
-                ]);
+                    'password_changed_at' => null,
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ];
+                
+                // Insert in chunks of 500 to avoid memory issues
+                if (count($studentsToInsert) >= 500) {
+                    Student::upsert($studentsToInsert, ['email'], ['full_name', 'department', 'year_level', 'section', 'updated_at']);
+                    $studentsToInsert = [];
+                }
             }
+            
+            // Insert remaining
+            if (count($studentsToInsert) > 0) {
+                Student::upsert($studentsToInsert, ['email'], ['full_name', 'department', 'year_level', 'section', 'updated_at']);
+            }
+            
         } finally {
             // Restore the event dispatcher
             if ($dispatcher) {
