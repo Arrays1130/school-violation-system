@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <div class="container mx-auto px-4 py-6">
         {{-- Breadcrumbs --}}
         <div class="flex items-center gap-2 text-sm text-slate-500 mb-6">
@@ -57,8 +57,8 @@
                             <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">Instructions</h3>
                             <ul class="list-disc list-inside text-sm text-blue-700 dark:text-blue-400 space-y-1">
                                 <li>The file must have a header row.</li>
-                                <li>Required columns: <strong>full_name, email, department, year_level, section</strong></li>
-                                <li>Optional columns: <strong>guardian_name, guardian_email, guardian_phone</strong></li>
+                                <li>Required columns: <strong>full_name, email, department</strong></li>
+                                <li>Optional columns: <strong>year_level, section, guardian_name, guardian_email, guardian_phone</strong></li>
                             </ul>
                         </div>
 
