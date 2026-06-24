@@ -156,16 +156,16 @@ class CaseAttachmentController extends Controller
 
     public function download(CaseAttachment $attachment)
     {
-        if (!Storage::disk(config('filesystems.default', 'cloudinary'))->exists($attachment->file_path)) {
+        if (!Storage::disk('local')->exists($attachment->file_path)) {
             return back()->with('error', 'File not found on server.');
         }
 
-        return Storage::disk(config('filesystems.default', 'cloudinary'))->download($attachment->file_path, $attachment->file_name);
+        return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
     }
 
     public function destroy(CaseAttachment $attachment)
     {
-        Storage::disk(config('filesystems.default', 'cloudinary'))->delete($attachment->file_path);
+        Storage::disk('local')->delete($attachment->file_path);
         $attachment->delete();
 
         return back()->with('success', 'Document deleted successfully.');
