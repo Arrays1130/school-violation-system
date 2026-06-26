@@ -413,15 +413,15 @@ class StudentController extends Controller
                     return null;
                 };
 
-                $firstName = $getVal(['firstname_required', 'firstname']);
-                $lastName = $getVal(['lastname_required', 'lastname']);
+                $firstName = $getVal(['firstnamerequired', 'firstname']);
+                $lastName = $getVal(['lastnamerequired', 'lastname']);
                 $fullName = trim($firstName . ' ' . $lastName);
 
                 if (empty($fullName)) {
                     $fullName = $getVal(['fullname', 'name']);
                 }
 
-                $email = $getVal(['emailaddress_required', 'emailaddress', 'email']);
+                $email = $getVal(['emailaddressrequired', 'emailaddress', 'email']);
                 $department = $getVal(['department']);
                 
                 if ($department) {
