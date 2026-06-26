@@ -6,13 +6,23 @@ use App\Models\Student;
 use App\Support\DepartmentResolver;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithLimit;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class StudentsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class StudentsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, WithLimit
 {
+    /**
+     * @return int
+     */
+    public function limit(): int
+    {
+        return 5000; // Hard limit to prevent 502 Bad Gateway from 1 Million Phantom Rows
+    }
+
     /**
     * @param \Illuminate\Support\Collection $collection
     */
