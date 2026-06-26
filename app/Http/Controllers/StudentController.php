@@ -339,17 +339,133 @@ class StudentController extends Controller
         $this->authorize('import', \App\Models\Student::class);
 
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv',
+            'file' => 'required|mimes:xlsx,xls,csv,txt',
         ]);
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
 
         try {
             \Illuminate\Support\Facades\Log::info('Starting import process...');
-            Excel::import(new StudentsImport, $request->file('file'));
+
+            if (strtolower($extension) === 'csv' || strtolower($extension) === 'txt') {
+                $this->importCsvManually($file->getRealPath());
+            } else {
+                Excel::import(new StudentsImport, $file);
+            }
+
             return redirect()->route('students.index')->with('success', 'Students imported successfully.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Student Import Failure: ' . $e->getMessage());
             return back()->with('error', 'Error importing students: ' . $e->getMessage());
         }
+    }
+
+    private function importCsvManually($path)
+    {
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            throw new \Exception('Cannot open CSV file.');
+        }
+
+        // Disable model events to prevent slow broadcast events/timeouts per row insertion
+        $dispatcher = \App\Models\Student::getEventDispatcher();
+        \App\Models\Student::unsetEventDispatcher();
+
+        $defaultPassword = config('school.student_default_password') ?: 'password123';
+        $hashedPassword = \Illuminate\Support\Facades\Hash::make($defaultPassword);
+
+        // Read BOM if present
+        $bom = fread($handle, 3);
+        if ($bom !== "\xEF\xBB\xBF") {
+            rewind($handle); // not BOM, rewind
+        }
+
+        $headers = fgetcsv($handle);
+        if ($headers === false) {
+            fclose($handle);
+            return;
+        }
+
+        // Clean headers to match Laravel Excel's behavior
+        $headerMap = [];
+        foreach ($headers as $index => $header) {
+            // Remove special characters except alphanumeric, convert to lowercase, spaces to underscore
+            $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', str_replace(' ', '_', trim($header))));
+            $headerMap[$cleanHeader] = $index;
+        }
+
+        $studentsToInsert = [];
+
+        try {
+            while (($rowArr = fgetcsv($handle)) !== false) {
+                // Skip empty rows
+                if (empty(array_filter($rowArr))) continue;
+
+                // Helper to get value
+                $getVal = function($keys) use ($rowArr, $headerMap) {
+                    if (!is_array($keys)) $keys = [$keys];
+                    foreach ($keys as $key) {
+                        if (isset($headerMap[$key]) && isset($rowArr[$headerMap[$key]])) {
+                            return trim($rowArr[$headerMap[$key]]);
+                        }
+                    }
+                    return null;
+                };
+
+                $firstName = $getVal(['firstname_required', 'firstname']);
+                $lastName = $getVal(['lastname_required', 'lastname']);
+                $fullName = trim($firstName . ' ' . $lastName);
+
+                if (empty($fullName)) {
+                    $fullName = $getVal(['fullname', 'name']);
+                }
+
+                $email = $getVal(['emailaddress_required', 'emailaddress', 'email']);
+                $department = $getVal(['department']);
+                
+                if ($department) {
+                    $department = \App\Support\DepartmentResolver::shortcutToLong($department) ?? $department;
+                }
+
+                $yearLevel = $getVal(['yearlevel', 'year']);
+                $section = $getVal(['section']);
+
+                if (empty($fullName) || empty($email)) continue;
+
+                $studentsToInsert[] = [
+                    'id'            => (string) \Illuminate\Support\Str::uuid(),
+                    'full_name'     => $fullName,
+                    'section'       => $section,
+                    'year_level'    => $yearLevel,
+                    'department'    => $department,
+                    'email'         => $email,
+                    'guardian_name' => $getVal(['guardianname']),
+                    'guardian_email'=> $getVal(['guardianemail']),
+                    'guardian_phone'=> $getVal(['guardianphone']),
+                    'password'      => $hashedPassword,
+                    'password_changed_at' => null,
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ];
+
+                if (count($studentsToInsert) >= 500) {
+                    \App\Models\Student::upsert($studentsToInsert, ['email'], ['full_name', 'department', 'year_level', 'section', 'updated_at']);
+                    $studentsToInsert = [];
+                }
+            }
+
+            if (count($studentsToInsert) > 0) {
+                \App\Models\Student::upsert($studentsToInsert, ['email'], ['full_name', 'department', 'year_level', 'section', 'updated_at']);
+            }
+        } finally {
+            fclose($handle);
+            if ($dispatcher) {
+                \App\Models\Student::setEventDispatcher($dispatcher);
+            }
+        }
+
+        \App\Models\StudentCase::clearDashboardCache();
     }
 
     /**
