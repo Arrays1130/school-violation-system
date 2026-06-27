@@ -46,5 +46,6 @@ class AppServiceProvider extends ServiceProvider
             \Livewire\Livewire::setScriptRoute(function ($handle) {
                 return \Illuminate\Support\Facades\Route::get('/school%20violation%20system/public/livewire/livewire.js', $handle);
             });
+        }
     }
 }
