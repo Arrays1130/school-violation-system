@@ -8,10 +8,11 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
 
 class NewViolationCaseNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
-    use Queueable;
+    use Queueable, SerializesModels;
 
     public $studentCase;
 
