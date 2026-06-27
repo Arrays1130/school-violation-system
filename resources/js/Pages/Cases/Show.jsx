@@ -5,7 +5,7 @@ import {
     ArrowLeft, FolderOpen, Edit3, Printer, ArrowUpRight, 
     Check, FileWarning, Calendar, UserCheck, Gavel, 
     ChevronRight, CalendarX, CalendarPlus, CheckCircle2, 
-    ExternalLink 
+    ExternalLink, Trash2 
 } from 'lucide-react';
 
 export default function Show({ auth, caseRecord, offenseHistory, offenseSummary }) {
@@ -25,6 +25,13 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
         e.preventDefault();
         if (confirm('Close this case? This action marks it as resolved.')) {
             router.post(route('cases.close', caseRecord.id));
+        }
+    };
+
+    const handleDelete = (e) => {
+        e.preventDefault();
+        if (confirm('Are you sure you want to move this violation record to the trash?')) {
+            router.delete(route('cases.destroy', caseRecord.id));
         }
     };
 
@@ -252,6 +259,14 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
                                     <button onClick={handleClose} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-100 hover:-translate-y-0.5 transition-all duration-200">
                                         <CheckCircle2 className="w-4.5 h-4.5" />
                                         Close Case
+                                    </button>
+                                </div>
+                                
+                                {/* Destructive Actions - Admin Only usually, but let's place it below */}
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <button onClick={handleDelete} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 rounded-xl text-sm font-bold shadow-sm hover:bg-rose-100 dark:hover:bg-rose-900/30 hover:-translate-y-0.5 transition-all duration-200">
+                                        <Trash2 className="w-4.5 h-4.5" />
+                                        Move to Trash Bin
                                     </button>
                                 </div>
                             </div>
