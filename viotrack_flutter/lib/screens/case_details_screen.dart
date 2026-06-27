@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'student_profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -33,9 +33,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     _fetchDetails();
   }
 
-  Future<void> _fetchDetails() async {
+  Future<void> _fetchDetails({bool force = false}) async {
     try {
-      final result = await _apiService.getCaseDetails(widget.caseId);
+      final result = await _apiService.getCaseDetails(widget.caseId, forcedRefresh: force);
       if (mounted) {
         if (mounted) setState(() {
           _case = result;
@@ -98,7 +98,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     final statusColor = _getStatusColor(status);
 
     return RefreshIndicator(
-      onRefresh: _fetchDetails,
+      onRefresh: () => _fetchDetails(force: true),
       color: AppTheme.accentCyan,
       child: CustomScrollView(
         slivers: [
@@ -552,11 +552,11 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(hearing['title']?.toString() ?? 'Scheduled Hearing', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('Scheduled Hearing', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
                 const SizedBox(height: 4),
-                Text(hearing['description']?.toString() ?? 'No agenda details provided.', style: GoogleFonts.outfit(fontSize: 13, color: Colors.white.withOpacity(0.8))),
+                Text(hearing['notes']?.toString() ?? 'No agenda details provided.', style: GoogleFonts.outfit(fontSize: 13, color: Colors.white.withOpacity(0.8))),
                 const SizedBox(height: 8),
-                Text(_formatDateTime(hearing['schedule']?.toString() ?? ''), style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(_formatDateTime(hearing['scheduled_at']?.toString() ?? ''), style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
               ],
             ),
           ),

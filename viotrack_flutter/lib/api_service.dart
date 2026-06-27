@@ -126,9 +126,9 @@ class ApiService {
     }
   }
 
-  Future<dynamic> getCaseDetails(int id) async {
+  Future<dynamic> getCaseDetails(int id, {bool forcedRefresh = false}) async {
     final String cacheKey = 'case_$id';
-    if (_isCacheValid(cacheKey)) {
+    if (!forcedRefresh && _isCacheValid(cacheKey)) {
       return _cache[cacheKey];
     }
 
