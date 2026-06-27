@@ -5,10 +5,11 @@ namespace App\Notifications;
 use App\Models\StudentCase;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class NewViolationCaseNotification extends Notification implements ShouldBroadcast
+class NewViolationCaseNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable;
 

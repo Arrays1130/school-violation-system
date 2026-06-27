@@ -8,7 +8,9 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\StudentCase;
 
-class DeanViolationNotification extends Notification
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class DeanViolationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -17,9 +19,13 @@ class DeanViolationNotification extends Notification
         //
     }
 
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
-        return ['mail', 'database'];
+        $channels = ['database'];
+        if (env('ENABLE_EMAILS', false)) {
+            $channels[] = 'mail';
+        }
+        return $channels;
     }
 
     public function toMail(object $notifiable): MailMessage
