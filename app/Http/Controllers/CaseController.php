@@ -239,26 +239,28 @@ class CaseController extends Controller
                 ]);
 
                 // Notify for the escalated case (Student)
-                if ($escalatedCase->student->email) {
-                    try {
-                        $escalatedCase->student->notify(new \App\Notifications\ViolationRecorded($escalatedCase));
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error("Failed to send escalation notification (Student): " . $e->getMessage());
+                dispatch(function () use ($escalatedCase) {
+                    if ($escalatedCase->student->email) {
+                        try {
+                            $escalatedCase->student->notify(new \App\Notifications\ViolationRecorded($escalatedCase));
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Failed to send escalation notification (Student): " . $e->getMessage());
+                        }
                     }
-                }
 
-                // Notify Deans for the escalated case
-                try {
-                    $deans = \App\Models\User::where('role', 'dean')
-                        ->where('department', $escalatedCase->student->department_shortcut)
-                        ->get();
-                    
-                    foreach ($deans as $dean) {
-                        $dean->notify(new \App\Notifications\DeanViolationNotification($escalatedCase));
+                    // Notify Deans for the escalated case
+                    try {
+                        $deans = \App\Models\User::where('role', 'dean')
+                            ->where('department', $escalatedCase->student->department_shortcut)
+                            ->get();
+                        
+                        foreach ($deans as $dean) {
+                            $dean->notify(new \App\Notifications\DeanViolationNotification($escalatedCase));
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to notify Deans about escalation: " . $e->getMessage());
                     }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify Deans about escalation: " . $e->getMessage());
-                }
+                })->afterResponse();
 
                 // Redirect to the new escalated case with a special message
                 return redirect()->route('cases.show', $escalatedCase)
@@ -267,38 +269,41 @@ class CaseController extends Controller
         }
         // --- END ESCALATION LOGIC ---
 
-        // Send Notification to Student (Email + In-app)
-        if ($case->student->email) {
-            try {
-                $case->student->notify(new \App\Notifications\ViolationRecorded($case));
-            } catch (\Exception $e) {
-                // Log but don't crash
-                \Illuminate\Support\Facades\Log::error("Failed to send notification: " . $e->getMessage());
+        // Send Notifications after response to prevent UI freezing
+        dispatch(function () use ($case) {
+            // Send Notification to Student (Email + In-app)
+            if ($case->student->email) {
+                try {
+                    $case->student->notify(new \App\Notifications\ViolationRecorded($case));
+                } catch (\Exception $e) {
+                    // Log but don't crash
+                    \Illuminate\Support\Facades\Log::error("Failed to send notification: " . $e->getMessage());
+                }
             }
-        }
 
-        // Also send to guardian email if available
-        if ($case->student->guardian_email) {
-            try {
-                \Illuminate\Support\Facades\Notification::route('mail', $case->student->guardian_email)
-                    ->notify(new \App\Notifications\ViolationRecorded($case));
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to send guardian notification: " . $e->getMessage());
+            // Also send to guardian email if available
+            if ($case->student->guardian_email) {
+                try {
+                    \Illuminate\Support\Facades\Notification::route('mail', $case->student->guardian_email)
+                        ->notify(new \App\Notifications\ViolationRecorded($case));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send guardian notification: " . $e->getMessage());
+                }
             }
-        }
 
-        // Send to Deans of the department
-        try {
-            $deans = \App\Models\User::where('role', 'dean')
-                ->where('department', $case->student->department_shortcut)
-                ->get();
-            
-            foreach ($deans as $dean) {
-                $dean->notify(new \App\Notifications\DeanViolationNotification($case));
+            // Send to Deans of the department
+            try {
+                $deans = \App\Models\User::where('role', 'dean')
+                    ->where('department', $case->student->department_shortcut)
+                    ->get();
+                
+                foreach ($deans as $dean) {
+                    $dean->notify(new \App\Notifications\DeanViolationNotification($case));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to notify Deans: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to notify Deans: " . $e->getMessage());
-        }
+        })->afterResponse();
 
         session()->flash('success', 'Violation recorded successfully.');
 
@@ -414,17 +419,19 @@ class CaseController extends Controller
             'closed_by' => auth()->id(),
         ]);
 
-        // Trigger N8n Webhook for Case Closed Asynchronously
-        \App\Jobs\TriggerN8nWebhook::dispatch('case_closed', [
-            'case_id' => $case->id,
-            'student_db_id' => $case->student->id,
-            'student_name' => $case->student->full_name,
-            'student_email' => $case->student->email,
-            'guardian_contact' => $case->student->guardian_phone,
-            'violation_title' => $case->violation->title,
-            'sanction' => $case->sanction,
-            'closed_at' => $case->closed_at->toIso8601String(),
-        ]);
+        // Trigger N8n Webhook for Case Closed Asynchronously after response
+        dispatch(function () use ($case) {
+            \App\Jobs\TriggerN8nWebhook::dispatchSync('case_closed', [
+                'case_id' => $case->id,
+                'student_db_id' => $case->student->id,
+                'student_name' => $case->student->full_name,
+                'student_email' => $case->student->email,
+                'guardian_contact' => $case->student->guardian_phone,
+                'violation_title' => $case->violation->title,
+                'sanction' => $case->sanction,
+                'closed_at' => $case->closed_at->toIso8601String(),
+            ]);
+        })->afterResponse();
 
         return back()->with('success', 'Case has been officially closed.');
     }

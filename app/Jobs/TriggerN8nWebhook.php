@@ -49,7 +49,7 @@ class TriggerN8nWebhook implements ShouldQueue
             }
             
             if ($smsUrl && $phone) {
-                 \Illuminate\Support\Facades\Http::post($smsUrl, [
+                 \Illuminate\Support\Facades\Http::timeout(5)->post($smsUrl, [
                      'username' => $smsUser,
                      'password' => $smsPass,
                      'number'   => $phone,
