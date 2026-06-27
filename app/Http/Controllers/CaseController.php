@@ -124,21 +124,23 @@ class CaseController extends Controller
         // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
         $guardianPhone = $case->student->guardian_phone;
         
-
         if ($guardianPhone) {
-            try {
-                $smsMessage = "SVS Notice: Your student {$case->student->full_name} has a recorded violation: {$violation->title}. Sanction: {$data['sanction']}. Please contact the school.";
-                
-                \Illuminate\Support\Facades\Http::withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
-                    ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
-                        'textMessage' => [
-                            'text' => $smsMessage
-                        ],
-                        'phoneNumbers' => [$guardianPhone]
-                    ]);
-            } catch (\Exception $e) {
-                // Ignore errors (Halimbawa: naka-off ang WiFi ng phone para hindi mag-crash ang system)
-            }
+            dispatch(function () use ($case, $violation, $data, $guardianPhone) {
+                try {
+                    $smsMessage = "SVS Notice: Your student {$case->student->full_name} has a recorded violation: {$violation->title}. Sanction: {$data['sanction']}. Please contact the school.";
+                    
+                    \Illuminate\Support\Facades\Http::timeout(5)
+                        ->withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
+                        ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                            'textMessage' => [
+                                'text' => $smsMessage
+                            ],
+                            'phoneNumbers' => [$guardianPhone]
+                        ]);
+                } catch (\Exception $e) {
+                    // Ignore errors (Halimbawa: naka-off ang WiFi ng phone para hindi mag-crash ang system)
+                }
+            })->afterResponse();
         }
         // ------------------------------------------------
         
