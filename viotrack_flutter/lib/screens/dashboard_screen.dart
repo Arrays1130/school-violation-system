@@ -48,7 +48,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     
     if (cachedViolations != null || cachedStats != null) {
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           if (cachedViolations != null) {
             if (cachedViolations is Map) {
               _violations = (cachedViolations['data'] ?? []) as List<dynamic>;
@@ -77,7 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _refreshData({bool showLoading = true}) async {
     if (showLoading && mounted) {
-      setState(() => _isLoading = true);
+      if (mounted) setState(() => _isLoading = true);
     }
     try {
       final api = ref.read(apiServiceProvider);
@@ -87,7 +87,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           await api.getStats(forcedRefresh: true);
       final int uCount = await api.getUnreadCount();
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           if (vResult is Map) {
             _violations = (vResult['data'] ?? []) as List<dynamic>;
           } else if (vResult is List) {
@@ -102,7 +102,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', ''), style: GoogleFonts.outfit()),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -122,7 +129,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         color: AppTheme.accentCyan,
         child: CustomScrollView(
           slivers: [
-            // ── Hero App Bar ──
+            // â”€â”€ Hero App Bar â”€â”€
             SliverAppBar(
               expandedHeight: 220,
               floating: false,
@@ -190,7 +197,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
 
-            // ── Search Bar ──
+            // â”€â”€ Search Bar â”€â”€
             SliverToBoxAdapter(
               child: Padding(
                 padding:
@@ -249,7 +256,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1),
             ),
 
-            // ── Stat Cards ──
+            // â”€â”€ Stat Cards â”€â”€
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -288,7 +295,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05),
             ),
 
-            // ── Upcoming Alerts ──
+            // â”€â”€ Upcoming Alerts â”€â”€
             if (_alerts.isNotEmpty) ...[
               SliverToBoxAdapter(
                   child: _buildSectionHeader(
@@ -309,7 +316,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
 
-            // ── Top Offenses ──
+            // â”€â”€ Top Offenses â”€â”€
             if (_topOffenses.isNotEmpty) ...[
               SliverToBoxAdapter(
                   child: _buildSectionHeader(
@@ -327,7 +334,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
 
-            // ── Recent Records ──
+            // â”€â”€ Recent Records â”€â”€
             SliverToBoxAdapter(
               child: _buildSectionHeader(
                 "Recent Records",
@@ -376,7 +383,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ── Notification Bell ───────────────────────────────────────────────────
+  // â”€â”€ Notification Bell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildNotificationBell() {
     return Stack(
@@ -420,7 +427,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ── Section Header ─────────────────────────────────────────────────────
+  // â”€â”€ Section Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildSectionHeader(String title, IconData icon,
       {VoidCallback? onTap, String? actionLabel}) {
@@ -482,7 +489,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ── Stat Card ──────────────────────────────────────────────────────────
+  // â”€â”€ Stat Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildStatCard(String label, String count, IconData icon,
       LinearGradient gradient, VoidCallback onTap) {
@@ -549,7 +556,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ── Alert Card ─────────────────────────────────────────────────────────
+  // â”€â”€ Alert Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildAlertCard(dynamic alert) {
     return Container(
@@ -610,7 +617,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ── Top Offense Item ───────────────────────────────────────────────────
+  // â”€â”€ Top Offense Item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildTopOffenseItem(dynamic offense, int index) {
     final colors = [
@@ -683,7 +690,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .slideX(begin: 0.02);
   }
 
-  // ── Violation Card ─────────────────────────────────────────────────────
+  // â”€â”€ Violation Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildViolationCard(dynamic violation, int index) {
     final status = violation['status'] ?? 'Pending';

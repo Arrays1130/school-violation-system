@@ -13,9 +13,9 @@ $LanIp = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
 } | Select-Object -First 1).IPAddress
 
 if ($Phone -and $LanIp) {
-    $apiUrl = "http://$LanIp/school%20violation%20system/public/api"
+    $apiUrl = "https://school-violation-system.onrender.com/api"
 } else {
-    $apiUrl = "http://127.0.0.1/school%20violation%20system/public/api"
+    $apiUrl = "https://school-violation-system.onrender.com/api"
 }
 
 Write-Host "API URL: $apiUrl" -ForegroundColor Cyan

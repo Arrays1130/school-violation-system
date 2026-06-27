@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,7 +33,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Future<void> _loadInitialData() async {
     final cachedData = await _apiService.getPersistentCache('notifications');
     if (cachedData != null && mounted) {
-      setState(() {
+      if (mounted) setState(() {
         if (cachedData is Map && cachedData.containsKey('data')) {
           _notifications = cachedData['data'] as List<dynamic>;
         } else if (cachedData is List) {
@@ -53,12 +53,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _fetchNotifications({bool showLoading = true}) async {
     if (showLoading && mounted) {
-      setState(() => _isLoading = true);
+      if (mounted) setState(() => _isLoading = true);
     }
     try {
       final dynamic result = await _apiService.getNotifications(forcedRefresh: true);
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           if (result is Map && result.containsKey('data')) {
             _notifications = result['data'] as List<dynamic>;
           } else if (result is List) {

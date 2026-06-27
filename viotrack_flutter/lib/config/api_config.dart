@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Base URL for the Laravel API (no trailing slash).
 /// Currently using ngrok tunnel for public access.
 class ApiConfig {
-  // 🌐 ngrok public URL — update this when ngrok URL changes
+  // 🌐 Production URL (Render)
   static const String _ngrokUrl =
-      'https://barbell-thesaurus-bulgur.ngrok-free.dev/school%20violation%20system/public/api';
+      'https://school-violation-system.onrender.com/api';
 
   // Local fallback (Laragon)
   static const String _laragonDefault =

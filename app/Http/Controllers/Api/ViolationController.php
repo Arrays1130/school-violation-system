@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\StudentCase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ViolationController extends Controller
 {
@@ -51,17 +52,21 @@ class ViolationController extends Controller
     {
         $user = $request->user();
         $dept = $user->department;
-        $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
+        
+        $cacheKey = 'mobile_dashboard_stats_' . md5($dept);
+        
+        $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($dept) {
+            $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
 
-        // 1. Status Counts
-        $counts = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
-                $q->where(function($sub) use ($dept, $longDept) {
-                    $sub->where('department', $dept)->orWhere('department', $longDept);
-                });
-            })
-            ->selectRaw("status, count(*) as count")
-            ->groupBy('status')
-            ->pluck('count', 'status');
+            // 1. Status Counts
+            $counts = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
+                    $q->where(function($sub) use ($dept, $longDept) {
+                        $sub->where('department', $dept)->orWhere('department', $longDept);
+                    });
+                })
+                ->selectRaw("status, count(*) as count")
+                ->groupBy('status')
+                ->pluck('count', 'status');
 
         $total = $counts->sum();
         $pending = $counts->get('Pending', 0) + $counts->get('Hearing Scheduled', 0) + $counts->get('Hearing', 0);
@@ -103,35 +108,39 @@ class ViolationController extends Controller
             ->groupBy('violations.severity')
             ->pluck('count', 'severity');
 
-        // 5. Monthly Trends (Last 6 Months for Bar Chart)
-        $monthlyTrends = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $count = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
+            // 5. Monthly Trends (Last 6 Months for Bar Chart)
+            $rawMonthlyTrend = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
                     $q->where(function($sub) use ($dept, $longDept) {
                         $sub->where('department', $dept)->orWhere('department', $longDept);
                     });
                 })
-                ->whereYear('created_at', $month->year)
-                ->whereMonth('created_at', $month->month)
-                ->count();
-            
-            $monthlyTrends[] = [
-                'month' => $month->format('M'),
-                'count' => $count,
-            ];
-        }
+                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
+                ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
+                ->groupBy('month')
+                ->pluck('count', 'month');
 
-        return response()->json([
-            'summary' => [
-                'total' => $total,
-                'pending' => $pending,
-                'resolved' => $resolved,
-            ],
-            'top_offenses' => $topOffenses,
-            'severity_stats' => $severityStats->isEmpty() ? (object)[] : $severityStats,
-            'monthly_trends' => $monthlyTrends,
-            'upcoming_hearings' => $upcomingHearings,
-        ]);
+            $monthlyTrends = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $month = now()->startOfMonth()->subMonths($i);
+                $monthlyTrends[] = [
+                    'month' => $month->format('M'),
+                    'count' => $rawMonthlyTrend->get($month->format('Y-m'), 0),
+                ];
+            }
+
+            return [
+                'summary' => [
+                    'total' => $total,
+                    'pending' => $pending,
+                    'resolved' => $resolved,
+                ],
+                'top_offenses' => $topOffenses,
+                'severity_stats' => $severityStats->isEmpty() ? (object)[] : $severityStats,
+                'monthly_trends' => $monthlyTrends,
+                'upcoming_hearings' => $upcomingHearings,
+            ];
+        });
+
+        return response()->json($data);
     }
 }

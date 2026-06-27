@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
@@ -56,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? name[0].toUpperCase()
                 : 'D';
 
-        setState(() {
+        if (mounted) setState(() {
           _userName = name.isNotEmpty ? name : 'Dean';
           _userEmail = email;
           _userRole = _formatRole(role);
@@ -69,7 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } catch (_) {}
     }
 
-    setState(() {
+    if (mounted) setState(() {
       _userName = 'Dean';
       _userEmail = '';
       _userRole = 'Dean of Discipline';
@@ -97,9 +97,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     if (!value) await SecurityService.clearCredentials();
     await SecurityService.setBiometricLock(value);
-    setState(() => _isBiometricEnabled = value);
+    if (mounted) setState(() => _isBiometricEnabled = value);
     _showSnackBar(
-        value ? "Biometric login enabled ✓" : "Biometric login disabled");
+        value ? "Biometric login enabled âœ“" : "Biometric login disabled");
   }
 
   void _showSnackBar(String message) {
@@ -142,7 +142,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     delegate: SliverChildListDelegate([
                       const SizedBox(height: 20),
 
-                      // ── Account Info Section ──
+                      // â”€â”€ Account Info Section â”€â”€
                       _buildSectionLabel("ACCOUNT INFO"),
                       const SizedBox(height: 10),
                       Container(
@@ -184,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       const SizedBox(height: 28),
 
-                      // ── Security Section ──
+                      // â”€â”€ Security Section â”€â”€
                       _buildSectionLabel("SECURITY & PRIVACY"),
                       const SizedBox(height: 10),
                       Container(
@@ -212,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       const SizedBox(height: 40),
 
-                      // ── Sign Out Button ──
+                      // â”€â”€ Sign Out Button â”€â”€
                       GestureDetector(
                         onTap: _showLogoutDialog,
                         child: Container(
@@ -240,7 +240,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
-                          "VioTrack Dean  •  v1.0.0\nSecure Academic Environment",
+                          "VioTrack Dean  â€¢  v1.0.0\nSecure Academic Environment",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.outfit(
                               fontSize: 11,

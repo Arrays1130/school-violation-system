@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
       final configured = isSupported && hasCredentials && isEnabled;
 
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _isBiometricConfigured = configured;
         });
         
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen>
       _showLinkDeviceDialog();
       return;
     }
-    setState(() => _isAuthenticating = true);
+    if (mounted) setState(() => _isAuthenticating = true);
     try {
       bool authenticated = await SecurityService.authenticate();
       if (authenticated) {
@@ -91,21 +91,21 @@ class _LoginScreenState extends State<LoginScreen>
         if (mounted &&
             credentials['email'] != null &&
             credentials['password'] != null) {
-          setState(() {
+          if (mounted) setState(() {
             _isLoading = true;
             _isAuthenticating = false;
           });
           final result = await _apiService.login(
               credentials['email']!, credentials['password']!);
           if (mounted) {
-            setState(() => _isLoading = false);
+            if (mounted) setState(() => _isLoading = false);
             if (result['success']) {
               FCMService.syncTokenWithBackend();
               Navigator.pushReplacement(context,
                   MaterialPageRoute(builder: (context) => const MainLayout()));
             } else {
               _showError("Session expired. Please log in manually.");
-              setState(() => _currentStage = LoginStage.passwordForm);
+              if (mounted) setState(() => _currentStage = LoginStage.passwordForm);
             }
           }
         }
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isAuthenticating = false);
+        if (mounted) setState(() => _isAuthenticating = false);
         _showError("Biometric error. Please use password.");
       }
     }
@@ -166,9 +166,9 @@ class _LoginScreenState extends State<LoginScreen>
       _showError("Please fill in all fields");
       return;
     }
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     final result = await _apiService.login(email, password);
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
     if (result['success']) {
       final bool isBiometricEnabled =
           await SecurityService.isBiometricLockEnabled();
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  // ─── Build ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   Widget build(BuildContext context) {
@@ -196,10 +196,10 @@ class _LoginScreenState extends State<LoginScreen>
         backgroundColor: const Color(0xFFFAFBFC),
         body: Stack(
           children: [
-            // ── Animated Background ──
+            // â”€â”€ Animated Background â”€â”€
             _buildBackground(size),
 
-            // ── Content ──
+            // â”€â”€ Content â”€â”€
             SafeArea(
               child: Column(
                 children: [
@@ -440,7 +440,7 @@ class _LoginScreenState extends State<LoginScreen>
               icon: Icons.password_rounded,
               title: "Email & Password",
               subtitle: "Manual credential entry",
-              onTap: () => setState(() => _currentStage = LoginStage.passwordForm),
+              onTap: () => if (mounted) setState(() => _currentStage = LoginStage.passwordForm),
               isPrimary: false,
               delay: 400,
             ),
@@ -554,7 +554,7 @@ class _LoginScreenState extends State<LoginScreen>
               alignment: Alignment.centerLeft,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _currentStage = LoginStage.selection),
+                onTap: () => if (mounted) setState(() => _currentStage = LoginStage.selection),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
@@ -611,10 +611,10 @@ class _LoginScreenState extends State<LoginScreen>
             const SizedBox(height: 8),
             _buildCleanTextField(
               controller: _passwordController,
-              hintText: "••••••••",
+              hintText: "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢",
               icon: Icons.lock_outline_rounded,
               obscureText: _obscurePassword,
-              onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
+              onToggleObscure: () => if (mounted) setState(() => _obscurePassword = !_obscurePassword),
             ),
             const SizedBox(height: 36),
 
@@ -753,7 +753,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildFooter() {
     return Text(
-      "© 2026 CST DEAN'S PORTAL  •  SECURE ACCESS",
+      "Â© 2026 CST DEAN'S PORTAL  â€¢  SECURE ACCESS",
       style: GoogleFonts.outfit(
           fontSize: 9,
           fontWeight: FontWeight.w600,
@@ -763,7 +763,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-// ─── Dot Grid Painter ────────────────────────────────────────────────────────
+// â”€â”€â”€ Dot Grid Painter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DotGridPainter extends CustomPainter {
   @override

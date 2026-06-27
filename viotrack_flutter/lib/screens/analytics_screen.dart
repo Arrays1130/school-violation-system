@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -56,7 +56,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       _computeMetrics(violations);
 
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _stats = stats;
           _allViolations = violations;
           _isLoading = false;
@@ -108,7 +108,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
     _repeatOffenders = sortedStudents.where((e) => e.value > 1).take(5).toList();
 
-    // Monthly trend — last 6 months
+    // Monthly trend â€” last 6 months
     final now = DateTime.now();
     _monthlyTrend = List.generate(6, (i) {
       final date = DateTime(now.year, now.month - 5 + i, 1);
@@ -215,31 +215,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Summary Cards ──
+          // â”€â”€ Summary Cards â”€â”€
           _buildSectionLabel("OVERVIEW"),
           const SizedBox(height: 12),
           _buildStatCards(),
           const SizedBox(height: 28),
 
-          // ── Monthly Trend Bar Chart ──
+          // â”€â”€ Monthly Trend Bar Chart â”€â”€
           _buildSectionLabel("MONTHLY TREND"),
           const SizedBox(height: 12),
           _buildTrendCard(),
           const SizedBox(height: 28),
 
-          // ── Top Violations ──
+          // â”€â”€ Top Violations â”€â”€
           _buildSectionLabel("TOP VIOLATIONS"),
           const SizedBox(height: 12),
           _buildTopViolationsCard(),
           const SizedBox(height: 28),
 
-          // ── Severity Pie Chart ──
+          // â”€â”€ Severity Pie Chart â”€â”€
           _buildSectionLabel("SEVERITY BREAKDOWN"),
           const SizedBox(height: 12),
           _buildSeverityCard(),
           const SizedBox(height: 28),
 
-          // ── Repeat Offenders ──
+          // â”€â”€ Repeat Offenders â”€â”€
           if (_repeatOffenders.isNotEmpty) ...[
             _buildSectionLabel("REPEAT OFFENDERS"),
             const SizedBox(height: 12),
@@ -556,7 +556,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     PieChartData(
                       pieTouchData: PieTouchData(
                         touchCallback: (event, response) {
-                          setState(() {
+                          if (mounted) setState(() {
                             if (!event.isInterestedForInteractions ||
                                 response == null ||
                                 response.touchedSection == null) {

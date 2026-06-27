@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'student_profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -37,7 +37,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     try {
       final result = await _apiService.getCaseDetails(widget.caseId);
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _case = result;
           _isLoading = false;
         });
@@ -102,7 +102,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       color: AppTheme.accentCyan,
       child: CustomScrollView(
         slivers: [
-        // ── Sticky Header with Background Pattern ──
+        // â”€â”€ Sticky Header with Background Pattern â”€â”€
         SliverAppBar(
           expandedHeight: 240,
           pinned: true,
@@ -243,7 +243,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           ),
         ),
 
-        // ── Main Body ──
+        // â”€â”€ Main Body â”€â”€
         SliverToBoxAdapter(
           child: Transform.translate(
             offset: const Offset(0, -32),

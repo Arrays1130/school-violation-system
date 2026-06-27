@@ -41,7 +41,7 @@ class CasesScreenState extends State<CasesScreen> {
     final cachedViolations = await _apiService.getPersistentCache('violations');
     if (cachedViolations != null) {
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           if (cachedViolations is Map) {
             _allViolations = (cachedViolations['data'] ?? []) as List<dynamic>;
           } else if (cachedViolations is List) {
@@ -75,7 +75,7 @@ class CasesScreenState extends State<CasesScreen> {
       final dynamic result =
           await _apiService.getViolations(forcedRefresh: true);
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           if (result is Map) {
             _allViolations = result['data'] as List<dynamic>;
           } else if (result is List) {
@@ -86,14 +86,23 @@ class CasesScreenState extends State<CasesScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        if (mounted) setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', ''), style: GoogleFonts.outfit()),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
   void _applyFilters() {
     String query = _searchController.text.toLowerCase();
     final now = DateTime.now();
-    setState(() {
+    if (mounted) setState(() {
       _filteredViolations = _allViolations.where((v) {
         final studentName =
             (v['student']?['full_name'] ?? '').toString().toLowerCase();
@@ -323,7 +332,7 @@ class CasesScreenState extends State<CasesScreen> {
               label: "Newest First",
               isSelected: !_isAscending,
               onTap: () {
-                setState(() => _isAscending = false);
+                if (mounted) setState(() => _isAscending = false);
                 _applyFilters();
                 Navigator.pop(ctx);
               },
@@ -335,7 +344,7 @@ class CasesScreenState extends State<CasesScreen> {
               label: "Oldest First",
               isSelected: _isAscending,
               onTap: () {
-                setState(() => _isAscending = true);
+                if (mounted) setState(() => _isAscending = true);
                 _applyFilters();
                 Navigator.pop(ctx);
               },
@@ -344,7 +353,7 @@ class CasesScreenState extends State<CasesScreen> {
             if (_hasActiveFilters()) ...[  
               TextButton.icon(
                 onPressed: () {
-                  setState(() {
+                  if (mounted) setState(() {
                     _selectedSeverity = 'All';
                     _selectedStatus = 'All';
                     _selectedDate = 'All Time';
@@ -466,7 +475,7 @@ class CasesScreenState extends State<CasesScreen> {
                     child: GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        setState(() => _selectedDate = opt);
+                        if (mounted) setState(() => _selectedDate = opt);
                         _applyFilters();
                       },
                       child: AnimatedContainer(
@@ -508,7 +517,7 @@ class CasesScreenState extends State<CasesScreen> {
                 _buildFilterGroup(
                     "Severity", ["All", "Minor", "Major"], _selectedSeverity,
                     (val) {
-                  setState(() => _selectedSeverity = val);
+                  if (mounted) setState(() => _selectedSeverity = val);
                   _applyFilters();
                 }),
                 const SizedBox(width: 16),
@@ -516,7 +525,7 @@ class CasesScreenState extends State<CasesScreen> {
                     "Status",
                     ["All", "Pending", "Hearing Scheduled", "Resolved"],
                     _selectedStatus, (val) {
-                  setState(() => _selectedStatus = val);
+                  if (mounted) setState(() => _selectedStatus = val);
                   _applyFilters();
                 }),
               ],

@@ -106,7 +106,7 @@ class ApiService {
           'Authorization': 'Bearer $token',
           'ngrok-skip-browser-warning': 'true',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         isOfflineNotifier.value = false;
@@ -142,7 +142,7 @@ class ApiService {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         isOfflineNotifier.value = false;
@@ -178,7 +178,7 @@ class ApiService {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         isOfflineNotifier.value = false;
@@ -232,7 +232,7 @@ class ApiService {
           'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         isOfflineNotifier.value = false;

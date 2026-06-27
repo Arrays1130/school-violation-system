@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -54,14 +54,14 @@ class MainLayoutState extends State<MainLayout> {
     try {
       final count = await ApiService().getUnreadCount();
       if (mounted) {
-        setState(() => _unreadCount = count);
+        if (mounted) setState(() => _unreadCount = count);
       }
     } catch (_) {}
   }
 
   void navigateToTab(int index, {String? search, String? status}) {
     HapticFeedback.lightImpact();
-    setState(() => _selectedIndex = index);
+    if (mounted) setState(() => _selectedIndex = index);
     if (index == 1) {
       final casesState = _casesScreenKey.currentState;
       if (casesState != null) {
@@ -73,17 +73,17 @@ class MainLayoutState extends State<MainLayout> {
     }
     // Clear badge when opening notifications tab
     if (index == 3) {
-      setState(() => _unreadCount = 0);
+      if (mounted) setState(() => _unreadCount = 0);
     }
   }
 
   void _onItemTapped(int index) {
     if (_selectedIndex == index) return;
     HapticFeedback.lightImpact();
-    setState(() => _selectedIndex = index);
+    if (mounted) setState(() => _selectedIndex = index);
     // Clear badge when opening notifications tab
     if (index == 3) {
-      setState(() => _unreadCount = 0);
+      if (mounted) setState(() => _unreadCount = 0);
     }
   }
 
@@ -141,7 +141,7 @@ class MainLayoutState extends State<MainLayout> {
                                 color: Colors.white, size: 14),
                             const SizedBox(width: 8),
                             Text(
-                              'Offline Mode • Showing saved data',
+                              'Offline Mode â€¢ Showing saved data',
                               style: GoogleFonts.inter(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -230,7 +230,7 @@ class MainLayoutState extends State<MainLayout> {
                                   ? AppTheme.primaryNavy
                                   : AppTheme.textMuted.withOpacity(0.7),
                             ),
-                            // Badge — only on notifications tab
+                            // Badge â€” only on notifications tab
                             if (isNotifTab && _unreadCount > 0)
                               Positioned(
                                 top: -4,
