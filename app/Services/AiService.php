@@ -447,13 +447,21 @@ class AiService
             // ── Phase 1+2 combined: stream directly from Ollama ──
             // This avoids a slow non-stream call that can timeout (60s+).
             // Auto-tool data is already injected into $currentMessage above.
-            $this->callGeminiApi(
+            $response = $this->callGeminiApi(
                 $currentMessage, $relevantHandbooks, $history, true, $onChunk, $institutionalContext
             );
+
+            if (str_starts_with($response, 'Error:')) {
+                if (str_contains($response, 'API key is missing')) {
+                    $onChunk("⚠️ **AI Disabled:** Walang nakalagay na `GEMINI_API_KEY` sa `.env` file mo kaya naka-dumb mode ang AI ngayon.\n\nPara maging matalino ulit ito, kumuha ng free API key sa [Google AI Studio](https://aistudio.google.com/app/apikey) at ilagay sa `.env` file mo.");
+                    return;
+                }
+                throw new \Exception($response);
+            }
             return;
 
         } catch (\Throwable $e) {
-            Log::error('streamChat Ollama error: ' . $e->getMessage());
+            Log::error('streamChat Gemini error: ' . $e->getMessage());
         }
 
         // ── Fallback: Local handbook search ──
@@ -469,8 +477,8 @@ class AiService
             }
         } else {
             $msg = $this->respondInTagalog
-                ? "Paumanhin, hindi pa available ang AI ngayon. Pakisuri ang iyong Gemini API at subukan muli."
-                : "The AI core is temporarily unavailable. Please ensure Ollama is running and try again.";
+                ? "Paumanhin, hindi ma-contact ang Gemini AI ngayon. Pakisuri ang iyong internet o API key."
+                : "The Gemini AI core is temporarily unavailable. Please check your internet connection and API key.";
             $onChunk($msg);
         }
     }
