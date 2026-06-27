@@ -15,9 +15,9 @@ return [
 
     'class_namespace' => 'App\\Livewire',
 
-    'asset_url' => 'http://localhost/school%20violation%20system/public',
+    'asset_url' => env('APP_ENV') === 'local' ? 'http://localhost/school%20violation%20system/public' : null,
 
-    'update_route' => '/school%20violation%20system/public/livewire/update',
+    'update_route' => env('APP_ENV') === 'local' ? '/school%20violation%20system/public/livewire/update' : null,
 
     /*
     |---------------------------------------------------------------------------

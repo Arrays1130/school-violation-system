@@ -37,8 +37,8 @@ class AppServiceProvider extends ServiceProvider
             return $user->isSuperAdmin() || $user->isAdmin() || $user->isDean();
         });
 
-        // Subdirectory support for Livewire
-        if (config('app.env') !== 'testing') {
+        // Subdirectory support for Livewire (Only for local Laragon environment)
+        if (config('app.env') === 'local') {
             \Livewire\Livewire::setUpdateRoute(function ($handle) {
                 return \Illuminate\Support\Facades\Route::post('/school%20violation%20system/public/livewire/update', $handle);
             });
