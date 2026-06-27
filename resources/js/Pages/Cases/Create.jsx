@@ -272,6 +272,7 @@ export default function Create({ auth, student, violations, students }) {
                                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Date & Time of Incident</label>
                                             <input 
                                                 type="datetime-local" 
+                                                required
                                                 className="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-rose-500 focus:ring-rose-500/20 bg-slate-50 dark:bg-slate-800"
                                                 value={data.occurred_at}
                                                 onChange={e => setData('occurred_at', e.target.value)}
@@ -294,6 +295,7 @@ export default function Create({ auth, student, violations, students }) {
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Incident Description</label>
                                         <textarea 
                                             rows="4"
+                                            required
                                             placeholder="Provide details about the incident..."
                                             className="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-rose-500 focus:ring-rose-500/20 bg-slate-50 dark:bg-slate-800 resize-none"
                                             value={data.description}
@@ -337,8 +339,8 @@ export default function Create({ auth, student, violations, students }) {
                                 ) : (
                                     <button
                                         type="submit"
-                                        disabled={processing || isLoadingSanction || !data.description || !data.occurred_at}
-                                        className={`px-8 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-lg ${(processing || isLoadingSanction || !data.description || !data.occurred_at) ? 'bg-slate-200 text-slate-400 shadow-none' : 'bg-rose-600 text-white hover:bg-rose-700 hover:-translate-y-0.5 shadow-rose-600/30'}`}
+                                        disabled={processing || isLoadingSanction}
+                                        className={`px-8 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-lg ${(processing || isLoadingSanction) ? 'bg-slate-200 text-slate-400 shadow-none' : 'bg-rose-600 text-white hover:bg-rose-700 hover:-translate-y-0.5 shadow-rose-600/30'}`}
                                     >
                                         {processing ? 'Submitting...' : 'Submit Violation'}
                                         {!processing && <CheckCircle2 className="w-4 h-4" />}
