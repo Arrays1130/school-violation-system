@@ -524,11 +524,22 @@ class StudentController extends Controller
         if (in_array('email', $methods)) {
             if ($student->guardian_email) {
                 try {
-                    \Illuminate\Support\Facades\Mail::to($student->guardian_email)
-                        ->send(new \App\Mail\CustomMessage('SVS Notification: Message from School', $request->message));
-                    $successMessages[] = 'Email sent successfully.';
+                    $subject = 'SVS Notification: Message from School';
+                    $body = (new \App\Mail\CustomMessage($subject, $request->message))->render();
+
+                    $response = \Illuminate\Support\Facades\Http::post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
+                        'to' => $student->guardian_email,
+                        'subject' => $subject,
+                        'body' => $body
+                    ]);
+
+                    if ($response->successful() && $response->json('status') === 'success') {
+                        $successMessages[] = 'Email sent successfully.';
+                    } else {
+                        $errorMessages[] = 'Failed to send Email via Script. Response: ' . $response->body();
+                    }
                 } catch (\Exception $e) {
-                    $errorMessages[] = 'Failed to send Email. Check SMTP settings.';
+                    $errorMessages[] = 'Failed to send Email. Check Script URL.';
                 }
             } else {
                 $errorMessages[] = 'No guardian email found.';

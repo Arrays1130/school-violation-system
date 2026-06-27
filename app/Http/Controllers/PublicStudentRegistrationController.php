@@ -52,7 +52,12 @@ class PublicStudentRegistrationController extends Controller
         ], now()->addMinutes(10));
 
         try {
-            Mail::to($validated['email'])->send(new StudentRegistrationOtpMail($otp));
+            $body = (new StudentRegistrationOtpMail($otp))->render();
+            \Illuminate\Support\Facades\Http::post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
+                'to' => $validated['email'],
+                'subject' => 'Your SVS Registration OTP',
+                'body' => $body
+            ]);
         } catch (\Exception $e) {
             \Log::error('Failed to send OTP email: ' . $e->getMessage());
             // If email fails, we still want to redirect but show an error. 
@@ -135,7 +140,12 @@ class PublicStudentRegistrationController extends Controller
         ], now()->addMinutes(10));
 
         try {
-            Mail::to($email)->send(new StudentRegistrationOtpMail($otp));
+            $body = (new StudentRegistrationOtpMail($otp))->render();
+            \Illuminate\Support\Facades\Http::post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
+                'to' => $email,
+                'subject' => 'Your SVS Registration OTP',
+                'body' => $body
+            ]);
         } catch (\Exception $e) {
             \Log::error('Failed to resend OTP email: ' . $e->getMessage());
         }
