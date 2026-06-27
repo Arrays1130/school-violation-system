@@ -46,23 +46,5 @@ class AppServiceProvider extends ServiceProvider
             \Livewire\Livewire::setScriptRoute(function ($handle) {
                 return \Illuminate\Support\Facades\Route::get('/school%20violation%20system/public/livewire/livewire.js', $handle);
             });
-        }
-
-        $this->app->terminating(function () {
-            if (config('queue.default') === 'database') {
-                try {
-                    if (function_exists('exec')) {
-                        $artisan = base_path('artisan');
-                        if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                            pclose(popen("start /B php \"$artisan\" queue:work --max-time=55 --stop-when-empty > NUL 2>&1", "r"));
-                        } else {
-                            exec("php \"$artisan\" queue:work --max-time=55 --stop-when-empty > /dev/null 2>&1 &");
-                        }
-                    }
-                } catch (\Exception $e) {
-                    // Ignore
-                }
-            }
-        });
     }
 }

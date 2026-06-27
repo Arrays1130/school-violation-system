@@ -87,6 +87,8 @@ class HearingController extends Controller
         } catch (\Exception $e) {
         }
 
+        \App\Support\QueueHelper::triggerBackgroundWorker();
+
         return redirect()->route('students.show', $hearing->case->student_id)
             ->with('success', 'Hearing scheduled successfully.');
     }

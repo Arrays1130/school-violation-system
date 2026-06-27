@@ -288,6 +288,8 @@ class CaseController extends Controller
 
         session()->flash('success', 'Violation recorded successfully.');
 
+        \App\Support\QueueHelper::triggerBackgroundWorker();
+
         if (request()->header('X-Inertia')) {
             return \Inertia\Inertia::location(route('cases.show', $case));
         }
