@@ -41,59 +41,65 @@ class HearingController extends Controller
 
         $hearing->case->update(['status' => 'Hearing Scheduled']);
         
-        // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
-        $guardianPhone = $hearing->case->student->guardian_phone;
-        
+        defer(function () use ($hearing) {
+            // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
+            $guardianPhone = $hearing->case->student->guardian_phone;
+            
+            if ($guardianPhone) {
+                try {
+                    // Ensure phone format is +63
+                    if (str_starts_with($guardianPhone, '0')) {
+                        $guardianPhone = '+63' . substr($guardianPhone, 1);
+                    }
 
-        if ($guardianPhone) {
+                    $formattedDate = \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A');
+                    $studentName = $hearing->case->student->full_name ?? ($hearing->case->student->first_name . ' ' . $hearing->case->student->last_name);
+                    $smsMessage = "SVS Notice: A hearing is scheduled for your student {$studentName} regarding {$hearing->case->violation->title} on {$formattedDate} at {$hearing->venue}. Please be present.";
+                    
+                    \Illuminate\Support\Facades\Http::timeout(5)->withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
+                        ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                            'textMessage' => [
+                                'text' => $smsMessage
+                            ],
+                            'phoneNumbers' => [$guardianPhone]
+                        ]);
+                } catch (\Exception $e) {
+                    // Ignore errors
+                }
+            }
+            // ------------------------------------------------
+
+            \App\Jobs\TriggerN8nWebhook::dispatch('hearing_scheduled', [
+                'hearing_id' => $hearing->id,
+                'case_id' => $hearing->case->id,
+                'student_id' => $hearing->case->student->student_id,
+                'student_name' => collect([$hearing->case->student->first_name, $hearing->case->student->middle_name, $hearing->case->student->last_name])->filter()->join(' '),
+                'student_email' => $hearing->case->student->email,
+                'guardian_email' => $hearing->case->student->guardian_email,
+                'guardian_contact' => $hearing->case->student->guardian_contact,
+                'department' => $hearing->case->student->department,
+                'venue' => $hearing->venue,
+                'scheduled_at' => \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A'),
+                'violation_title' => $hearing->case->violation->title,
+            ]);
+
             try {
-                $formattedDate = \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A');
-                $studentName = $hearing->case->student->full_name ?? ($hearing->case->student->first_name . ' ' . $hearing->case->student->last_name);
-                $smsMessage = "SVS Notice: A hearing is scheduled for your student {$studentName} regarding {$hearing->case->violation->title} on {$formattedDate} at {$hearing->venue}. Please be present.";
-                
-                \Illuminate\Support\Facades\Http::withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
-                    ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
-                        'textMessage' => [
-                            'text' => $smsMessage
-                        ],
-                        'phoneNumbers' => [$guardianPhone]
-                    ]);
+                if ($hearing->case->student->email) {
+                    $hearing->case->student->notify(new \App\Notifications\HearingScheduled($hearing));
+                }
             } catch (\Exception $e) {
-                // Ignore errors
+                \Log::error('Failed to notify student about hearing: '.$e->getMessage());
             }
-        }
-        // ------------------------------------------------
 
-        \App\Jobs\TriggerN8nWebhook::dispatch('hearing_scheduled', [
-            'hearing_id' => $hearing->id,
-            'case_id' => $hearing->case->id,
-            'student_id' => $hearing->case->student->student_id,
-            'student_name' => collect([$hearing->case->student->first_name, $hearing->case->student->middle_name, $hearing->case->student->last_name])->filter()->join(' '),
-            'student_email' => $hearing->case->student->email,
-            'guardian_email' => $hearing->case->student->guardian_email,
-            'guardian_contact' => $hearing->case->student->guardian_contact,
-            'department' => $hearing->case->student->department,
-            'venue' => $hearing->venue,
-            'scheduled_at' => \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A'),
-            'violation_title' => $hearing->case->violation->title,
-        ]);
-
-        try {
-            if ($hearing->case->student->email) {
-                $hearing->case->student->notify(new \App\Notifications\HearingScheduled($hearing));
+            try {
+                $allDeans = \App\Models\User::where('role', 'dean')->get();
+                foreach ($allDeans as $dean) {
+                    $dean->notify(new \App\Notifications\DeanHearingNotification($hearing));
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to notify all Deans about hearing: '.$e->getMessage());
             }
-        } catch (\Exception $e) {
-            \Log::error('Failed to notify student about hearing: '.$e->getMessage());
-        }
-
-        try {
-            $allDeans = \App\Models\User::where('role', 'dean')->get();
-            foreach ($allDeans as $dean) {
-                $dean->notify(new \App\Notifications\DeanHearingNotification($hearing));
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to notify all Deans about hearing: '.$e->getMessage());
-        }
+        });
 
         try {
             event(new DashboardUpdated('Hearing scheduled'));

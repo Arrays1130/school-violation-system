@@ -121,53 +121,60 @@ class CaseController extends Controller
 
         $case = \App\Models\StudentCase::create($data);
         
-        // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
-        $guardianPhone = $case->student->guardian_phone;
-        
-        if ($guardianPhone && env('ENABLE_SMS_GATEWAY', false)) {
-            try {
-                $smsMessage = "SVS Notice: Your student {$case->student->full_name} has a recorded violation: {$violation->title}. Sanction: {$data['sanction']}. Please contact the school.";
-                
-                \Illuminate\Support\Facades\Http::timeout(3)
-                    ->withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
-                    ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
-                        'textMessage' => [
-                            'text' => $smsMessage
-                        ],
-                        'phoneNumbers' => [$guardianPhone]
-                    ]);
-            } catch (\Exception $e) {
-                // Ignore errors
-            }
-        }
-        // ------------------------------------------------
-        
-        // Dispatch Real-time Event
-        event(new \App\Events\ViolationRecorded($case));
-
-        // Dispatch Reverb & Database Notifications
-        $notifiableUsers = \App\Models\User::where('role', 'super_admin')
-            ->orWhere(function($query) use ($case) {
-                if ($case->student->department) {
-                    $query->where('role', 'dean')
-                          ->where('department', $case->student->department);
+        defer(function () use ($case, $violation, $data) {
+            // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY ---
+            $guardianPhone = $case->student->guardian_phone;
+            
+            if ($guardianPhone && env('ENABLE_SMS_GATEWAY', false)) {
+                try {
+                    // Ensure phone format is +63
+                    if (str_starts_with($guardianPhone, '0')) {
+                        $guardianPhone = '+63' . substr($guardianPhone, 1);
+                    }
+                    
+                    $smsMessage = "SVS Notice: Your student {$case->student->full_name} has a recorded violation: {$violation->title}. Sanction: {$data['sanction']}. Please contact the school.";
+                    
+                    \Illuminate\Support\Facades\Http::timeout(5)
+                        ->withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
+                        ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                            'textMessage' => [
+                                'text' => $smsMessage
+                            ],
+                            'phoneNumbers' => [$guardianPhone]
+                        ]);
+                } catch (\Exception $e) {
+                    // Log or ignore
                 }
-            })->get();
-        \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($case));
+            }
+            // ------------------------------------------------
+            
+            // Dispatch Real-time Event
+            event(new \App\Events\ViolationRecorded($case));
 
-        // Trigger N8n Webhook Asynchronously
-        \App\Jobs\TriggerN8nWebhook::dispatch('violation_recorded', [
-            'case_id' => $case->id,
-            'student_db_id' => $case->student->id,
-            'student_name' => $case->student->full_name,
-            'student_email' => $case->student->email,
-            'guardian_email' => $case->student->guardian_email,
-            'guardian_contact' => $case->student->guardian_phone,
-            'department' => $case->student->department,
-            'violation_title' => $violation->title,
-            'violation_severity' => $violation->severity,
-            'sanction' => $data['sanction'],
-        ]);
+            // Dispatch Reverb & Database Notifications
+            $notifiableUsers = \App\Models\User::where('role', 'super_admin')
+                ->orWhere(function($query) use ($case) {
+                    if ($case->student->department) {
+                        $query->where('role', 'dean')
+                              ->where('department', $case->student->department);
+                    }
+                })->get();
+            \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($case));
+
+            // Trigger N8n Webhook Asynchronously
+            \App\Jobs\TriggerN8nWebhook::dispatch('violation_recorded', [
+                'case_id' => $case->id,
+                'student_db_id' => $case->student->id,
+                'student_name' => $case->student->full_name,
+                'student_email' => $case->student->email,
+                'guardian_email' => $case->student->guardian_email,
+                'guardian_contact' => $case->student->guardian_phone,
+                'department' => $case->student->department,
+                'violation_title' => $violation->title,
+                'violation_severity' => $violation->severity,
+                'sanction' => $data['sanction'],
+            ]);
+        });
 
         // --- AUTOMATED ESCALATION LOGIC ---
         // 1. Check if the newly added case is a Minor offense

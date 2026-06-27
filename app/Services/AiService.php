@@ -428,7 +428,6 @@ class AiService
 
         $history        = [];
         $currentMessage = $message;
-        $ollamaWorking  = false;
 
         // ── Phase 0: PHP auto-detects & fetches tool data BEFORE calling LLM ──
         $autoToolResults = $this->autoDetectAndRunTools($message);
@@ -444,21 +443,51 @@ class AiService
         }
 
         try {
-            // ── Phase 1+2 combined: stream directly from Ollama ──
-            // This avoids a slow non-stream call that can timeout (60s+).
-            // Auto-tool data is already injected into $currentMessage above.
-            $response = $this->callGeminiApi(
-                $currentMessage, $relevantHandbooks, $history, true, $onChunk, $institutionalContext
-            );
+            for ($i = 0; $i < 3; $i++) {
+                // Do NOT pass $onChunk here, we will handle simulated streaming manually if it's the final answer
+                $response = $this->callGeminiApi(
+                    $currentMessage, $relevantHandbooks, $history, false, null, $institutionalContext
+                );
 
-            if (str_starts_with($response, 'Error:')) {
-                if (str_contains($response, 'API key is missing')) {
-                    $onChunk("⚠️ **AI Disabled:** Walang nakalagay na `GEMINI_API_KEY` sa `.env` file mo kaya naka-dumb mode ang AI ngayon.\n\nPara maging matalino ulit ito, kumuha ng free API key sa [Google AI Studio](https://aistudio.google.com/app/apikey) at ilagay sa `.env` file mo.");
-                    return;
+                if (str_starts_with($response, 'Error:')) {
+                    if (str_contains($response, 'API key is missing')) {
+                        $onChunk("⚠️ **AI Disabled:** Walang nakalagay na `GEMINI_API_KEY` sa `.env` file mo kaya naka-dumb mode ang AI ngayon.\n\nPara maging matalino ulit ito, kumuha ng free API key sa [Google AI Studio](https://aistudio.google.com/app/apikey) at ilagay sa `.env` file mo.");
+                        return;
+                    }
+                    throw new \Exception($response);
                 }
-                throw new \Exception($response);
+
+                if (preg_match('/\[TOOL:\s*(\w+)\s*,\s*(.*?)\]/', $response, $matches)) {
+                    $toolName = trim($matches[1]);
+                    $toolArg = trim($matches[2]);
+                    
+                    $toolResult = $this->executeTool($toolName, $toolArg);
+                    
+                    $history[] = ['role' => 'assistant', 'content' => $response];
+                    $history[] = ['role' => 'system', 'content' => "CRITICAL SYSTEM DATA ($toolName): " . $toolResult];
+                    
+                    $currentMessage = "SYSTEM DATA RECEIVED: $toolResult. Now, answer the user's question directly using this data. If no data was found, say so. Do not imagine data.";
+                    continue;
+                }
+
+                // If it's not a tool call, stream it word-by-word to simulate streaming beautifully
+                $words = explode(' ', $response);
+                foreach ($words as $word) {
+                    $onChunk($word . ' ');
+                    usleep(15000); // 15ms per word
+                }
+                
+                // For SSE, we can send sources at the end
+                $sources = array_map(fn($item) => $item['handbook']->title, $relevantHandbooks);
+                $uniqueSources = array_values(array_unique($sources));
+                if (!empty($uniqueSources)) {
+                    echo 'data: ' . json_encode(['sources' => $uniqueSources]) . "\n\n";
+                    if (ob_get_level() > 0) ob_flush();
+                    flush();
+                }
+
+                return;
             }
-            return;
 
         } catch (\Throwable $e) {
             Log::error('streamChat Gemini error: ' . $e->getMessage());
