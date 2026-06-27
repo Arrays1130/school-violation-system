@@ -1,4 +1,5 @@
 import React from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
@@ -16,23 +17,53 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
 
     const handleEndorse = (e) => {
         e.preventDefault();
-        if (confirm('Endorse this case to the Grievance Committee?')) {
-            router.post(route('cases.endorse', caseRecord.id));
-        }
+        Swal.fire({
+            title: 'Endorse to Grievance?',
+            text: "Are you sure you want to endorse this case?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, endorse it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('cases.endorse', caseRecord.id));
+            }
+        });
     };
 
     const handleClose = (e) => {
         e.preventDefault();
-        if (confirm('Close this case? This action marks it as resolved.')) {
-            router.post(route('cases.close', caseRecord.id));
-        }
+        Swal.fire({
+            title: 'Close this case?',
+            text: "This action marks the case as resolved.",
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, close case'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('cases.close', caseRecord.id));
+            }
+        });
     };
 
     const handleDelete = (e) => {
         e.preventDefault();
-        if (confirm('Are you sure you want to move this violation record to the trash?')) {
-            router.delete(route('cases.destroy', caseRecord.id));
-        }
+        Swal.fire({
+            title: 'Move to Trash Bin?',
+            text: "Are you sure you want to move this violation record to the trash?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, move to trash'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('cases.destroy', caseRecord.id));
+            }
+        });
     };
 
     const getStatusStyle = (status) => {

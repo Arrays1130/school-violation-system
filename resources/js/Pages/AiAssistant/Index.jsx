@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import {
@@ -258,7 +259,19 @@ export default function AiAssistant({ auth }) {
     }, [input, isTyping]);
 
     const clearChat = () => {
-        if (window.confirm('Clear conversation history?')) setMessages([]);
+        Swal.fire({
+            title: 'Clear history?',
+            text: "Are you sure you want to clear the conversation history?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, clear it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setMessages([]);
+            }
+        });
     };
 
     const isEmpty = messages.length === 0;

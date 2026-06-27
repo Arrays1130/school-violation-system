@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
@@ -33,9 +34,19 @@ export default function Index({ auth, users, filters }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this user account?')) {
-            router.delete(route('users.destroy', id));
-        }
+        Swal.fire({
+            title: 'Delete User?',
+            text: "Are you sure you want to delete this user account? This cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, delete user'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('users.destroy', id));
+            }
+        });
     };
 
     const getRoleBadge = (role) => {

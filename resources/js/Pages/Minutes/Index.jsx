@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { FolderGit, UploadCloud, Plus, Files, FileText, Database, X, Tag, ChevronDown, Search, SlidersHorizontal, Trash2, Eye, UserSearch, CheckCircle2 } from 'lucide-react';
@@ -57,9 +58,19 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
     };
 
     const deleteRecord = (url) => {
-        if (confirm('Are you sure you want to delete this record?')) {
-            router.delete(url);
-        }
+        Swal.fire({
+            title: 'Delete Record?',
+            text: "Are you sure you want to delete this record?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, delete it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(url);
+            }
+        });
     };
 
     return (

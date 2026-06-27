@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
@@ -31,9 +32,19 @@ export default function Index({ auth, violations, categories, filters }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this rule?')) {
-            router.delete(route('violations.destroy', id));
-        }
+        Swal.fire({
+            title: 'Delete Rule?',
+            text: "Are you sure you want to delete this rule? This cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, delete it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('violations.destroy', id));
+            }
+        });
     };
 
     return (

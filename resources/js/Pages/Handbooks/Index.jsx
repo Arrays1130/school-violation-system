@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { BookOpen, Plus, Search, FileText, Clock, Calendar, Eye, Edit3, Trash2 } from 'lucide-react';
@@ -24,10 +25,20 @@ export default function Index({ auth, handbooks, filters, flash }) {
         router.get(route('handbooks.index'), { search: searchQuery }, { preserveState: true, preserveScroll: true });
     };
 
-    const deleteHandbook = (id) => {
-        if (confirm('Are you sure you want to delete this handbook document?')) {
-            router.delete(route('handbooks.destroy', id));
-        }
+    const handleDelete = (id) => {
+        Swal.fire({
+            title: 'Delete Document?',
+            text: "Are you sure you want to delete this handbook document? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, delete it'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('handbooks.destroy', id));
+            }
+        });
     };
 
     return (
@@ -142,7 +153,7 @@ export default function Index({ auth, handbooks, filters, flash }) {
                                                 <Edit3 className="w-4 h-4" />
                                             </Link>
                                             <button 
-                                                onClick={() => deleteHandbook(handbook.id)} 
+                                                onClick={() => handleDelete(handbook.id)} 
                                                 className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:bg-rose-900/20 border border-transparent hover:border-rose-100 flex items-center justify-center transition-all"
                                                 title="Delete"
                                             >

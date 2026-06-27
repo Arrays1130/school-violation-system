@@ -1,4 +1,5 @@
 import React from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link, router } from '@inertiajs/react';
 import { FilePlus, ArrowLeft, CheckCircle2, ShieldAlert, Trash2 } from 'lucide-react';
@@ -18,9 +19,19 @@ export default function Edit({ auth, caseRecord }) {
 
     const handleDelete = (e) => {
         e.preventDefault();
-        if (confirm('Are you sure you want to move this violation record to the trash?')) {
-            router.delete(route('cases.destroy', caseRecord.id));
-        }
+        Swal.fire({
+            title: 'Move to Trash Bin?',
+            text: "Are you sure you want to move this violation record to the trash?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, move to trash'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('cases.destroy', caseRecord.id));
+            }
+        });
     };
 
     return (
