@@ -31,7 +31,7 @@ COPY . /var/www
 
 # Install PHP dependencies
 ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
+RUN composer install --no-dev --optimize-autoloader --prefer-source --no-progress --no-interaction
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build
