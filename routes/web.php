@@ -174,3 +174,14 @@ Route::get('/test-sms', function () {
         return 'ERROR: Hindi ma-contact ang Android Phone. Make sure nasa parehas na Wi-Fi ang laptop at phone. <br>Error Details: '.$e->getMessage();
     }
 });
+
+Route::get('/view-logs-xyz', function () {
+    $path = storage_path('logs/laravel.log');
+    if (file_exists($path)) {
+        // Read last 150 lines
+        $lines = file($path);
+        $lastLines = array_slice($lines, -150);
+        return response(implode("", $lastLines), 200, ['Content-Type' => 'text/plain']);
+    }
+    return 'Log file not found';
+});
