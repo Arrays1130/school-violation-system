@@ -78,7 +78,8 @@ class CaseController extends Controller
         }
 
         $violations = \App\Models\Violation::query()->get();
-        $students   = \App\Models\Student::orderBy('full_name')->get(); // for picker when no student
+        // Optimize: Only fetch necessary columns to prevent huge JSON payload that freezes the page
+        $students   = \App\Models\Student::select('id', 'full_name', 'department')->orderBy('full_name')->get(); // for picker when no student
 
         return inertia('Cases/Create', [
             'student' => $student,
