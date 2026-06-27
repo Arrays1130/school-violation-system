@@ -92,6 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/meeting-minutes/create', [MeetingMinuteController::class, 'create'])->name('meeting-minutes.create');
     Route::post('/meeting-minutes', [MeetingMinuteController::class, 'store'])->name('meeting-minutes.store');
     Route::get('/meeting-minutes/{meetingMinute}', [MeetingMinuteController::class, 'show'])->name('meeting-minutes.show');
+    Route::get('/meeting-minutes/{meetingMinute}/edit', [MeetingMinuteController::class, 'edit'])->name('meeting-minutes.edit');
+    Route::patch('/meeting-minutes/{meetingMinute}', [MeetingMinuteController::class, 'update'])->name('meeting-minutes.update');
     Route::delete('/meeting-minutes/{meetingMinute}', [MeetingMinuteController::class, 'destroy'])->name('meeting-minutes.destroy');
 
     // Attachments (Files)
