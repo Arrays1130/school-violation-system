@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notification;
 
 use App\Models\Hearing;
 
-class HearingScheduled extends Notification
+class HearingScheduled extends Notification implements ShouldQueue
 {
     use Queueable;
 

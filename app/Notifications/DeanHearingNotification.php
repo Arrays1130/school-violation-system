@@ -8,7 +8,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Hearing;
 
-class DeanHearingNotification extends Notification
+class DeanHearingNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
