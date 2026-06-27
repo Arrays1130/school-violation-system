@@ -434,7 +434,6 @@ class StudentController extends Controller
                 if (empty($fullName) || empty($email)) continue;
 
                 $studentsToInsert[] = [
-                    'id'            => (string) \Illuminate\Support\Str::uuid(),
                     'full_name'     => $fullName,
                     'section'       => $section,
                     'year_level'    => $yearLevel,
