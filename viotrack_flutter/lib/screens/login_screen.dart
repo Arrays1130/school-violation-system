@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -753,7 +753,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildFooter() {
     return Text(
-      "Â© 2026 CST DEAN'S PORTAL  â€¢  SECURE ACCESS",
+      "© 2026 CST DEAN'S PORTAL  •  SECURE ACCESS",
       style: GoogleFonts.outfit(
           fontSize: 9,
           fontWeight: FontWeight.w600,

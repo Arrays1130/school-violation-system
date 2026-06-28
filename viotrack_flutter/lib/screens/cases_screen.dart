@@ -692,7 +692,7 @@ class CasesScreenState extends State<CasesScreen> {
         ),
       ),
     ).animate()
-        .fadeIn(delay: Duration(milliseconds: 40 * index))
+        .fadeIn(delay: Duration(milliseconds: 40 * (index > 6 ? 6 : index)))
         .slideX(begin: 0.04);
   }
 

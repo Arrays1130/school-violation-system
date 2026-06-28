@@ -303,7 +303,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Icons.event_note_rounded)),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 150,
+                  height: 190,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding:
@@ -559,60 +559,109 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // â”€â”€ Alert Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildAlertCard(dynamic alert) {
-    return Container(
-      width: 240,
-      margin: const EdgeInsets.only(right: 14),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppTheme.accentGradient,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: AppTheme.glassShadow,
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8)),
-                child: Text("HEARING",
+    final caseId = alert['case_id'];
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        if (caseId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CaseDetailsScreen(caseId: int.parse(caseId.toString())),
+            ),
+          ).then((_) => _refreshData());
+        }
+      },
+      child: Container(
+        width: 250,
+        margin: const EdgeInsets.only(right: 14),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: AppTheme.heroGradient,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppTheme.glassShadow,
+          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Text("HEARING",
+                      style: GoogleFonts.outfit(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1.2)),
+                ),
+                const Spacer(),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    color: Colors.white, size: 12),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              alert['case']?['student']?['full_name'] ?? 'Student',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              alert['case']?['violation']?['title'] ?? 'N/A',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.calendar_month_rounded, color: Colors.white70, size: 12),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _formatDateTime(alert['scheduled_at']?.toString() ?? ''),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 1.2)),
-              ),
-              const Spacer(),
-              const Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white, size: 14),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            alert['case']?['student']?['full_name'] ?? 'Student',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 16),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            alert['case']?['violation']?['title'] ?? 'N/A',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 11,
-                fontWeight: FontWeight.w500),
-          ),
-        ],
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Icon(Icons.place_rounded, color: Colors.white70, size: 12),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    alert['venue']?.toString() ?? 'Guidance Office',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -686,7 +735,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
     ).animate()
-        .fadeIn(delay: Duration(milliseconds: 80 * index))
+        .fadeIn(delay: Duration(milliseconds: 80 * (index > 4 ? 4 : index)))
         .slideX(begin: 0.02);
   }
 
@@ -840,7 +889,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
     ).animate()
-        .fadeIn(delay: Duration(milliseconds: 80 * index))
+        .fadeIn(delay: Duration(milliseconds: 80 * (index > 4 ? 4 : index)))
         .slideY(begin: 0.05);
   }
 
@@ -877,5 +926,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   IconData _getSeverityIcon(String severity) {
     if (severity == 'Major') return Icons.error_outline_rounded;
     return Icons.info_outline_rounded;
+  }
+
+  String _formatDateTime(String dateTimeStr) {
+    if (dateTimeStr.isEmpty) return 'Date & Time TBA';
+    try {
+      final date = DateTime.parse(dateTimeStr).toLocal();
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+      final minute = date.minute.toString().padLeft(2, '0');
+      final ampm = date.hour >= 12 ? 'PM' : 'AM';
+      return "${months[date.month - 1]} ${date.day}, ${date.year} at $hour:$minute $ampm";
+    } catch (e) {
+      return dateTimeStr;
+    }
   }
 }

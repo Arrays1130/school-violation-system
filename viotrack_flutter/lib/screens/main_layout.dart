@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -141,7 +141,7 @@ class MainLayoutState extends State<MainLayout> {
                                 color: Colors.white, size: 14),
                             const SizedBox(width: 8),
                             Text(
-                              'Offline Mode â€¢ Showing saved data',
+                              'Offline Mode • Showing saved data',
                               style: GoogleFonts.inter(
                                 color: Colors.white,
                                 fontSize: 12,

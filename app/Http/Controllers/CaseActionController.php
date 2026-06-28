@@ -40,7 +40,7 @@ class CaseActionController extends Controller
         $this->authorize('endorse', $case);
 
         $request->validate([
-            'description' => 'required|string|max:2000',
+            'description' => 'nullable|string|max:2000',
         ]);
 
         // Guard: major offenses need at least 1 prior OSA action
@@ -53,7 +53,7 @@ class CaseActionController extends Controller
             'case_id'                => $case->id,
             'user_id'                => auth()->id(),
             'action_type'            => 'endorsement',
-            'description'            => $request->description,
+            'description'            => $request->description ?? 'Case officially endorsed to the Grievance Committee.',
             'endorsed_to_grievance'  => true,
         ]);
 

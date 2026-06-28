@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -422,7 +422,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
       ),
     ).animate()
-        .fadeIn(delay: Duration(milliseconds: 50 * index))
+        .fadeIn(delay: Duration(milliseconds: 50 * (index > 6 ? 6 : index)))
         .slideX(begin: 0.04);
   }
 

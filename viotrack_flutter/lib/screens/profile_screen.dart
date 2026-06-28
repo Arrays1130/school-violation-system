@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
@@ -240,7 +240,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
-                          "VioTrack Dean  â€¢  v1.0.0\nSecure Academic Environment",
+                          "VioTrack Dean  •  v1.0.0\nSecure Academic Environment",
                           textAlign: TextAlign.center,
                           style: GoogleFonts.outfit(
                               fontSize: 11,

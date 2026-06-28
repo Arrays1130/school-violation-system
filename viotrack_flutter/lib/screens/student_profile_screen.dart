@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -112,7 +112,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       if (studentNo != null && studentNo.isNotEmpty) studentNo,
       if (course != null && course.isNotEmpty) course,
     ];
-    final String subtitle = subtitleParts.isNotEmpty ? subtitleParts.join('  â€¢  ') : '';
+    final String subtitle = subtitleParts.isNotEmpty ? subtitleParts.join('  •  ') : '';
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,

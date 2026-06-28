@@ -277,7 +277,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     if (_case!['hearings'] != null && (_case!['hearings'] as List).isNotEmpty) ...[
                       _buildSectionHeader("Official Hearing", Icons.calendar_month_rounded),
                       const SizedBox(height: 12),
-                      _buildHearingCard((_case!['hearings'] as List).last),
+                      _buildHearingCard((_case!['hearings'] as List).first),
                       const SizedBox(height: 24),
                     ],
 
@@ -533,6 +533,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Widget _buildHearingCard(dynamic hearing) {
+    final scheduledAt = hearing['scheduled_at']?.toString() ?? hearing['scheduledAt']?.toString() ?? '';
+    final venue = hearing['venue']?.toString() ?? hearing['location']?.toString() ?? 'Location TBA';
+    final notes = hearing['notes']?.toString() ?? 'No agenda details provided.';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -549,25 +553,27 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           ),
           const SizedBox(width: 16),
           Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Scheduled Hearing', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
                 const SizedBox(height: 4),
-                Text(hearing['notes']?.toString() ?? 'No agenda details provided.', style: GoogleFonts.outfit(fontSize: 13, color: Colors.white.withOpacity(0.8))),
+                Text(notes, style: GoogleFonts.outfit(fontSize: 13, color: Colors.white.withOpacity(0.8))),
                 const SizedBox(height: 8),
-                Text(_formatDateTime(hearing['scheduled_at']?.toString() ?? ''), style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(_formatDateTime(scheduledAt), style: GoogleFonts.outfit(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 16),
           Expanded(
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Venue", style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1)),
                 const SizedBox(height: 4),
-                Text(hearing['venue']?.toString() ?? 'Location TBA', style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600)),
+                Text(venue, style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -604,11 +610,17 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
 
   String _formatDateTime(String dateTimeStr) {
+    if (dateTimeStr.isEmpty) return 'Date & Time TBA';
     try {
       final date = DateTime.parse(dateTimeStr).toLocal();
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return "${months[date.month - 1]} ${date.day}, ${date.year}";
-    } catch (e) { return dateTimeStr; }
+      final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+      final minute = date.minute.toString().padLeft(2, '0');
+      final ampm = date.hour >= 12 ? 'PM' : 'AM';
+      return "${months[date.month - 1]} ${date.day}, ${date.year} at $hour:$minute $ampm";
+    } catch (e) {
+      return dateTimeStr;
+    }
   }
 
   Color _getStatusColor(String status) {
