@@ -89,8 +89,13 @@ class HearingController extends Controller
 
         \App\Support\QueueHelper::triggerBackgroundWorker();
 
-        return redirect()->route('students.show', $hearing->case->student_id)
-            ->with('success', 'Hearing scheduled successfully.');
+        session()->flash('success', 'Hearing scheduled successfully.');
+
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location(route('students.show', $hearing->case->student_id));
+        }
+
+        return redirect()->route('students.show', $hearing->case->student_id);
     }
 
     public function show(Hearing $hearing)
@@ -133,8 +138,13 @@ class HearingController extends Controller
         } catch (\Exception $e) {
         }
 
-        return redirect()->route('students.show', $hearing->case->student_id)
-            ->with('success', 'Hearing updated successfully.');
+        session()->flash('success', 'Hearing updated successfully.');
+
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location(route('students.show', $hearing->case->student_id));
+        }
+
+        return redirect()->route('students.show', $hearing->case->student_id);
     }
 
     public function destroy(Hearing $hearing)
@@ -147,8 +157,13 @@ class HearingController extends Controller
         } catch (\Exception $e) {
         }
 
-        return redirect()->route('students.show', $studentId)
-            ->with('success', 'Hearing deleted successfully.');
+        session()->flash('success', 'Hearing deleted successfully.');
+
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location(route('students.show', $studentId));
+        }
+
+        return redirect()->route('students.show', $studentId);
     }
 
     public function markCompleted(Request $request, Hearing $hearing)

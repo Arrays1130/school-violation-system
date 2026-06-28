@@ -345,8 +345,14 @@ class CaseController extends Controller
     {
         $studentId = $case->student_id;
         $case->delete();
-        return redirect()->route('students.show', $studentId)
-            ->with('success', 'Violation record moved to trash.');
+
+        session()->flash('success', 'Violation record moved to trash.');
+
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location(route('students.show', $studentId));
+        }
+
+        return redirect()->route('students.show', $studentId);
     }
 
     /**
@@ -373,8 +379,13 @@ class CaseController extends Controller
         $this->authorize('restore', $case);
         $case->restore();
 
-        return redirect()->route('students.show', $case->student_id)
-            ->with('success', 'Violation record has been successfully restored.');
+        session()->flash('success', 'Violation record has been successfully restored.');
+
+        if (request()->header('X-Inertia')) {
+            return \Inertia\Inertia::location(route('students.show', $case->student_id));
+        }
+
+        return redirect()->route('students.show', $case->student_id);
     }
 
     /**
