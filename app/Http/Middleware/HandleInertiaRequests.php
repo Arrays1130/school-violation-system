@@ -35,6 +35,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'unreadNotifications' => $request->user() ? $request->user()->unreadNotifications()->latest()->take(10)->get() : [],
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
             'openCasesCount' => $request->user() ? \App\Models\StudentCase::whereNotIn('status', ['Closed', 'Dismissed'])->count() : 0,
         ];
     }

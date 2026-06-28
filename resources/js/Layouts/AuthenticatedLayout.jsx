@@ -11,7 +11,7 @@ import {
 
 export default function Authenticated({ user, header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { openCasesCount, auth } = usePage().props;
+    const { openCasesCount, auth, flash } = usePage().props;
     
     const [isDarkMode, setIsDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -30,6 +30,35 @@ export default function Authenticated({ user, header, children }) {
             localStorage.setItem('theme', 'light');
         }
     }, [isDarkMode]);
+
+    useEffect(() => {
+        if (flash?.success) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Success',
+                text: flash.success,
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                customClass: {
+                    popup: '!rounded-xl !shadow-xl !border !border-slate-100 dark:border-slate-800',
+                }
+            });
+        }
+        if (flash?.error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Cannot Proceed',
+                text: flash.error,
+                confirmButtonColor: '#e11d48',
+                customClass: {
+                    popup: '!rounded-xl !shadow-xl !border !border-slate-100 dark:border-slate-800',
+                }
+            });
+        }
+    }, [flash]);
     
     // Fallback to auth.user if user is not explicitly passed as a prop
     const currentUser = user || auth?.user || {};
