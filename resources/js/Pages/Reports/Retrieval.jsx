@@ -155,7 +155,6 @@ export default function Retrieval({ cases, departments, violations, academicYear
                                         <option value="">All Severities</option>
                                         <option value="Minor">Minor</option>
                                         <option value="Major">Major</option>
-                                        <option value="Critical">Critical</option>
                                     </select>
                                 </div>
                             </div>

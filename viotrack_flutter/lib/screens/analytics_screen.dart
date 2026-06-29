@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -82,7 +82,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       final dateStr = v['created_at'] ?? '';
 
       if (status == 'pending') pending++;
-      if (status == 'resolved') resolved++;
+      if (status == 'resolved' || status == 'closed') resolved++;
       if (severity == 'major') major++;
       if (severity == 'minor') minor++;
 
@@ -280,7 +280,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            _statCard("Resolved", "$_resolvedCases", Icons.check_circle_outline_rounded, AppTheme.accentEmerald),
+            _statCard("Closed", "$_resolvedCases", Icons.check_circle_outline_rounded, AppTheme.accentEmerald),
             const SizedBox(width: 12),
             _statCard("Resolution %", "$resolutionRate%", Icons.trending_up_rounded, AppTheme.accentCyan),
           ],

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
@@ -179,7 +178,7 @@ class CasesScreenState extends State<CasesScreen> {
                         )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                           itemCount: _filteredViolations.length,
                           itemBuilder: (context, index) =>
                               _buildViolationCard(
@@ -479,7 +478,7 @@ class CasesScreenState extends State<CasesScreen> {
                         _applyFilters();
                       },
                       child: AnimatedContainer(
-                        duration: 200.ms,
+                        duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -523,7 +522,7 @@ class CasesScreenState extends State<CasesScreen> {
                 const SizedBox(width: 16),
                 _buildFilterGroup(
                     "Status",
-                    ["All", "Pending", "Hearing Scheduled", "Resolved"],
+                    ["All", "Pending", "Hearing Scheduled", "Closed"],
                     _selectedStatus, (val) {
                   if (mounted) setState(() => _selectedStatus = val);
                   _applyFilters();
@@ -557,7 +556,7 @@ class CasesScreenState extends State<CasesScreen> {
                 onSelected(opt);
               },
               child: AnimatedContainer(
-                duration: 200.ms,
+                duration: const Duration(milliseconds: 200),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -691,9 +690,7 @@ class CasesScreenState extends State<CasesScreen> {
           ),
         ),
       ),
-    ).animate()
-        .fadeIn(delay: Duration(milliseconds: 40 * (index > 6 ? 6 : index)))
-        .slideX(begin: 0.04);
+    );
   }
 
   String _formatDate(String dateStr) {

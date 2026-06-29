@@ -17,6 +17,7 @@ Route::prefix('mobile')->group(function () {
             return $request->user();
         });
         
+        Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
         Route::post('/update-fcm-token', [\App\Http\Controllers\Api\AuthController::class, 'updateFcmToken']);
         
         Route::get('/violations', [\App\Http\Controllers\Api\ViolationController::class, 'index']);

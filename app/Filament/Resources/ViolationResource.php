@@ -32,7 +32,6 @@ class ViolationResource extends Resource
                     ->options([
                         'Minor' => 'Minor',
                         'Major' => 'Major',
-                        'Critical' => 'Critical',
                     ])
                     ->required(),
                 Forms\Components\Textarea::make('default_description')

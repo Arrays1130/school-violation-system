@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:lottie/lottie.dart';
 import 'package:flutter/services.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
@@ -70,6 +68,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _markAllAsRead() async {
+    try {
+      await _apiService.markAllNotificationsAsRead();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('All notifications marked as read', style: GoogleFonts.outfit()),
+            backgroundColor: AppTheme.accentCyan,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        await _fetchNotifications(showLoading: false);
+      }
+    } catch (_) {}
   }
 
   Future<void> _handleNotificationTap(dynamic notification) async {
@@ -196,7 +210,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                           itemCount: _notifications.length,
                           itemBuilder: (context, index) =>
                               _buildNotificationItem(
@@ -240,7 +254,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ],
                 ),
               ),
-              if (unreadCount > 0)
+              if (unreadCount > 0) ...[
+                TextButton(
+                  onPressed: _markAllAsRead,
+                  child: Text(
+                    'Mark all read',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.accentCyan,
+                    ),
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
@@ -261,6 +286,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           color: Colors.white,
                           letterSpacing: 0.5)),
                 ),
+              ],
             ],
           ),
         ),
@@ -421,9 +447,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
         ),
       ),
-    ).animate()
-        .fadeIn(delay: Duration(milliseconds: 50 * (index > 6 ? 6 : index)))
-        .slideX(begin: 0.04);
+    );
   }
 
   String _formatDate(String dateStr) {

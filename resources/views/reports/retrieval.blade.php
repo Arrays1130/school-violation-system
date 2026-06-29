@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <div class="space-y-6 max-w-7xl mx-auto">
         {{-- Modern Header --}}
         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
@@ -81,7 +81,6 @@
                             <option value="">All Severities</option>
                             <option value="Minor" {{ request('severity') == 'Minor' ? 'selected' : '' }}>Minor</option>
                             <option value="Major" {{ request('severity') == 'Major' ? 'selected' : '' }}>Major</option>
-                            <option value="Critical" {{ request('severity') == 'Critical' ? 'selected' : '' }}>Critical</option>
                         </select>
                     </div>
                 </div>

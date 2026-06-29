@@ -468,8 +468,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Widget _buildTimeline(String currentStatus) {
-    final stages = ["Pending", "Hearing Scheduled", "Resolved"];
-    final currentIdx = stages.indexOf(currentStatus);
+    final stages = ["Pending", "Hearing Scheduled", "Closed"];
+    final currentIdx = stages.indexOf(currentStatus == 'Resolved' ? 'Closed' : currentStatus);
     
     return Container(
       padding: const EdgeInsets.all(28),

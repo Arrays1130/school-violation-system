@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:flutter/material.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -10,55 +9,46 @@ class NotificationService {
   WebSocketChannel? _channel;
   bool _isConnected = false;
 
+  /// WebSocket disabled on cloud hosts — prevents reconnect loops and crashes.
   void connect(String ip, Function(String) onNotification) {
     if (_isConnected) return;
+    if (ip.contains('onrender.com') || ip.contains('127.0.0.1') || ip.contains('localhost')) {
+      return;
+    }
 
     try {
-      // Reverb/Pusher compatible raw websocket connection
-      // We use the IP and port 8080 from the reverb:start command
       _channel = WebSocketChannel.connect(
-        Uri.parse('ws://$ip:8080/app/viotrack_key?protocol=7&client=js&version=8.4.0&flash=false'),
+        Uri.parse('ws://$ip:8080/app/viotrack_key?protocol=7&client=js&version=8.4.0'),
       );
 
-      _channel!.stream.listen((message) {
-        _isConnected = true;
-        final data = jsonDecode(message);
-        
-        // Handle Pusher-style events
-        if (data['event'] == 'App\\Events\\DashboardUpdated' || 
-            data['event'] == 'App\\Events\\ViolationRecorded') {
-          onNotification("Bagong update sa aming system! I-refresh ang dashboard.");
-        }
-        
-        // Respond to ping to keep connection alive
-        if (data['event'] == 'pusher:ping') {
-          _channel!.sink.add(jsonEncode({'event': 'pusher:pong'}));
-        }
-      }, onError: (err) {
-        _isConnected = false;
-        _reconnect(ip, onNotification);
-      }, onDone: () {
-        _isConnected = false;
-        _reconnect(ip, onNotification);
-      });
-
-      // Subscribe to public channel
-      _channel!.sink.add(jsonEncode({
-        'event': 'pusher:subscribe',
-        'data': {'channel': 'dashboard-channel'}
-      }));
-
-    } catch (e) {
+      _channel!.stream.listen(
+        (message) {
+          _isConnected = true;
+          try {
+            final data = jsonDecode(message);
+            if (data is! Map) return;
+            final event = data['event']?.toString() ?? '';
+            if (event.contains('DashboardUpdated') || event.contains('ViolationRecorded')) {
+              onNotification('May bagong update sa system.');
+            }
+            if (event == 'pusher:ping') {
+              _channel!.sink.add(jsonEncode({'event': 'pusher:pong'}));
+            }
+          } catch (_) {}
+        },
+        onError: (_) => _isConnected = false,
+        onDone: () => _isConnected = false,
+        cancelOnError: true,
+      );
+    } catch (_) {
       _isConnected = false;
     }
   }
 
-  void _reconnect(String ip, Function(String) onNotification) {
-    Future.delayed(const Duration(seconds: 5), () => connect(ip, onNotification));
-  }
-
   void disconnect() {
-    _channel?.sink.close();
+    try {
+      _channel?.sink.close();
+    } catch (_) {}
     _isConnected = false;
   }
 }

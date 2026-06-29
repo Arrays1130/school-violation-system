@@ -50,7 +50,7 @@ class ShimmerLoader extends StatelessWidget {
       children: List.generate(3, (index) => Expanded(
         child: Padding(
           padding: EdgeInsets.only(right: index == 2 ? 0 : 12),
-          child: const ShimmerLoader.rounded(height: 110, width: double.infinity),
+          child: const ShimmerLoader.rounded(height: 90, width: double.infinity),
         ),
       )),
     );

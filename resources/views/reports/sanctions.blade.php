@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     @section('header', 'Sanctions Report')
 
     <div class="space-y-6 max-w-7xl mx-auto">
@@ -92,7 +92,6 @@
                         <option value="">All Severities</option>
                         <option value="Minor"  {{ request('severity') == 'Minor'  ? 'selected' : '' }}>Minor</option>
                         <option value="Major"  {{ request('severity') == 'Major'  ? 'selected' : '' }}>Major</option>
-                        <option value="Critical" {{ request('severity') == 'Critical' ? 'selected' : '' }}>Critical</option>
                     </select>
                 </div>
 

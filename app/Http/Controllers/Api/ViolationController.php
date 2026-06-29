@@ -51,20 +51,31 @@ class ViolationController extends Controller
     public function stats(Request $request)
     {
         $user = $request->user();
-        $dept = $user->department;
-        
-        $cacheKey = 'mobile_dashboard_stats_' . md5($dept);
-        
-        $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($dept) {
-            $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
+        $scope = $user->isDean() && $user->department
+            ? 'dean:' . $user->department
+            : 'all';
 
-            // 1. Status Counts
-            $counts = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
-                    $q->where(function($sub) use ($dept, $longDept) {
+        $cacheKey = 'mobile_dashboard_stats_' . md5($scope);
+
+        $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($user) {
+            $applyDeptScope = function ($query) use ($user) {
+                if (! $user->isDean() || ! $user->department) {
+                    return $query;
+                }
+
+                $dept = $user->department;
+                $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
+
+                return $query->whereHas('student', function ($q) use ($dept, $longDept) {
+                    $q->where(function ($sub) use ($dept, $longDept) {
                         $sub->where('department', $dept)->orWhere('department', $longDept);
                     });
-                })
-                ->selectRaw("status, count(*) as count")
+                });
+            };
+
+            // 1. Status Counts
+            $counts = $applyDeptScope(StudentCase::query())
+                ->selectRaw('status, count(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status');
 
@@ -73,11 +84,7 @@ class ViolationController extends Controller
         $resolved = $counts->get('Closed', 0);
 
         // 2. Top Offenses
-        $topOffenses = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
-                $q->where(function($sub) use ($dept, $longDept) {
-                    $sub->where('department', $dept)->orWhere('department', $longDept);
-                });
-            })
+        $topOffenses = $applyDeptScope(StudentCase::query())
             ->join('violations', 'cases.violation_id', '=', 'violations.id')
             ->selectRaw('violations.title, count(*) as count')
             ->groupBy('violations.title')
@@ -86,11 +93,7 @@ class ViolationController extends Controller
             ->get();
 
         // 3. Upcoming Hearings
-        $upcomingHearings = \App\Models\Hearing::whereHas('case.student', function($q) use ($dept, $longDept) {
-                $q->where(function($sub) use ($dept, $longDept) {
-                    $sub->where('department', $dept)->orWhere('department', $longDept);
-                });
-            })
+        $upcomingHearings = $applyDeptScope(\App\Models\Hearing::query())
             ->with(['case.student', 'case.violation'])
             ->where('scheduled_at', '>=', now())
             ->orderBy('scheduled_at', 'asc')
@@ -98,22 +101,14 @@ class ViolationController extends Controller
             ->get();
 
         // 4. Severity Distribution (for Pie Chart)
-        $severityStats = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
-                $q->where(function($sub) use ($dept, $longDept) {
-                    $sub->where('department', $dept)->orWhere('department', $longDept);
-                });
-            })
+        $severityStats = $applyDeptScope(StudentCase::query())
             ->join('violations', 'cases.violation_id', '=', 'violations.id')
             ->selectRaw('violations.severity, count(*) as count')
             ->groupBy('violations.severity')
             ->pluck('count', 'severity');
 
             // 5. Monthly Trends (Last 6 Months for Bar Chart)
-            $rawMonthlyTrend = StudentCase::whereHas('student', function($q) use ($dept, $longDept) {
-                    $q->where(function($sub) use ($dept, $longDept) {
-                        $sub->where('department', $dept)->orWhere('department', $longDept);
-                    });
-                })
+            $rawMonthlyTrend = $applyDeptScope(StudentCase::query())
                 ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
                 ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->groupBy('month')
