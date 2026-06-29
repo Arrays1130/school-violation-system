@@ -2,14 +2,16 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Student;
-use App\Models\Violation;
 use App\Models\StudentCase;
 use App\Models\User;
+use App\Models\Violation;
+use Database\Seeders\Concerns\SeedsWithoutFaker;
+use Illuminate\Database\Seeder;
 
 class CaseSeeder extends Seeder
 {
+    use SeedsWithoutFaker;
     public function run(): void
     {
         $students = Student::all();
@@ -18,7 +20,7 @@ class CaseSeeder extends Seeder
             'name' => 'Dean of Discipline',
             'email' => 'dean@cst.edu.ph',
             'password' => bcrypt('password'),
-            'role' => 'Dean',
+            'role' => 'admin',
         ]);
 
         $scenarios = [
@@ -91,20 +93,17 @@ class CaseSeeder extends Seeder
             
             // Pick a realistic scenario description based on the violation code
             $scenarioList = $scenarios[$violation->code] ?? ['Official violation case recorded by the Dean of Discipline.'];
-            $scenario = fake()->randomElement($scenarioList);
+            $scenario = $this->pick($scenarioList);
 
-            $date = fake()->dateTimeBetween('-3 months', 'now');
-            
-            // Distribute status realistically
-            $status = fake()->randomElement(['Pending', 'Pending', 'Closed', 'Hearing Scheduled']);
-            
-            // Major offenses are highly weighted towards "Hearing Scheduled" or "Closed" (if older)
+            $date = $this->randomBetween(now()->subMonths(3), now());
+
+            $status = $this->pick(['Pending', 'Pending', 'Closed', 'Hearing Scheduled']);
+
             if ($violation->severity == 'Major') {
-                $status = fake()->randomElement(['Hearing Scheduled', 'Hearing Scheduled', 'Closed']);
+                $status = $this->pick(['Hearing Scheduled', 'Hearing Scheduled', 'Closed']);
             }
-            
-            // Older cases are naturally resolved/closed
-            if ($date < now()->subMonth()) {
+
+            if ($date->lt(now()->subMonth())) {
                 $status = 'Closed';
             }
 

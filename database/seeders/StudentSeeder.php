@@ -2,12 +2,15 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Student;
+use Database\Seeders\Concerns\SeedsWithoutFaker;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class StudentSeeder extends Seeder
 {
+    use SeedsWithoutFaker;
+
     public function run(): void
     {
         $departments = [
@@ -24,13 +27,13 @@ class StudentSeeder extends Seeder
             'Juan', 'Maria', 'Jose', 'Angelo', 'Jayson', 'Ramil', 'Manuel', 'Ricardo', 'Antonio', 'Crisanto',
             'Janice', 'Rhea', 'Camille', 'Shaira', 'Princess', 'Precious', 'Abigail', 'Rachelle', 'Jovelyn', 'Angelica',
             'Christian', 'John Paul', 'Joshua', 'Aldrin', 'Jerome', 'Mark', 'Arnel', 'Jeffrey', 'Dexter', 'Renato',
-            'Michelle', 'Roxanne', 'Jonalyn', 'Mary Joy', 'Jocelyn', 'Sheryl', 'Gemma', 'Marites', 'Kyla', 'Andrea'
+            'Michelle', 'Roxanne', 'Jonalyn', 'Mary Joy', 'Jocelyn', 'Sheryl', 'Gemma', 'Marites', 'Kyla', 'Andrea',
         ];
 
         $filipinoLastNames = [
             'Dela Cruz', 'Santos', 'Reyes', 'Aquino', 'Santiago', 'Mendoza', 'Bautista', 'Garcia', 'Cruz', 'Diaz',
             'Gonzales', 'Villanueva', 'Ramos', 'Castro', 'Mercado', 'Flores', 'Del Rosario', 'Pascual', 'Valenzuela', 'Soriano',
-            'Alcantara', 'Aquino', 'Mangahas', 'San Jose', 'Tolentino', 'Corpuz', 'Dizon', 'Salazar', 'Bermudez', 'Beltran'
+            'Alcantara', 'Aquino', 'Mangahas', 'San Jose', 'Tolentino', 'Corpuz', 'Dizon', 'Salazar', 'Bermudez', 'Beltran',
         ];
 
         $guardians = [
@@ -44,23 +47,22 @@ class StudentSeeder extends Seeder
             ['name' => 'Gregorio', 'relation' => 'Father'],
         ];
 
-        // Ensure we seed exactly 50 realistic students
         for ($i = 0; $i < 50; $i++) {
-            $firstName = fake()->randomElement($filipinoFirstNames);
-            $lastName = fake()->randomElement($filipinoLastNames);
-            $fullName = $firstName . ' ' . $lastName;
-            
-            $dept = fake()->randomElement($departments);
-            $year = fake()->randomElement($yearLevels);
-            $sec = fake()->randomElement($sections);
-            $sectionString = $year . '-' . $sec;
+            $firstName = $this->pick($filipinoFirstNames);
+            $lastName = $this->pick($filipinoLastNames);
+            $fullName = $firstName.' '.$lastName;
 
-            $emailName = strtolower(str_replace(' ', '', $firstName . '.' . $lastName));
-            $email = $emailName . $i . '@cst.edu.ph';
+            $dept = $this->pick($departments);
+            $year = $this->pick($yearLevels);
+            $sec = $this->pick($sections);
+            $sectionString = $year.'-'.$sec;
 
-            $g = fake()->randomElement($guardians);
-            $guardianName = $g['name'] . ' ' . $lastName;
-            $guardianEmail = strtolower($g['name'] . '.' . $lastName) . '@gmail.com';
+            $emailName = strtolower(str_replace(' ', '', $firstName.'.'.$lastName));
+            $email = $emailName.$i.'@cst.edu.ph';
+
+            $g = $this->pick($guardians);
+            $guardianName = $g['name'].' '.$lastName;
+            $guardianEmail = strtolower($g['name'].'.'.$lastName).'@gmail.com';
 
             Student::create([
                 'full_name' => $fullName,
@@ -70,7 +72,7 @@ class StudentSeeder extends Seeder
                 'email' => $email,
                 'guardian_name' => $guardianName,
                 'guardian_email' => $guardianEmail,
-                'guardian_phone' => '09' . fake()->numerify('#########'),
+                'guardian_phone' => $this->randomPhone(),
                 'password' => Hash::make('password'),
             ]);
         }
