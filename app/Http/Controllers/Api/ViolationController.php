@@ -93,12 +93,23 @@ class ViolationController extends Controller
             ->get();
 
         // 3. Upcoming Hearings
-        $upcomingHearings = $applyDeptScope(\App\Models\Hearing::query())
+        $hearingQuery = \App\Models\Hearing::query()
             ->with(['case.student', 'case.violation'])
             ->where('scheduled_at', '>=', now())
             ->orderBy('scheduled_at', 'asc')
-            ->limit(5)
-            ->get();
+            ->limit(5);
+
+        if ($user->isDean() && $user->department) {
+            $dept = $user->department;
+            $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
+            $hearingQuery->whereHas('case.student', function ($q) use ($dept, $longDept) {
+                $q->where(function ($sub) use ($dept, $longDept) {
+                    $sub->where('department', $dept)->orWhere('department', $longDept);
+                });
+            });
+        }
+
+        $upcomingHearings = $hearingQuery->get();
 
         // 4. Severity Distribution (for Pie Chart)
         $severityStats = $applyDeptScope(StudentCase::query())
