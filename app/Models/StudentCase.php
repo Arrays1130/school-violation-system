@@ -18,13 +18,7 @@ class StudentCase extends Model
     public static function clearDashboardCache($case = null)
     {
         try {
-            \Illuminate\Support\Facades\Cache::forget('dashboard.data');
-            if ($case && $case->student) {
-                \Illuminate\Support\Facades\Cache::forget('dean_dashboard.data.' . md5($case->student->department));
-            }
-            foreach (DepartmentResolver::cacheKeysForDeanDashboard() as $cacheKey) {
-                \Illuminate\Support\Facades\Cache::forget($cacheKey);
-            }
+            \Illuminate\Support\Facades\Cache::flush();
         } catch (\Exception $e) {}
     }
 

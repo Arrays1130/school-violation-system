@@ -158,7 +158,18 @@ export default function Authenticated({ user, header, children }) {
             items: [
                 { name: 'Handbook', href: route('handbooks.index'), icon: BookOpen, isExternal: true, activeCheck: () => route().current('handbooks.*') },
                 { name: 'Meeting Minutes', href: route('meeting-minutes.index'), icon: ClipboardList, isExternal: true, activeCheck: () => route().current('meeting-minutes.*') },
-                { name: 'Reports', href: route('reports.index'), icon: BarChart3, isExternal: true, activeCheck: () => route().current('reports.index') || route().current('reports.*') },
+                {
+                    name: 'Reports',
+                    href: route('reports.index'),
+                    icon: BarChart3,
+                    isExternal: true,
+                    activeCheck: () => (route().current('reports.*') && !route().current('reports.retrieval') && !route().current('reports.audit-logs')) || route().current('reports.index'),
+                    subItems: [
+                        { name: 'Violation Ledger', href: route('reports.index'), icon: List, isExternal: true, activeCheck: () => route().current('reports.index') },
+                        { name: 'System Statistics', href: route('reports.system'), icon: BarChart3, isExternal: true, activeCheck: () => route().current('reports.system') },
+                        { name: 'Sanction Reports', href: route('reports.sanctions'), icon: FileWarning, isExternal: true, activeCheck: () => route().current('reports.sanctions') },
+                    ]
+                },
                 { name: 'Record Retrieval', href: route('reports.retrieval'), icon: Database, isExternal: true, activeCheck: () => route().current('reports.retrieval') },
             ],
         },

@@ -68,6 +68,7 @@ class StudentSeeder extends Seeder
                 'full_name' => $fullName,
                 'section' => $sectionString,
                 'year_level' => $year,
+                'academic_year' => 'SY 2024-2025',
                 'department' => $dept,
                 'email' => $email,
                 'guardian_name' => $guardianName,
