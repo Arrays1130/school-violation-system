@@ -116,20 +116,28 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Center(
+                  child: Image.asset(
+                    'assets/images/ilink_logo.png',
+                    width: 90,
+                    height: 90,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Center(
                   child: Image.asset(
                     'assets/images/viotrack_logo.png',
-                    width: 110,
-                    height: 110,
+                    width: 100,
+                    height: 100,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Text(
                   'VioTrack',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 28,
+                    fontSize: 26,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textMain,
                   ),
@@ -137,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'Dean Portal · v2.0',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textMuted),
+                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
                 ),
                 const SizedBox(height: 40),
                 Text(
