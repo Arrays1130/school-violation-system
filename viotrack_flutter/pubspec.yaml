@@ -107,11 +107,11 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/viotrack_logo.png"
 
 flutter_native_splash:
   color: "#FAFBFC"
-  image: "assets/images/logo.png"
+  image: "assets/images/viotrack_logo.png"
   android_12:
     color: "#FAFBFC"
-    image: "assets/images/logo.png"
+    image: "assets/images/viotrack_logo.png"

@@ -118,15 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 24),
                 Center(
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.heroGradient,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: AppTheme.softShadow,
-                    ),
-                    child: const Icon(Icons.shield_outlined, color: Colors.white, size: 40),
+                  child: Image.asset(
+                    'assets/images/viotrack_logo.png',
+                    width: 110,
+                    height: 110,
                   ),
                 ),
                 const SizedBox(height: 24),
