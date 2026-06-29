@@ -23,15 +23,42 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/wipe-students-now', function () {
-    try {
-        \App\Models\Student::withTrashed()->forceDelete();
-        \App\Models\StudentCase::clearDashboardCache();
-        return 'SUCCESS! All students have been completely deleted from the database.';
-    } catch (\Throwable $e) {
-        return 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
-    }
-});
+if (app()->environment('local') && config('app.debug')) {
+    Route::get('/test-sms', function () {
+        $apiUrl = env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message');
+        $username = env('SMS_GATEWAY_USERNAME');
+        $password = env('SMS_GATEWAY_PASSWORD');
+        $phoneNumber = env('SMS_TEST_NUMBER');
+
+        abort_unless($username && $password && $phoneNumber, 404);
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withBasicAuth($username, $password)
+                ->post($apiUrl, [
+                    'textMessage' => ['text' => 'Test SMS from School Violation System (local only).'],
+                    'phoneNumbers' => [$phoneNumber],
+                ]);
+
+            if ($response->successful()) {
+                return 'SUCCESS! Test SMS sent.';
+            }
+
+            return 'FAILED (Status: '.$response->status().') — '.$response->body();
+        } catch (\Exception $e) {
+            return 'ERROR: '.$e->getMessage();
+        }
+    });
+
+    Route::get('/view-logs-xyz', function () {
+        $path = storage_path('logs/laravel.log');
+        abort_unless(file_exists($path), 404);
+
+        $lines = file($path);
+        $lastLines = array_slice($lines, -150);
+
+        return response(implode('', $lastLines), 200, ['Content-Type' => 'text/plain']);
+    });
+}
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -145,43 +172,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
-
-use Illuminate\Support\Facades\Http;
-
-Route::get('/test-sms', function () {
-    $apiUrl = env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message');
-    $username = env('SMS_GATEWAY_USERNAME', 'IG8TFT');
-    $password = env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al');
-
-    // Pinalitan ko ng +63 format ang number mo dahil yun ang required ng Android app
-    $phoneNumber = '+639660249726';
-
-    try {
-        $response = Http::withBasicAuth($username, $password)
-            ->post($apiUrl, [
-                'textMessage' => [
-                    'text' => 'Hello! Test SMS ito galing sa School Violation System Capstone!',
-                ],
-                'phoneNumbers' => [$phoneNumber],
-            ]);
-
-        if ($response->successful()) {
-            return 'SUCCESS! Na-send ang message. Check mo yung phone mo kung nag-text.';
-        } else {
-            return 'FAILED (Status: '.$response->status().')<br>Error Message: '.$response->body();
-        }
-    } catch (\Exception $e) {
-        return 'ERROR: Hindi ma-contact ang Android Phone. Make sure nasa parehas na Wi-Fi ang laptop at phone. <br>Error Details: '.$e->getMessage();
-    }
-});
-
-Route::get('/view-logs-xyz', function () {
-    $path = storage_path('logs/laravel.log');
-    if (file_exists($path)) {
-        // Read last 150 lines
-        $lines = file($path);
-        $lastLines = array_slice($lines, -150);
-        return response(implode("", $lastLines), 200, ['Content-Type' => 'text/plain']);
-    }
-    return 'Log file not found';
-});
