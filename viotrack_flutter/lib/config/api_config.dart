@@ -21,7 +21,16 @@ class ApiConfig {
 
   static String get baseUrl {
     if (kIsWeb) {
-      return _rawBaseUrl;
+      if (_rawBaseUrl != productionUrl && _rawBaseUrl != laragonUrl) {
+        return _rawBaseUrl;
+      }
+      // Same-origin API when dean web app is hosted on Laravel (e.g. /dean-app/)
+      final uri = Uri.base;
+      if (uri.path.contains('/public/')) {
+        final idx = uri.path.indexOf('/public/');
+        return '${uri.origin}${uri.path.substring(0, idx + '/public'.length)}/api';
+      }
+      return '${uri.origin}/api';
     }
 
     try {

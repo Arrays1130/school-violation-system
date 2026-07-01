@@ -23,6 +23,28 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Dean mobile web app (Flutter Web — iPhone PWA, same API as Android APK)
+Route::get('/dean-app', function () {
+    $index = public_path('dean-app/index.html');
+    abort_unless(file_exists($index), 404, 'Dean app not built. Run: scripts/build-dean-web.ps1');
+
+    return response()->file($index, ['Content-Type' => 'text/html; charset=UTF-8']);
+})->name('dean-app');
+
+Route::get('/dean-app/{path}', function (string $path) {
+    $safePath = str_replace(['..', '\\'], '', $path);
+    $file = public_path('dean-app/'.$safePath);
+
+    if ($safePath !== '' && file_exists($file) && is_file($file)) {
+        return response()->file($file);
+    }
+
+    $index = public_path('dean-app/index.html');
+    abort_unless(file_exists($index), 404);
+
+    return response()->file($index, ['Content-Type' => 'text/html; charset=UTF-8']);
+})->where('path', '.*');
+
 if (app()->environment('local') && config('app.debug')) {
     Route::get('/test-sms', function () {
         $apiUrl = env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message');

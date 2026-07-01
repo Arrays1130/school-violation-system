@@ -29,6 +29,8 @@ WORKDIR /var/www
 # Copy existing application directory contents
 COPY . /var/www
 
+# Dean mobile web app: pre-built in public/dean-app (run scripts/build-dean-web.ps1 before deploy)
+
 # Install PHP dependencies
 ENV COMPOSER_MEMORY_LIMIT=-1
 RUN composer install --no-dev --optimize-autoloader --prefer-source --no-progress --no-interaction
