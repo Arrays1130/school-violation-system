@@ -18,6 +18,20 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ViolationController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health', function () {
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+
+        return response()->json([
+            'status' => 'ok',
+            'app' => config('app.name'),
+            'time' => now()->toIso8601String(),
+        ]);
+    } catch (\Throwable) {
+        return response()->json(['status' => 'error'], 503);
+    }
+})->name('health');
+
 Route::get('/', function () {
     return redirect()->route('login');
 });

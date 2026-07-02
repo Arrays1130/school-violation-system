@@ -125,9 +125,9 @@ export default function Login({ status, canResetPassword }) {
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-gray-900 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all uppercase tracking-wide"
+                            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50 shadow-blue-600/20"
                         >
-                            Sign In
+                            {processing ? "Signing In..." : "Sign In"}
                         </button>
                     </div>
                 </form>

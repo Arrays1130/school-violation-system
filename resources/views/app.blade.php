@@ -27,11 +27,6 @@
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
         @inertiaHead
-        <style>
-            /* Completely hide scrollbars globally for seamless premium SaaS UI */
-            ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-            * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
-        </style>
     </head>
     <body class="font-sans antialiased h-full">
         @inertia

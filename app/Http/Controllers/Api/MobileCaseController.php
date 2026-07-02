@@ -7,7 +7,7 @@ use App\Models\CaseAction;
 use App\Models\CaseAttachment;
 use App\Models\StudentCase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use App\Support\AttachmentStorage;
 
 class MobileCaseController extends Controller
 {
@@ -41,10 +41,10 @@ class MobileCaseController extends Controller
             }
         }
 
-        if (! Storage::disk('local')->exists($attachment->file_path)) {
+        if (! AttachmentStorage::disk()->exists($attachment->file_path)) {
             return response()->json(['message' => 'File not found'], 404);
         }
 
-        return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
+        return AttachmentStorage::disk()->download($attachment->file_path, $attachment->file_name);
     }
 }

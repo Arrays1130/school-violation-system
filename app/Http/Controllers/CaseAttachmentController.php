@@ -10,7 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Support\AttachmentStorage;
 
 class CaseAttachmentController extends Controller
 {
@@ -218,11 +218,11 @@ class CaseAttachmentController extends Controller
     {
         $this->resolveAuthorizedCase($attachment);
 
-        if (! Storage::disk('local')->exists($attachment->file_path)) {
+        if (! AttachmentStorage::disk()->exists($attachment->file_path)) {
             return back()->with('error', 'File not found on server.');
         }
 
-        return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
+        return AttachmentStorage::disk()->download($attachment->file_path, $attachment->file_name);
     }
 
     public function destroy(CaseAttachment $attachment)
@@ -230,7 +230,7 @@ class CaseAttachmentController extends Controller
         $case = $this->resolveAuthorizedCase($attachment);
         $this->authorize('update', $case);
 
-        Storage::disk('local')->delete($attachment->file_path);
+        AttachmentStorage::disk()->delete($attachment->file_path);
         $attachment->delete();
 
         return back()->with('success', 'Document deleted successfully.');
@@ -242,7 +242,7 @@ class CaseAttachmentController extends Controller
 
         $file = $request->file('file');
         $fileName = time().'_'.$file->getClientOriginalName();
-        $filePath = $file->storeAs('attachments', $fileName, 'local');
+        $filePath = $file->storeAs('attachments', $fileName, (string) config('filesystems.attachments_disk', 'local'));
 
         CaseAttachment::create([
             'case_id' => $case->id,

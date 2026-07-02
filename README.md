@@ -6,7 +6,7 @@ Web and mobile platform for recording student violations, scheduling hearings, g
 
 | Layer | Technology |
 |-------|------------|
-| Backend | Laravel 12, Sanctum, Filament, DomPDF, Maatwebsite Excel |
+| Backend | Laravel 12, Sanctum, DomPDF, Maatwebsite Excel |
 | Web UI | Inertia.js, React 19, Tailwind CSS |
 | Real-time | Laravel Reverb |
 | Automation | n8n webhooks |
@@ -61,6 +61,9 @@ APP_URL=http://localhost:8000
 # Staff self-registration (keep false in production)
 REGISTRATION_ENABLED=false
 
+# Case attachments disk (use s3 on ephemeral hosts — see DEPLOY.md)
+ATTACHMENTS_DISK=local
+
 SCHOOL_NAME="I-Link CST"
 
 # n8n
@@ -79,6 +82,12 @@ REVERB_APP_SECRET=
 
 Departments are centralized in `config/school.php` (shortcut → full name). Update that file when colleges change.
 
+## Production deployment
+
+See **[DEPLOY.md](DEPLOY.md)** for Render setup, env vars, queue workers, S3 attachments, and post-deploy checks.
+
+Health endpoint: `GET /health` returns `{"status":"ok",...}` when the app and database are reachable.
+
 ## Mobile app (Flutter)
 
 ```bash
@@ -95,7 +104,7 @@ Use your machine's LAN IP when testing on a physical device. Android emulator: `
 php artisan test
 ```
 
-Includes authorization, registration lockdown, and mobile API department scoping tests.
+Includes authorization, registration lockdown, mobile API department scoping, health check, login smoke, and settings archive tests.
 
 ## Security notes
 
