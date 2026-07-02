@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <form action="{{ route('student.register.send_otp') }}" method="POST">
+        <form action="{{ route('student.register.send') }}" method="POST">
             @csrf
             
             <div class="bg-white/95 backdrop-blur-xl rounded-2xl ring-1 ring-slate-200/50 shadow-2xl overflow-hidden">

@@ -9,7 +9,7 @@
                 <i data-lucide="shield-check" class="w-8 h-8"></i>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2 tracking-tight">Verify Your Email</h2>
-            <p class="text-indigo-200/80 text-sm">We've sent a code to <span class="text-white font-medium">{{ session('registration_data.email') }}</span></p>
+            <p class="text-indigo-200/80 text-sm">We've sent a code to <span class="text-white font-medium">{{ session('pending_registration_email') }}</span></p>
         </div>
 
         <div class="bg-white/95 backdrop-blur-xl rounded-2xl ring-1 ring-slate-200/50 shadow-2xl p-6 sm:p-8">
@@ -24,7 +24,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('student.register.verify_otp') }}" method="POST">
+            <form action="{{ route('student.register.verify') }}" method="POST">
                 @csrf
                 <div class="mb-6">
                     <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">Enter 6-Digit OTP</label>
@@ -40,7 +40,7 @@
 
             <div class="mt-6 text-center">
                 <p class="text-xs text-slate-500 mb-2">Didn't receive the code?</p>
-                <form action="{{ route('student.register.resend_otp') }}" method="POST">
+                <form action="{{ route('student.register.resend') }}" method="POST">
                     @csrf
                     <button type="submit" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Resend OTP</button>
                 </form>
