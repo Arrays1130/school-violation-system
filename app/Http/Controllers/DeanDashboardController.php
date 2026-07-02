@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Support\DashboardCache;
 use App\Models\StudentCase;
 use App\Models\Student;
 use App\Models\Violation;
@@ -21,7 +22,7 @@ class DeanDashboardController extends Controller
         $department = !$user->isSuperAdmin() ? $user->department : 'All Departments';
         
         // Cache heavy metrics, lists, and charts per department to deliver exceptional capstone performance
-        $cacheKey = 'dean_dashboard.data.' . md5($department);
+        $cacheKey = DashboardCache::deanKey($department);
         $cachedData = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($department, $user) {
             // Base Query for students in the department
             $studentQuery = \App\Models\Student::query();
@@ -63,7 +64,7 @@ class DeanDashboardController extends Controller
             // --- Chart Data ---
             // 1. Monthly Trend (Last 6 Months)
             $rawMonthlyTrend = StudentCase::active()->whereIn('student_id', $studentIds)
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
+                ->selectRaw(\App\Support\SqlDate::yearMonth('created_at').' as month, COUNT(*) as count')
                 ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->groupBy('month')
                 ->pluck('count', 'month');
@@ -107,10 +108,10 @@ class DeanDashboardController extends Controller
                 ->get();
 
             $topRepeaters = \App\Models\Student::whereIn('id', $studentIds)
+                ->whereHas('cases', fn ($query) => $query->active())
                 ->withCount(['cases' => function ($query) {
                     $query->active();
                 }])
-                ->having('cases_count', '>', 0)
                 ->orderByDesc('cases_count')
                 ->take(5)
                 ->get();

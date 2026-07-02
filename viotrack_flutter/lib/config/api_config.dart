@@ -21,16 +21,14 @@ class ApiConfig {
 
   static String get baseUrl {
     if (kIsWeb) {
-      if (_rawBaseUrl != productionUrl && _rawBaseUrl != laragonUrl) {
-        return _rawBaseUrl;
-      }
-      // Same-origin API when dean web app is hosted on Laravel (e.g. /dean-app/)
+      // Same-origin API only when dean web app is hosted on Laravel (e.g. /dean-app/)
       final uri = Uri.base;
       if (uri.path.contains('/public/')) {
         final idx = uri.path.indexOf('/public/');
         return '${uri.origin}${uri.path.substring(0, idx + '/public'.length)}/api';
       }
-      return '${uri.origin}/api';
+      // Flutter dev server (localhost:random-port) — use configured API URL
+      return _rawBaseUrl;
     }
 
     try {

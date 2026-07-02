@@ -1,0 +1,52 @@
+/* Auth pages — outside @layer so styles always apply on Blade + Inertia */
+html.auth-page,
+body.auth-page {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: 100dvh !important;
+    height: 100% !important;
+    background-color: #7eb8e6 !important;
+    overflow-x: hidden !important;
+}
+
+html.auth-page #app {
+    min-height: 100dvh;
+    width: 100%;
+}
+
+.auth-bg-layer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    z-index: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    background-color: #7eb8e6;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* Fallback when using <img> inside the layer */
+.auth-bg-layer img {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    object-position: center !important;
+}
+
+.auth-screen {
+    position: relative;
+    width: 100%;
+    min-height: 100dvh;
+}

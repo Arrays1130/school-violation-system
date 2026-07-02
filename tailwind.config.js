@@ -30,9 +30,14 @@ export default {
                 "headline-xl": ["Manrope"]
             },
             colors: {
+                brand: {
+                    DEFAULT: '#0f172a',
+                    accent: '#0284c7',
+                    light: '#e0f2fe',
+                },
                 primary: {
-                    ...colors.blue,
-                    DEFAULT: colors.blue[600]
+                    ...colors.slate,
+                    DEFAULT: colors.slate[900],
                 },
                 secondary: {
                     ...colors.yellow,

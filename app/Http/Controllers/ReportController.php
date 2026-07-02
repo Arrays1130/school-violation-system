@@ -7,6 +7,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
+    private const EXPORT_LIMIT = 5000;
+
     public function index(Request $request)
     {
         $cases = $this->getFilteredCases($request)->paginate(15);
@@ -21,13 +23,26 @@ class ReportController extends Controller
 
     public function print(Request $request)
     {
-        $cases = $this->getFilteredCases($request)->get();
+        $query = $this->getFilteredCases($request);
+        $total = (clone $query)->count();
+        if ($total > self::EXPORT_LIMIT) {
+            return back()->with('error', "Export limited to ".self::EXPORT_LIMIT." records. You have {$total} — narrow your filters or use CSV export.");
+        }
+
+        $cases = $query->limit(self::EXPORT_LIMIT)->get();
+
         return view('reports.print', compact('cases'));
     }
 
     public function pdf(Request $request) 
     {
-        $cases = $this->getFilteredCases($request)->get();
+        $query = $this->getFilteredCases($request);
+        $total = (clone $query)->count();
+        if ($total > self::EXPORT_LIMIT) {
+            return back()->with('error', "Export limited to ".self::EXPORT_LIMIT." records. You have {$total} — narrow your filters or use CSV export.");
+        }
+
+        $cases = $query->limit(self::EXPORT_LIMIT)->get();
         // Uses standard View 'reports.pdf', no sidebar/layout
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.pdf', compact('cases'));
         return $pdf->download('violation_report_' . date('Y-m-d') . '.pdf');
@@ -109,6 +124,7 @@ class ReportController extends Controller
     public function sanctions(Request $request)
     {
         $query = \App\Models\StudentCase::query()
+            ->forUser($request->user())
             ->whereHas('student')
             ->with(['student', 'violation', 'closedByUser']);
 
@@ -136,7 +152,10 @@ class ReportController extends Controller
         $cases = $query->latest('occurred_at')->paginate(20)->appends($request->all());
 
         // Summary counters
-        $base = \App\Models\StudentCase::query()->whereHas('student')->whereNotNull('sanction');
+        $base = \App\Models\StudentCase::query()
+            ->forUser($request->user())
+            ->whereHas('student')
+            ->whereNotNull('sanction');
         $sanctionStatusCounts = (clone $base)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
             ->groupBy('status')->pluck('total', 'status');
 
@@ -160,16 +179,19 @@ class ReportController extends Controller
 
     public function system(Request $request)
     {
-        $cases = \App\Models\StudentCase::query()->whereHas('student')->with(['student', 'violation']);
+        $cases = \App\Models\StudentCase::query()
+            ->forUser($request->user())
+            ->whereHas('student')
+            ->with(['student', 'violation']);
 
         // Overview counters
-        $statusCounts = clone($cases)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+        $statusCounts = (clone $cases)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
             ->groupBy('status')->pluck('total', 'status');
 
         $total      = $statusCounts->sum();
         $pending    = $statusCounts['Pending'] ?? 0;
-        $hearing    = $statusCounts['Hearing Scheduled'] ?? 0;
-        $endorsed   = $statusCounts['Endorsed to Grievance'] ?? 0;
+        $hearing    = ($statusCounts['Hearing Scheduled'] ?? 0) + ($statusCounts['Hearing'] ?? 0);
+        $endorsed   = (clone $cases)->whereNotNull('endorsed_at')->count();
         $closed     = $statusCounts['Closed'] ?? 0;
 
         // Department breakdown
@@ -191,10 +213,11 @@ class ReportController extends Controller
 
         // Monthly trend (current year)
         $currentYear = now()->year;
+        $monthExpr = \App\Support\SqlDate::monthNumber('cases.occurred_at');
         $monthlyTrend = (clone $cases)
             ->whereYear('cases.occurred_at', $currentYear)
-            ->selectRaw('MONTH(cases.occurred_at) as month, COUNT(*) as total')
-            ->groupByRaw('MONTH(cases.occurred_at)')
+            ->selectRaw("{$monthExpr} as month, COUNT(*) as total")
+            ->groupByRaw($monthExpr)
             ->orderBy('month')
             ->pluck('total', 'month')
             ->toArray();
@@ -203,8 +226,8 @@ class ReportController extends Controller
             ->join('violations as minor_violations', 'cases.violation_id', '=', 'minor_violations.id')
             ->whereYear('cases.occurred_at', $currentYear)
             ->where('minor_violations.severity', 'Minor')
-            ->selectRaw('MONTH(cases.occurred_at) as month, COUNT(*) as total')
-            ->groupByRaw('MONTH(cases.occurred_at)')
+            ->selectRaw("{$monthExpr} as month, COUNT(*) as total")
+            ->groupByRaw($monthExpr)
             ->orderBy('month')
             ->pluck('total', 'month')
             ->toArray();
@@ -213,8 +236,8 @@ class ReportController extends Controller
             ->join('violations as major_violations', 'cases.violation_id', '=', 'major_violations.id')
             ->whereYear('cases.occurred_at', $currentYear)
             ->whereIn('major_violations.severity', ['Major', 'Critical'])
-            ->selectRaw('MONTH(cases.occurred_at) as month, COUNT(*) as total')
-            ->groupByRaw('MONTH(cases.occurred_at)')
+            ->selectRaw("{$monthExpr} as month, COUNT(*) as total")
+            ->groupByRaw($monthExpr)
             ->orderBy('month')
             ->pluck('total', 'month')
             ->toArray();
@@ -244,29 +267,6 @@ class ReportController extends Controller
         ]);
     }
 
-    public function bulkAction(Request $request)
-    {
-        abort_unless($request->user()->isSuperAdmin(), 403);
-
-        $ids = $request->input('selected_ids', []);
-        $action = $request->input('action');
-        if (empty($ids) || empty($action)) {
-            return redirect()->back()->with('error', 'No cases selected or action specified.');
-        }
-        switch ($action) {
-            case 'mark_reviewed':
-                \App\Models\StudentCase::whereIn('id', $ids)->update(['reviewed' => true]);
-                break;
-            case 'close':
-                \App\Models\StudentCase::whereIn('id', $ids)->update(['status' => 'Closed']);
-                break;
-            default:
-                // Add other bulk actions here
-                break;
-        }
-        return redirect()->back()->with('status', 'Bulk action applied successfully.');
-    }
-
     private function getFilteredCases(Request $request)
     {
         $query = \App\Models\StudentCase::query()
@@ -281,7 +281,11 @@ class ReportController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'endorsed') {
+                $query->whereNotNull('endorsed_at');
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->filled('severity')) {

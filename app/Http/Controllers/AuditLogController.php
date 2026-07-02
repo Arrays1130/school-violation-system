@@ -35,10 +35,20 @@ class AuditLogController extends Controller
 
         $logs = $query->paginate(20)->appends($request->all());
 
+        $logs->getCollection()->transform(function ($log) {
+            return $this->formatActivityForInertia($log);
+        });
+
         $users = User::orderBy('name')->get(['id', 'name', 'email', 'role']);
         $subjectTypes = $this->subjectTypeOptions();
 
-        return view('reports.audit-logs', compact('logs', 'stats', 'users', 'subjectTypes'));
+        return inertia('Reports/AuditLogs', [
+            'logs' => $logs,
+            'stats' => $stats,
+            'users' => $users,
+            'subjectTypes' => $subjectTypes,
+            'filters' => $request->all(),
+        ]);
     }
 
     public function export(Request $request): StreamedResponse
@@ -165,6 +175,35 @@ class AuditLogController extends Controller
             User::class => 'User Account',
             Hearing::class => 'Hearing',
             Violation::class => 'Violation Rule',
+        ];
+    }
+
+    protected function formatActivityForInertia(Activity $log): array
+    {
+        $changedFields = $this->formatter->changedFields($log);
+
+        return [
+            'id' => $log->id,
+            'created_at_date' => $log->created_at->format('M d, Y'),
+            'created_at_time' => $log->created_at->format('h:i:s A'),
+            'causer_initial' => strtoupper(substr($log->causer->name ?? 'S', 0, 1)),
+            'causer_name' => $log->causer->name ?? 'System',
+            'causer_email' => $log->causer->email ?? 'Automated action',
+            'event' => $log->event ?? 'unknown',
+            'event_icon' => $this->formatter->eventIcon($log->event ?? ''),
+            'event_color' => $this->formatter->eventColor($log->event ?? ''),
+            'subject_label' => $this->formatter->subjectLabel($log),
+            'subject_id' => $log->subject_id,
+            'subject_url' => $this->formatter->subjectUrl($log),
+            'has_changes' => count($changedFields) > 0,
+            'change_summary' => $this->formatter->changeSummary($log),
+            'description' => $log->description,
+            'detail' => count($changedFields) > 0 ? [
+                'event' => $log->event,
+                'subject_label' => $this->formatter->subjectLabel($log),
+                'subject_id' => $log->subject_id,
+                'fields' => $changedFields,
+            ] : null,
         ];
     }
 }

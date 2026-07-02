@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\ScopedForUser;
 use App\Support\DepartmentResolver;
+use App\Support\DashboardCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,16 +19,28 @@ class Student extends Authenticatable
     protected static function booted()
     {
         static::created(function ($student) {
-            \App\Models\StudentCase::clearDashboardCache();
-            try { event(new \App\Events\DashboardUpdated('New student registered')); } catch (\Exception $e) {}
+            DashboardCache::bust();
+            try {
+                event(new \App\Events\DashboardUpdated('New student registered'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after student create', ['error' => $e->getMessage()]);
+            }
         });
         static::updated(function ($student) {
-            \App\Models\StudentCase::clearDashboardCache();
-            try { event(new \App\Events\DashboardUpdated('Student updated')); } catch (\Exception $e) {}
+            DashboardCache::bust();
+            try {
+                event(new \App\Events\DashboardUpdated('Student updated'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after student update', ['error' => $e->getMessage()]);
+            }
         });
         static::deleted(function ($student) {
-            \App\Models\StudentCase::clearDashboardCache();
-            try { event(new \App\Events\DashboardUpdated('Student removed')); } catch (\Exception $e) {}
+            DashboardCache::bust();
+            try {
+                event(new \App\Events\DashboardUpdated('Student removed'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after student delete', ['error' => $e->getMessage()]);
+            }
         });
     }
 

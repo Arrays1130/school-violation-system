@@ -38,8 +38,9 @@ class HearingController extends Controller
         ];
 
         $hearing = Hearing::create($hearingData);
+        $hearing->load(['case.student', 'case.violation']);
 
-        $hearing->case->update(['status' => 'Hearing Scheduled']);
+        $hearing->case->transitionStatus('Hearing Scheduled');
         
         // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY (QUEUED) ---
         $guardianPhone = $hearing->case->student->guardian_phone;
@@ -58,7 +59,7 @@ class HearingController extends Controller
             'student_name' => collect([$hearing->case->student->first_name, $hearing->case->student->middle_name, $hearing->case->student->last_name])->filter()->join(' '),
             'student_email' => $hearing->case->student->email,
             'guardian_email' => $hearing->case->student->guardian_email,
-            'guardian_contact' => $hearing->case->student->guardian_contact,
+            'guardian_contact' => $hearing->case->student->guardian_phone,
             'department' => $hearing->case->student->department,
             'venue' => $hearing->venue,
             'scheduled_at' => \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A'),
@@ -136,6 +137,7 @@ class HearingController extends Controller
         try {
             event(new DashboardUpdated('Hearing updated'));
         } catch (\Exception $e) {
+            \Log::warning('Dashboard event dispatch failed after hearing update', ['error' => $e->getMessage()]);
         }
 
         session()->flash('success', 'Hearing updated successfully.');
@@ -155,6 +157,7 @@ class HearingController extends Controller
         try {
             event(new DashboardUpdated('Hearing deleted'));
         } catch (\Exception $e) {
+            \Log::warning('Dashboard event dispatch failed after hearing delete', ['error' => $e->getMessage()]);
         }
 
         session()->flash('success', 'Hearing deleted successfully.');
@@ -174,12 +177,9 @@ class HearingController extends Controller
             'sanction' => 'required|string',
         ]);
 
-        $hearing->case->update([
-            'status' => 'Closed',
-            'sanction' => $request->sanction,
-            'closed_at' => now(),
-            'closed_by' => auth()->id(),
-        ]);
+        $case = $hearing->case;
+        $case->update(['sanction' => $request->sanction]);
+        $case->markClosed(auth()->id());
 
         return back()->with('success', 'Hearing marked as completed and case closed with sanction.');
     }
@@ -188,7 +188,7 @@ class HearingController extends Controller
     {
         $this->authorize('start', $hearing);
 
-        $hearing->case->update(['status' => 'Hearing']);
+        $hearing->case->transitionStatus('Hearing');
 
         return back()->with('success', 'Hearing has officially started.');
     }

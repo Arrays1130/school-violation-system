@@ -16,11 +16,20 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ViolationController;
-use App\Http\Controllers\PublicStudentRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+// Public student self-registration (OTP via institutional email)
+Route::prefix('student')->name('student.')->group(function () {
+    Route::get('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showRegistrationForm'])->name('register.form');
+    Route::post('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'sendOtp'])->name('register.send');
+    Route::get('/register/verify', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showVerifyForm'])->name('register.verify_form');
+    Route::post('/register/verify', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'verifyOtp'])->name('register.verify');
+    Route::post('/register/resend-otp', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'resendOtp'])->name('register.resend');
+    Route::get('/register/success', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showSuccess'])->name('register.success');
 });
 
 // Dean mobile web app (Flutter Web — iPhone PWA, same API as Android APK)
@@ -45,43 +54,6 @@ Route::get('/dean-app/{path}', function (string $path) {
     return response()->file($index, ['Content-Type' => 'text/html; charset=UTF-8']);
 })->where('path', '.*');
 
-if (app()->environment('local') && config('app.debug')) {
-    Route::get('/test-sms', function () {
-        $apiUrl = env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message');
-        $username = env('SMS_GATEWAY_USERNAME');
-        $password = env('SMS_GATEWAY_PASSWORD');
-        $phoneNumber = env('SMS_TEST_NUMBER');
-
-        abort_unless($username && $password && $phoneNumber, 404);
-
-        try {
-            $response = \Illuminate\Support\Facades\Http::withBasicAuth($username, $password)
-                ->post($apiUrl, [
-                    'textMessage' => ['text' => 'Test SMS from School Violation System (local only).'],
-                    'phoneNumbers' => [$phoneNumber],
-                ]);
-
-            if ($response->successful()) {
-                return 'SUCCESS! Test SMS sent.';
-            }
-
-            return 'FAILED (Status: '.$response->status().') — '.$response->body();
-        } catch (\Exception $e) {
-            return 'ERROR: '.$e->getMessage();
-        }
-    });
-
-    Route::get('/view-logs-xyz', function () {
-        $path = storage_path('logs/laravel.log');
-        abort_unless(file_exists($path), 404);
-
-        $lines = file($path);
-        $lastLines = array_slice($lines, -150);
-
-        return response(implode('', $lastLines), 200, ['Content-Type' => 'text/plain']);
-    });
-}
-
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
@@ -90,7 +62,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/{id}/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
     Route::post('/notifications/mark-all-as-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
 
-    // Profile
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -146,7 +117,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/meeting-minutes/{meetingMinute}', [MeetingMinuteController::class, 'destroy'])->name('meeting-minutes.destroy');
 
     // Attachments (Files)
-    Route::post('/cases/{case}/attachments', [CaseAttachmentController::class, 'store'])->name('cases.attachments.store');
+    Route::post('/cases/{case}/attachments', [CaseAttachmentController::class, 'storeForCase'])->name('cases.attachments.store');
     Route::get('/attachments/{attachment}/view', [CaseAttachmentController::class, 'view'])->name('attachments.view');
     Route::get('/attachments/{attachment}/download', [CaseAttachmentController::class, 'download'])->name('attachments.download');
     Route::delete('/attachments/{attachment}', [CaseAttachmentController::class, 'destroy'])->name('attachments.destroy');

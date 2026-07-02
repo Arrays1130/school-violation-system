@@ -105,23 +105,12 @@ class StudentController extends Controller
     public function create()
     {
         $currentAcademicYear = \App\Models\SystemSetting::where('key', 'current_academic_year')->value('value') ?? 'SY 2024-2025';
-        return view('students.create', compact('currentAcademicYear'));
+        return inertia('Students/Create', compact('currentAcademicYear'));
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreStudentRequest $request)
     {
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'required|email|unique:students,email',
-            'section' => 'required|string|max:255',
-            'year_level' => 'required|string|max:255',
-            'academic_year' => 'nullable|string|max:255',
-            'department' => 'required|string|max:255',
-            'guardian_name' => 'nullable|string|max:255',
-            'guardian_email' => 'nullable|email',
-            'guardian_phone' => 'nullable|string|max:20',
-        ]);
+        $validated = $request->validated();
 
         // Avoid a shared/default password across all students.
         // If STUDENT_DEFAULT_PASSWORD is unset, we generate a random password per student.
@@ -147,28 +136,17 @@ class StudentController extends Controller
         
         $messageTemplates = \App\Models\MessageTemplate::latest()->get();
         
-        return view('students.show', compact('student', 'offenseSummary', 'messageTemplates'));
+        return inertia('Students/Show', compact('student', 'offenseSummary', 'messageTemplates'));
     }
 
     public function edit(\App\Models\Student $student)
     {
-        return view('students.edit', compact('student'));
+        return inertia('Students/Edit', compact('student'));
     }
 
-    public function update(Request $request, \App\Models\Student $student)
+    public function update(\App\Http\Requests\UpdateStudentRequest $request, \App\Models\Student $student)
     {
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'required|email|unique:students,email,' . $student->id,
-            'section' => 'required|string|max:255',
-            'year_level' => 'required|string|max:255',
-            'academic_year' => 'nullable|string|max:255',
-            'department' => 'required|string|max:255',
-            'guardian_name' => 'nullable|string|max:255',
-            'guardian_email' => 'nullable|email',
-            'guardian_phone' => 'nullable|string|max:20',
-        ]);
+        $validated = $request->validated();
 
         $student->update($validated);
 
@@ -237,7 +215,9 @@ class StudentController extends Controller
 
         // Clear dashboard cache and dispatch event once after bulk operation
         \App\Models\StudentCase::clearDashboardCache();
-        try { event(new \App\Events\DashboardUpdated('Bulk graduated 4th-year students')); } catch (\Exception $e) {}
+        try { event(new \App\Events\DashboardUpdated('Bulk graduated 4th-year students')); } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after bulk graduation', ['error' => $e->getMessage()]);
+        }
 
         return redirect()->route('students.index')->with('success', "Successfully graduated and archived {$count} 4th-year students for {$academicYear}.");
     }
@@ -250,7 +230,10 @@ class StudentController extends Controller
         abort_if(auth()->user()->isDean(), 403);
 
         $students = \App\Models\Student::onlyTrashed()->withCount('cases')->latest()->paginate(15);
-        return view('students.trash', compact('students'));
+
+        return inertia('Students/Trash', [
+            'students' => $students,
+        ]);
     }
 
     /**
@@ -311,9 +294,16 @@ class StudentController extends Controller
             return response()->json([]);
         }
 
-        $students = \App\Models\Student::onlyTrashed()
-            ->where('academic_year_graduated', $academicYear)
-            ->get(['id', 'full_name', 'department', 'section', 'year_level', 'deleted_at', 'academic_year_graduated']);
+        $query = \App\Models\Student::onlyTrashed()
+            ->where('academic_year_graduated', $academicYear);
+
+        $user = $request->user();
+        if ($user && $user->isDean()) {
+            $deanDept = \App\Support\DepartmentResolver::shortcutToLong($user->department);
+            $query->where('department', $deanDept);
+        }
+
+        $students = $query->get(['id', 'full_name', 'department', 'section', 'year_level', 'deleted_at', 'academic_year_graduated']);
 
         return response()->json($students);
     }
@@ -331,7 +321,7 @@ class StudentController extends Controller
     {
         $this->authorize('import', \App\Models\Student::class);
 
-        return view('students.import');
+        return inertia('Students/Import');
     }
 
     public function import(Request $request)
@@ -356,8 +346,8 @@ class StudentController extends Controller
 
             return redirect()->route('students.index')->with('success', 'Students imported successfully.');
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Student Import Failure: ' . $e->getMessage());
-            return back()->with('error', 'Error importing students: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Student Import Failure', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Unable to import students. Please verify the file format and try again.');
         }
     }
 
@@ -497,9 +487,17 @@ class StudentController extends Controller
                 }
 
                 try {
+                    $smsUrl = env('SMS_GATEWAY_URL');
+                    $smsUser = env('SMS_GATEWAY_USERNAME');
+                    $smsPass = env('SMS_GATEWAY_PASSWORD');
+
+                    if (! $smsUrl || ! $smsUser || ! $smsPass) {
+                        throw new \Exception('SMS gateway is not configured.');
+                    }
+
                     $response = \Illuminate\Support\Facades\Http::timeout(5)
-                        ->withBasicAuth(env('SMS_GATEWAY_USERNAME', 'IG8TFT'), env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al'))
-                        ->post(env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message'), [
+                        ->withBasicAuth($smsUser, $smsPass)
+                        ->post($smsUrl, [
                             'textMessage' => [
                                 'text' => $request->message
                             ],
@@ -527,7 +525,7 @@ class StudentController extends Controller
                     $subject = 'SVS Notification: Message from School';
                     $body = (new \App\Mail\CustomMessage($subject, $request->message))->render();
 
-                    $response = \Illuminate\Support\Facades\Http::post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
+                    $response = \Illuminate\Support\Facades\Http::timeout(10)->post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
                         'to' => $student->guardian_email,
                         'subject' => $subject,
                         'body' => $body

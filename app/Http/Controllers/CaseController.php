@@ -34,7 +34,11 @@ class CaseController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'endorsed') {
+                $query->whereNotNull('endorsed_at');
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->filled('severity')) {
@@ -119,7 +123,7 @@ class CaseController extends Controller
         // Fallback or explicit "null" handling if needed
         $data['sanction'] = $sanction ?: 'Sanction pending determination.';
 
-        $case = \App\Models\StudentCase::create($data);
+        $case = \App\Models\StudentCase::createForStaff($data, auth()->id());
         
         // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY (QUEUED) ---
         $guardianPhone = $case->student->guardian_phone;
@@ -192,16 +196,14 @@ class CaseController extends Controller
                 };
 
                 // Create the Major Case
-                $escalatedCase = \App\Models\StudentCase::create([
+                $escalatedCase = \App\Models\StudentCase::createForStaff([
                     'student_id' => $data['student_id'],
                     'violation_id' => $escalationViolation->id,
                     'description' => "System automatically generated this Major offense because the student reached {$totalMinors} minor offenses.",
                     'occurred_at' => now(),
-                    'status' => 'Pending',
-                    'created_by' => auth()->id() ?? 1, // Fallback to 1 if system runs it
                     'offense_level' => $escalationLevel,
                     'sanction' => $escalationSanction,
-                ]);
+                ], auth()->id() ?? 1);
 
                 // Dispatch Real-time Event for Escalated Case
                 event(new \App\Events\ViolationRecorded($escalatedCase));
@@ -320,6 +322,13 @@ class CaseController extends Controller
             'caseRecord' => $case,
             'offenseHistory' => $offenseHistory,
             'offenseSummary' => $offenseSummary,
+            'workflow' => [
+                'can_close' => $case->canClose(),
+                'can_endorse' => $case->canEndorse(),
+                'close_block_reason' => $case->closureBlockReason(),
+                'endorse_block_reason' => $case->endorseBlockReason(),
+                'needs_osa_action' => $case->isMajorOffense() && ! $case->canEndorseToGrievance(),
+            ],
             'auth' => ['user' => auth()->user()]
         ]);
     }
@@ -343,16 +352,15 @@ class CaseController extends Controller
 
     public function destroy(\App\Models\StudentCase $case)
     {
-        $studentId = $case->student_id;
         $case->delete();
 
         session()->flash('success', 'Violation record moved to trash.');
 
         if (request()->header('X-Inertia')) {
-            return \Inertia\Inertia::location(route('students.show', $studentId));
+            return \Inertia\Inertia::location(route('cases.index'));
         }
 
-        return redirect()->route('students.show', $studentId);
+        return redirect()->route('cases.index');
     }
 
     /**
@@ -367,7 +375,9 @@ class CaseController extends Controller
             ->latest('deleted_at')
             ->paginate(15);
             
-        return view('cases.trash', compact('cases'));
+        return inertia('Cases/Trash', [
+            'cases' => $cases,
+        ]);
     }
 
     /**
@@ -407,11 +417,11 @@ class CaseController extends Controller
     {
         $this->authorize('close', $case);
 
-        $case->update([
-            'status'    => 'Closed',
-            'closed_at' => now(),
-            'closed_by' => auth()->id(),
-        ]);
+        if ($reason = $case->closureBlockReason()) {
+            return back()->with('error', $reason);
+        }
+
+        $case->markClosed(auth()->id());
 
         // Trigger Webhook for Case Closed Asynchronously
         \App\Jobs\TriggerN8nWebhook::dispatch('case_closed', [
@@ -433,6 +443,9 @@ class CaseController extends Controller
     public function print(\App\Models\StudentCase $case)
     {
         $case->load(['student', 'violation', 'hearings', 'actions.user']);
-        return view('cases.print', compact('case'));
+
+        return inertia('Cases/Print', [
+            'case' => $case,
+        ]);
     }
 }

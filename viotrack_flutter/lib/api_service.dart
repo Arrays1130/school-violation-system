@@ -142,10 +142,10 @@ class ApiService {
     SessionService.reset();
   }
 
-  Future<dynamic> getViolations({bool forcedRefresh = false}) async {
+  Future<dynamic> getViolations({bool forcedRefresh = false, int page = 1}) async {
     return _getWithCache(
-      cacheKey: 'violations',
-      uri: Uri.parse('$baseUrl/mobile/violations'),
+      cacheKey: page == 1 ? 'violations' : 'violations_page_$page',
+      uri: Uri.parse('$baseUrl/mobile/violations?page=$page'),
       forcedRefresh: forcedRefresh,
     );
   }
@@ -166,10 +166,18 @@ class ApiService {
     );
   }
 
-  Future<dynamic> getNotifications({bool forcedRefresh = false}) async {
+  Future<dynamic> getAnalytics({bool forcedRefresh = false}) async {
     return _getWithCache(
-      cacheKey: 'notifications',
-      uri: Uri.parse('$baseUrl/mobile/notifications'),
+      cacheKey: 'analytics',
+      uri: Uri.parse('$baseUrl/mobile/analytics'),
+      forcedRefresh: forcedRefresh,
+    );
+  }
+
+  Future<dynamic> getNotifications({bool forcedRefresh = false, int page = 1}) async {
+    return _getWithCache(
+      cacheKey: page == 1 ? 'notifications' : 'notifications_page_$page',
+      uri: Uri.parse('$baseUrl/mobile/notifications?page=$page'),
       forcedRefresh: forcedRefresh,
     );
   }
@@ -228,9 +236,11 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body)['count'] ?? 0;
       }
-    } catch (_) {}
-
-    return 0;
+      throw Exception('Unread count failed (${response.statusCode})');
+    } catch (e) {
+      if (e.toString().contains('Session expired')) rethrow;
+      rethrow;
+    }
   }
 
   Future<void> markNotificationAsRead(String id) async {
@@ -240,7 +250,28 @@ class ApiService {
       headers: headers,
     );
     _handleUnauthorized(response);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to mark notification as read');
+    }
+    _cache.remove('notifications');
+    _cacheExpiry.remove('notifications');
   }
+
+  Future<void> acknowledgeCase(int caseId) async {
+    final headers = await _authHeaders();
+    headers['Content-Type'] = 'application/json';
+    final response = await http.post(
+      Uri.parse('$baseUrl/mobile/cases/$caseId/acknowledge'),
+      headers: headers,
+    );
+    _handleUnauthorized(response);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to acknowledge case');
+    }
+    clearCache();
+  }
+
+  Future<Map<String, String>> authHeadersForImages() => _authHeaders();
 
   Future<void> markAllNotificationsAsRead() async {
     final headers = await _authHeaders();
@@ -249,7 +280,10 @@ class ApiService {
       headers: headers,
     );
     _handleUnauthorized(response);
-    _cache.remove('notifications');
-    _cacheExpiry.remove('notifications');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to mark all notifications as read');
+    }
+    _cache.removeWhere((key, _) => key.startsWith('notifications'));
+    _cacheExpiry.removeWhere((key, _) => key.startsWith('notifications'));
   }
 }

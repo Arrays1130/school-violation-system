@@ -70,4 +70,9 @@ class StudentCasePolicy
     {
         return $this->isStaff($user);
     }
+
+    public function acknowledge(User $user, StudentCase $case): bool
+    {
+        return $this->view($user, $case);
+    }
 }

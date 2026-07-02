@@ -22,6 +22,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   final ApiService _apiService = ApiService();
   Map<String, dynamic>? _case;
   bool _isLoading = true;
+  bool _acknowledging = false;
+  Map<String, String>? _authHeaders;
 
   @override
   void initState() {
@@ -30,7 +32,13 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       _case = widget.initialData;
       _isLoading = false;
     }
+    _loadAuthHeaders();
     _fetchDetails();
+  }
+
+  Future<void> _loadAuthHeaders() async {
+    final headers = await _apiService.authHeadersForImages();
+    if (mounted) setState(() => _authHeaders = headers);
   }
 
   Future<void> _fetchDetails({bool force = false}) async {
@@ -47,10 +55,52 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     }
   }
 
+  Future<void> _acknowledgeCase() async {
+    if (_acknowledging) return;
+    setState(() => _acknowledging = true);
+    try {
+      await _apiService.acknowledgeCase(widget.caseId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Case acknowledged.', style: GoogleFonts.outfit()),
+          backgroundColor: AppTheme.accentEmerald,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      await _fetchDetails(force: true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not acknowledge case.', style: GoogleFonts.outfit()),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _acknowledging = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final endorsed = _case?['endorsed_at'] != null;
+    final status = _case?['status']?.toString() ?? 'Pending';
+    final showAcknowledge = endorsed && status != 'Closed' && status != 'Resolved';
+
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
+      floatingActionButton: showAcknowledge
+          ? FloatingActionButton.extended(
+              onPressed: _acknowledging ? null : _acknowledgeCase,
+              backgroundColor: AppTheme.primaryNavy,
+              icon: _acknowledging
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.check_circle_outline_rounded),
+              label: Text('Acknowledge', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            )
+          : null,
       body: _isLoading
           ? SafeArea(
               child: Padding(
@@ -102,13 +152,13 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       color: AppTheme.accentCyan,
       child: CustomScrollView(
         slivers: [
-        // â”€â”€ Sticky Header with Background Pattern â”€â”€
+        // Sticky header with refined gradient
         SliverAppBar(
-          expandedHeight: 240,
+          expandedHeight: 220,
           pinned: true,
           elevation: 0,
           stretch: true,
-          backgroundColor: _getSeverityColor(severity),
+          backgroundColor: AppTheme.primaryNavy,
           leading: IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -128,8 +178,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        _getSeverityColor(severity).withOpacity(0.85),
-                        _getSeverityColor(severity),
+                        AppTheme.primaryNavy,
+                        AppTheme.primaryIndigo,
+                        _getSeverityColor(severity).withOpacity(0.9),
                       ],
                     ),
                   ),
@@ -137,7 +188,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                 _buildPattern(),
                 // User Profile Header
                 Positioned(
-                  bottom: 40,
+                  bottom: 34,
                   left: 24,
                   right: 24,
                   child: GestureDetector(
@@ -157,11 +208,11 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                           child: Material(
                             color: Colors.transparent,
                             child: Container(
-                                width: 84,
-                                height: 84,
+                                width: 76,
+                                height: 76,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(24),
+                                  borderRadius: BorderRadius.circular(22),
                                   boxShadow: [
                                     BoxShadow(
                                       color: _getSeverityColor(severity).withOpacity(0.5),
@@ -194,7 +245,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                               Text(
                                   student['full_name'] ?? 'Unknown Student',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 26,
+                                    fontSize: 24,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
                                     letterSpacing: -0.5,
@@ -210,18 +261,18 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                                 ),
                               const SizedBox(height: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: _getSeverityColor(severity).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: _getSeverityColor(severity).withOpacity(0.5)),
+                                  color: Colors.white.withOpacity(0.14),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white.withOpacity(0.28)),
                                 ),
                                 child: Text(
                                   severity.toUpperCase(),
                                   style: GoogleFonts.outfit(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                                    color: Colors.white.withOpacity(0.95),
                                     letterSpacing: 1.0,
                                   ),
                                 ),
@@ -261,19 +312,19 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     _buildStatusCard(status, statusColor, severity),
                     const SizedBox(height: 24),
 
-                    // Violation Info (Bento Grid)
+                    // Violation info
                     _buildSectionHeader("CASE DETAILS", Icons.dashboard_rounded),
                     const SizedBox(height: 12),
                     _buildBentoGrid(violation, severity),
                     const SizedBox(height: 24),
 
-                    // Schedule Timeline
+                    // Schedule timeline
                     _buildSectionHeader("Process Timeline", Icons.timeline_rounded),
                     const SizedBox(height: 16),
                     _buildTimeline(status),
                     const SizedBox(height: 24),
 
-                    // Hearing Details
+                    // Hearing details
                     if (_case!['hearings'] != null && (_case!['hearings'] as List).isNotEmpty) ...[
                       _buildSectionHeader("Official Hearing", Icons.calendar_month_rounded),
                       const SizedBox(height: 12),
@@ -301,7 +352,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Widget _buildPattern() {
     return Opacity(
-      opacity: 0.05,
+      opacity: 0.035,
       child: CustomPaint(
         painter: GridPainter(),
       ),
@@ -310,33 +361,34 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Widget _buildStatusCard(String status, Color color, String severity) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.7)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           )
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
-            child: Icon(Icons.shield_rounded, color: color, size: 26),
+            child: Icon(Icons.shield_rounded, color: color, size: 22),
           ),
-          const SizedBox(width: 18),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Case Status", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textMuted, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
-                Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5)),
+                Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5)),
               ],
             ),
           ),
@@ -357,16 +409,47 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppTheme.textMuted.withOpacity(0.5)),
-          const SizedBox(width: 10),
-          Text(title.toUpperCase(), style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 2.0)),
-        ],
-      ),
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryIndigo.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 14, color: AppTheme.primaryIndigo),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title.toUpperCase(),
+          style: GoogleFonts.outfit(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textMuted,
+            letterSpacing: 1.6,
+          ),
+        ),
+      ],
     );
+  }
+
+  String _formatSeverityLevel() {
+    final level = _case?['offense_level'];
+    if (level == null) return 'N/A';
+
+    final raw = level.toString().trim();
+    if (raw.isEmpty) return 'N/A';
+
+    if (RegExp(r'^\d+$').hasMatch(raw)) {
+      return 'Level $raw';
+    }
+
+    if (RegExp(r'^[ivxlcdm]+$', caseSensitive: false).hasMatch(raw)) {
+      return 'Level ${raw.toUpperCase()}';
+    }
+
+    return raw;
   }
 
   Widget _buildBentoGrid(Map<String, dynamic> violation, String severity) {
@@ -388,7 +471,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
               flex: 1,
               child: _buildBentoCard(
                 title: "Case ID",
-                content: "#00${widget.caseId}",
+                content: "#${widget.caseId.toString().padLeft(4, '0')}",
                 icon: Icons.tag_rounded,
                 color: AppTheme.accentCyan,
               ),
@@ -409,8 +492,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildBentoCard(
-                title: "Severity Level",
-                content: _case!['offense_level']?.toString() ?? severity,
+                title: "Offense Level",
+                content: _formatSeverityLevel(),
                 icon: Icons.bar_chart_rounded,
                 color: _getSeverityColor(severity),
               ),
@@ -430,16 +513,16 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Widget _buildBentoCard({required String title, required String content, required IconData icon, required Color color}) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.06), width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.08), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           )
         ],
       ),
@@ -457,7 +540,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                 child: Icon(icon, size: 14, color: color),
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(title.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 1.2), overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text(title.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 1.1), overflow: TextOverflow.ellipsis)),
             ],
           ),
           const SizedBox(height: 12),
@@ -468,8 +551,16 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Widget _buildTimeline(String currentStatus) {
-    final stages = ["Pending", "Hearing Scheduled", "Closed"];
-    final currentIdx = stages.indexOf(currentStatus == 'Resolved' ? 'Closed' : currentStatus);
+    final endorsed = _case?['endorsed_at'] != null;
+    final stages = ["Pending", "Hearing", "Endorsed", "Closed"];
+    int currentIdx = 0;
+    if (currentStatus == 'Closed' || currentStatus == 'Resolved') {
+      currentIdx = 3;
+    } else if (endorsed) {
+      currentIdx = 2;
+    } else if (currentStatus == 'Hearing Scheduled') {
+      currentIdx = 1;
+    }
     
     return Container(
       padding: const EdgeInsets.all(28),
@@ -591,7 +682,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         itemCount: attachments.length,
         itemBuilder: (context, index) {
           final att = attachments[index];
-          final isImage = att['file_path'].toString().contains(RegExp(r'\.(jpg|jpeg|png)$'));
+          final url = (att['mobile_download_url'] ?? att['file_path'])?.toString() ?? '';
+          final isImage = url.contains(RegExp(r'\.(jpg|jpeg|png|webp)', caseSensitive: false));
           return Container(
             width: 140,
             margin: const EdgeInsets.only(right: 12),
@@ -599,9 +691,16 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: AppTheme.softShadow,
-              image: isImage ? DecorationImage(image: NetworkImage(att['file_path']), fit: BoxFit.cover) : null,
             ),
-            child: !isImage ? const Center(child: Icon(Icons.insert_drive_file_rounded, color: AppTheme.textMuted)) : null,
+            clipBehavior: Clip.antiAlias,
+            child: isImage && _authHeaders != null
+                ? Image.network(
+                    url,
+                    headers: _authHeaders,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image_rounded, color: AppTheme.textMuted)),
+                  )
+                : const Center(child: Icon(Icons.insert_drive_file_rounded, color: AppTheme.textMuted)),
           );
         },
       ),

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,60 +7,87 @@ import '../theme/app_theme.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
 import 'case_details_screen.dart';
+import 'main_layout.dart';
+import '../widgets/app_ui.dart';
+import '../utils/notification_pagination.dart';
 
 class NotificationScreen extends StatefulWidget {
+  const NotificationScreen({super.key});
+
   @override
-  _NotificationScreenState createState() => _NotificationScreenState();
+  NotificationScreenState createState() => NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
+class NotificationScreenState extends State<NotificationScreen> {
   final ApiService _apiService = ApiService();
+  final ScrollController _scrollController = ScrollController();
   List<dynamic> _notifications = [];
   bool _isLoading = true;
-  Timer? _autoRefreshTimer;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  int _lastPage = 1;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadInitialData();
-    _autoRefreshTimer = Timer.periodic(
-        const Duration(seconds: 30), (_) => _fetchNotifications(showLoading: false));
+  }
+
+  void refreshFromPoller() {
+    if (!mounted) return;
+    _fetchNotifications(showLoading: false, reset: true);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _currentPage < _lastPage) {
+      _loadMore();
+    }
   }
 
   Future<void> _loadInitialData() async {
     final cachedData = await _apiService.getPersistentCache('notifications');
     if (cachedData != null && mounted) {
-      if (mounted) setState(() {
-        if (cachedData is Map && cachedData.containsKey('data')) {
-          _notifications = cachedData['data'] as List<dynamic>;
-        } else if (cachedData is List) {
-          _notifications = cachedData;
-        }
+      setState(() {
+        _applyPageResult(cachedData, reset: true);
         _isLoading = false;
       });
     }
-    await _fetchNotifications(showLoading: _isLoading);
+    await _fetchNotifications(showLoading: _isLoading, reset: true);
+  }
+
+  void _applyPageResult(dynamic result, {required bool reset}) {
+    final applied = NotificationPagination.applyPage(
+      existing: _notifications,
+      result: result,
+      reset: reset,
+      currentPage: _currentPage,
+      lastPage: _lastPage,
+    );
+    _notifications = applied['items'] as List<dynamic>;
+    _currentPage = applied['currentPage'] as int;
+    _lastPage = applied['lastPage'] as int;
   }
 
   @override
   void dispose() {
-    _autoRefreshTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchNotifications({bool showLoading = true}) async {
+  Future<void> _fetchNotifications({bool showLoading = true, bool reset = true}) async {
     if (showLoading && mounted) {
-      if (mounted) setState(() => _isLoading = true);
+      setState(() => _isLoading = true);
     }
     try {
-      final dynamic result = await _apiService.getNotifications(forcedRefresh: true);
+      final dynamic result =
+          await _apiService.getNotifications(forcedRefresh: true, page: 1);
       if (mounted) {
-        if (mounted) setState(() {
-          if (result is Map && result.containsKey('data')) {
-            _notifications = result['data'] as List<dynamic>;
-          } else if (result is List) {
-            _notifications = result;
-          }
+        setState(() {
+          _applyPageResult(result, reset: reset);
           _isLoading = false;
         });
       }
@@ -70,20 +96,51 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || _currentPage >= _lastPage) return;
+    setState(() => _isLoadingMore = true);
+    final nextPage = _currentPage + 1;
+    try {
+      final result =
+          await _apiService.getNotifications(forcedRefresh: true, page: nextPage);
+      if (mounted) {
+        setState(() {
+          _applyPageResult(result, reset: false);
+          _isLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  Future<void> _syncBadge() async {
+    MainLayout.of(context)?.refreshUnreadCount();
+  }
+
   Future<void> _markAllAsRead() async {
     try {
       await _apiService.markAllNotificationsAsRead();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('All notifications marked as read', style: GoogleFonts.outfit()),
-            backgroundColor: AppTheme.accentCyan,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        await _fetchNotifications(showLoading: false);
-      }
-    } catch (_) {}
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('All notifications marked as read', style: GoogleFonts.outfit()),
+          backgroundColor: AppTheme.accentCyan,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      await _fetchNotifications(showLoading: false);
+      await _syncBadge();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to mark all as read', style: GoogleFonts.outfit()),
+          backgroundColor: AppTheme.accentRose,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _handleNotificationTap(dynamic notification) async {
@@ -93,8 +150,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ? Map<String, dynamic>.from(jsonDecode(notification['data']))
         : Map<String, dynamic>.from(notification['data']);
     if (notification['read_at'] == null) {
-      await _apiService.markNotificationAsRead(id);
-      _fetchNotifications();
+      try {
+        await _apiService.markNotificationAsRead(id);
+        await _fetchNotifications(showLoading: false);
+        await _syncBadge();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to mark as read', style: GoogleFonts.outfit()),
+            backgroundColor: AppTheme.accentRose,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
     if (data.containsKey('case_id')) {
       if (!mounted) return;
@@ -118,7 +187,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             );
           },
         ),
-      ).then((_) => _fetchNotifications());
+      ).then((_) => _fetchNotifications(showLoading: false));
     } else {
       if (!mounted) return;
       _showDetailsDialog(notification['title'] ?? 'Notification Details', data);
@@ -192,7 +261,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           _buildHeader(unreadCount),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: _fetchNotifications,
+              onRefresh: () => _fetchNotifications(reset: true),
               color: AppTheme.accentCyan,
               child: _isLoading
                   ? Padding(
@@ -209,12 +278,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ),
                         )
                       : ListView.builder(
+                          controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          itemCount: _notifications.length,
-                          itemBuilder: (context, index) =>
-                              _buildNotificationItem(
-                                  _notifications[index], index),
+                          itemCount:
+                              _notifications.length + (_isLoadingMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index >= _notifications.length) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primary,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            }
+                            return _buildNotificationItem(
+                                _notifications[index], index);
+                          },
                         ),
             ),
           ),
@@ -224,73 +307,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildHeader(int unreadCount) {
-    return Container(
-      color: Colors.white,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Notifications",
-                        style: GoogleFonts.outfit(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.textMain)),
-                    if (unreadCount > 0)
-                      Text("$unreadCount unread",
-                          style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: AppTheme.accentCyan,
-                              fontWeight: FontWeight.w600))
-                    else
-                      Text("All caught up",
-                          style: GoogleFonts.outfit(
-                              fontSize: 12, color: AppTheme.textMuted)),
-                  ],
-                ),
+    return AppUi.gradientHeader(
+      greeting: unreadCount > 0 ? '$unreadCount unread updates' : 'All caught up',
+      title: 'Notifications',
+      trailing: unreadCount > 0
+          ? TextButton(
+              onPressed: _markAllAsRead,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              if (unreadCount > 0) ...[
-                TextButton(
-                  onPressed: _markAllAsRead,
-                  child: Text(
-                    'Mark all read',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.accentCyan,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.accentGradient,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                          color: AppTheme.accentCyan.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Text("$unreadCount NEW",
-                      style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 0.5)),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+              child: Text(
+                'Mark all read',
+                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            )
+          : null,
     );
   }
 
@@ -315,7 +349,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: isUnread ? AppTheme.softShadow : null,
         border: isUnread
-            ? Border.all(color: AppTheme.accentCyan.withOpacity(0.15))
+            ? Border.all(color: AppTheme.accentCyan.withOpacity(0.22))
             : Border.all(color: AppTheme.inputBorder.withOpacity(0.5)),
       ),
       child: Material(

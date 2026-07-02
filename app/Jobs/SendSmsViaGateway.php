@@ -27,11 +27,17 @@ class SendSmsViaGateway implements ShouldQueue
      */
     public function handle(): void
     {
-        try {
-            $smsUrl = env('SMS_GATEWAY_URL', 'https://api.sms-gate.app/3rdparty/v1/message');
-            $smsUser = env('SMS_GATEWAY_USERNAME', 'IG8TFT');
-            $smsPass = env('SMS_GATEWAY_PASSWORD', 'q4lzeljjwx--al');
+        $smsUrl = env('SMS_GATEWAY_URL');
+        $smsUser = env('SMS_GATEWAY_USERNAME');
+        $smsPass = env('SMS_GATEWAY_PASSWORD');
 
+        if (! $smsUrl || ! $smsUser || ! $smsPass) {
+            Log::warning('SMS gateway skipped: credentials not configured.');
+
+            return;
+        }
+
+        try {
             $phone = $this->phone;
             if (str_starts_with($phone, '0')) {
                 $phone = '+63' . substr($phone, 1);

@@ -23,7 +23,17 @@ class EmailLogController extends Controller
 
         $logs = $query->latest()->paginate(20);
 
-        return view('reports.email-logs', compact('logs'));
+        $logs->getCollection()->transform(function ($log) {
+            return array_merge($log->toArray(), [
+                'created_at_date' => $log->created_at->format('M d, Y'),
+                'created_at_time' => $log->created_at->format('h:i A'),
+            ]);
+        });
+
+        return inertia('Reports/EmailLogs', [
+            'logs' => $logs,
+            'filters' => $request->only('search'),
+        ]);
     }
     public function destroy(\App\Models\EmailLog $emailLog)
     {

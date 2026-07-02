@@ -14,7 +14,16 @@ class SettingsController extends Controller
         }
 
         $currentAcademicYear = \App\Models\SystemSetting::where('key', 'current_academic_year')->value('value');
-        return view('settings.index', compact('currentAcademicYear'));
+
+        $currentYear = (int) date('Y');
+        $academicYears = collect(range($currentYear - 5, $currentYear + 5))
+            ->map(fn ($y) => "SY {$y}-".($y + 1))
+            ->values();
+
+        return inertia('Settings/Index', [
+            'currentAcademicYear' => $currentAcademicYear,
+            'academicYears' => $academicYears,
+        ]);
     }
 
     public function update(Request $request)

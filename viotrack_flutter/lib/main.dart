@@ -10,12 +10,14 @@ import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/security_service.dart';
 import 'services/session_service.dart';
+import 'services/push_bootstrap.dart';
 import 'api_service.dart';
 
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     await GoogleFonts.pendingFonts();
+    await PushBootstrap.init();
 
     FlutterError.onError = (details) {
       FlutterError.presentError(details);

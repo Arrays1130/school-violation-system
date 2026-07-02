@@ -5,31 +5,18 @@ import { Menu as HeadlessMenu, Transition } from '@headlessui/react';
 import {
     LayoutDashboard, GraduationCap, FolderOpen, ShieldAlert, BookOpen,
     ClipboardList, BarChart3, Sparkles, Settings, LogOut, Menu, Bell, History,
-    UserCircle, ChevronRight, X, Shield, Database, MessageSquare, FileWarning, CheckCircle2, Moon, Sun,
+    UserCircle, ChevronRight, X, Shield, Database, MessageSquare, FileWarning, CheckCircle2,
     Trash2, List, Sliders
 } from 'lucide-react';
 
 export default function Authenticated({ user, header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { openCasesCount, auth, flash } = usePage().props;
-    
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('theme') === 'dark' || 
-                (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        }
-        return false;
-    });
 
     useEffect(() => {
-        if (isDarkMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [isDarkMode]);
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    }, []);
 
     useEffect(() => {
         if (flash?.success) {
@@ -127,18 +114,16 @@ export default function Authenticated({ user, header, children }) {
                     name: 'Students', 
                     href: route('students.index'), 
                     icon: GraduationCap, 
-                    isExternal: true, 
                     activeCheck: () => route().current('students.*'),
                     subItems: [
-                        { name: 'All Students', href: route('students.index'), icon: List, isExternal: true, activeCheck: () => route().current('students.index') || route().current('students.show') || route().current('students.edit') || route().current('students.create') },
-                        ...(currentUser?.role !== 'dean' ? [{ name: 'Trash Bin', href: route('students.trash'), icon: Trash2, isExternal: true, activeCheck: () => route().current('students.trash') }] : []),
+                        { name: 'All Students', href: route('students.index'), icon: List, activeCheck: () => route().current('students.index') || route().current('students.show') || route().current('students.edit') || route().current('students.create') || route().current('students.import') || route().current('students.trash') },
+                        ...(currentUser?.role !== 'dean' ? [{ name: 'Trash Bin', href: route('students.trash'), icon: Trash2, activeCheck: () => route().current('students.trash') }] : []),
                     ]
                 },
                 { 
                     name: 'Violation Cases', 
                     href: route('cases.index'), 
                     icon: FolderOpen, 
-                    isExternal: true, 
                     activeCheck: () => route().current('cases.*') || route().current('hearings.*'),
                     badge: openCasesCount > 0 ? {
                         text: openCasesCount,
@@ -146,47 +131,45 @@ export default function Authenticated({ user, header, children }) {
                         inactiveClass: 'bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'
                     } : null,
                     subItems: [
-                        { name: 'All Cases', href: route('cases.index'), icon: List, isExternal: true, activeCheck: () => route().current('cases.index') || route().current('cases.show') || route().current('cases.edit') || route().current('cases.create') || route().current('hearings.*') },
-                        ...(currentUser?.role !== 'dean' ? [{ name: 'Trash Bin', href: route('cases.trash'), icon: Trash2, isExternal: true, activeCheck: () => route().current('cases.trash') }] : []),
+                        { name: 'All Cases', href: route('cases.index'), icon: List, activeCheck: () => route().current('cases.index') || route().current('cases.show') || route().current('cases.edit') || route().current('cases.create') || route().current('cases.trash') || route().current('hearings.*') },
+                        ...(currentUser?.role !== 'dean' ? [{ name: 'Trash Bin', href: route('cases.trash'), icon: Trash2, activeCheck: () => route().current('cases.trash') }] : []),
                     ]
                 },
-                { name: 'Rules & Violations', href: route('violations.index'), icon: FileWarning, isExternal: true, activeCheck: () => route().current('violations.*') },
+                { name: 'Rules & Violations', href: route('violations.index'), icon: FileWarning, activeCheck: () => route().current('violations.*') },
             ],
         },
         {
             label: 'Records',
             items: [
-                { name: 'Handbook', href: route('handbooks.index'), icon: BookOpen, isExternal: true, activeCheck: () => route().current('handbooks.*') },
-                { name: 'Meeting Minutes', href: route('meeting-minutes.index'), icon: ClipboardList, isExternal: true, activeCheck: () => route().current('meeting-minutes.*') },
+                { name: 'Handbook', href: route('handbooks.index'), icon: BookOpen, activeCheck: () => route().current('handbooks.*') },
+                { name: 'Meeting Minutes', href: route('meeting-minutes.index'), icon: ClipboardList, activeCheck: () => route().current('meeting-minutes.*') },
                 {
                     name: 'Reports',
                     href: route('reports.index'),
                     icon: BarChart3,
-                    isExternal: true,
-                    activeCheck: () => (route().current('reports.*') && !route().current('reports.retrieval') && !route().current('reports.audit-logs')) || route().current('reports.index'),
+                    activeCheck: () => (route().current('reports.*') && !route().current('reports.retrieval') && !route().current('reports.audit-logs') && !route().current('reports.email-logs')) || route().current('reports.index'),
                     subItems: [
-                        { name: 'Violation Ledger', href: route('reports.index'), icon: List, isExternal: true, activeCheck: () => route().current('reports.index') },
-                        { name: 'System Statistics', href: route('reports.system'), icon: BarChart3, isExternal: true, activeCheck: () => route().current('reports.system') },
-                        { name: 'Sanction Reports', href: route('reports.sanctions'), icon: FileWarning, isExternal: true, activeCheck: () => route().current('reports.sanctions') },
+                        { name: 'Violation Ledger', href: route('reports.index'), icon: List, activeCheck: () => route().current('reports.index') },
+                        { name: 'System Statistics', href: route('reports.system'), icon: BarChart3, activeCheck: () => route().current('reports.system') },
+                        { name: 'Sanction Reports', href: route('reports.sanctions'), icon: FileWarning, activeCheck: () => route().current('reports.sanctions') },
                     ]
                 },
-                { name: 'Record Retrieval', href: route('reports.retrieval'), icon: Database, isExternal: true, activeCheck: () => route().current('reports.retrieval') },
+                { name: 'Record Retrieval', href: route('reports.retrieval'), icon: Database, activeCheck: () => route().current('reports.retrieval') },
             ],
         },
         {
             label: 'System',
             items: [
-                ...(currentUser?.role === 'super_admin' ? [{ name: 'User Accounts', href: route('users.index'), icon: UserCircle, isExternal: true, activeCheck: () => route().current('users.*') }] : []),
+                ...(currentUser?.role === 'super_admin' ? [{ name: 'User Accounts', href: route('users.index'), icon: UserCircle, activeCheck: () => route().current('users.*') }] : []),
                 ...(currentUser?.role === 'super_admin' || currentUser?.role === 'dean' ? [
-                    { name: 'Audit Logs', href: route('reports.audit-logs'), icon: Shield, isExternal: true, activeCheck: () => route().current('reports.audit-logs') },
-                    { name: 'Message Templates', href: route('message-templates.index'), icon: MessageSquare, isExternal: true, activeCheck: () => route().current('message-templates.*') },
-                    { name: 'System Settings', href: route('settings.index'), icon: Sliders, isExternal: true, activeCheck: () => route().current('settings.*') }
+                    { name: 'Audit Logs', href: route('reports.audit-logs'), icon: Shield, activeCheck: () => route().current('reports.audit-logs') },
+                    { name: 'Message Templates', href: route('message-templates.index'), icon: MessageSquare, activeCheck: () => route().current('message-templates.*') },
+                    { name: 'System Settings', href: route('settings.index'), icon: Sliders, activeCheck: () => route().current('settings.*') }
                 ] : []),
                 { 
                     name: 'AI Assistant', 
                     href: route('ai-assistant.index'), 
                     icon: Sparkles, 
-                    isExternal: true, 
                     activeCheck: () => route().current('ai-assistant.*'),
                     badge: {
                         text: 'Beta',
@@ -231,13 +214,7 @@ export default function Authenticated({ user, header, children }) {
             </span>
         ) : null;
 
-        const mainLink = item.isExternal ? (
-            <a href={item.href} className={className}>
-                <Icon className={iconClassName} />
-                <span>{item.name}</span>
-                {badgeElement}
-            </a>
-        ) : (
+        const mainLink = (
             <Link href={item.href} className={className}>
                 <Icon className={iconClassName} />
                 <span>{item.name}</span>
@@ -264,12 +241,7 @@ export default function Authenticated({ user, header, children }) {
                                         ? 'text-rose-600 dark:text-rose-400'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                             } ${sub.name === 'Trash Bin' && !subActive ? 'text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10' : ''}`;
-                            return sub.isExternal ? (
-                                <a key={sub.name} href={sub.href} className={subClass}>
-                                    <SubIcon className="w-3.5 h-3.5 shrink-0" />
-                                    {sub.name}
-                                </a>
-                            ) : (
+                            return (
                                 <Link key={sub.name} href={sub.href} className={subClass}>
                                     <SubIcon className="w-3.5 h-3.5 shrink-0" />
                                     {sub.name}
@@ -384,14 +356,6 @@ export default function Authenticated({ user, header, children }) {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsDarkMode(!isDarkMode)}
-                            className="p-2 text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800/50 rounded-xl transition-colors border border-slate-100 dark:border-slate-800 focus:outline-none"
-                            title="Toggle Theme"
-                        >
-                            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                        </button>
-
                         <HeadlessMenu as="div" className="relative">
                             <HeadlessMenu.Button className="p-2 text-slate-400 hover:text-slate-500 dark:text-slate-400 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800/50 rounded-xl transition-colors border border-slate-100 dark:border-slate-800 relative focus:outline-none">
                                 <Bell className="w-5 h-5" />

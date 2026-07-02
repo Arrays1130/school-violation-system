@@ -9,7 +9,6 @@ export default function Edit({ auth, caseRecord }) {
         description: caseRecord.description || '',
         witness: caseRecord.witness || '',
         occurred_at: caseRecord.occurred_at ? new Date(caseRecord.occurred_at).toISOString().slice(0, 16) : '',
-        status: caseRecord.status || 'Pending',
     });
 
     const submit = (e) => {
@@ -52,7 +51,7 @@ export default function Edit({ auth, caseRecord }) {
                                 <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
                                     Edit Case #{caseRecord.id}
                                 </h1>
-                                <p className="text-rose-200/70 text-sm mt-1">Update incident details and status.</p>
+                                <p className="text-rose-200/70 text-sm mt-1">Update incident details. Status changes via hearings and case actions.</p>
                             </div>
                         </div>
                     </div>
@@ -96,23 +95,6 @@ export default function Edit({ auth, caseRecord }) {
                                         value={data.witness}
                                         onChange={e => setData('witness', e.target.value)}
                                     />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
-                                    <select 
-                                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-rose-500 focus:ring-rose-500/20 bg-slate-50 dark:bg-slate-800"
-                                        value={data.status}
-                                        onChange={e => setData('status', e.target.value)}
-                                    >
-                                        <option value="Pending">Pending</option>
-                                        <option value="Hearing Scheduled">Hearing Scheduled</option>
-                                        <option value="Hearing">Hearing</option>
-                                        <option value="Closed">Closed</option>
-                                    </select>
-                                    {errors.status && <p className="text-xs text-red-600 mt-1">{errors.status}</p>}
                                 </div>
                             </div>
 

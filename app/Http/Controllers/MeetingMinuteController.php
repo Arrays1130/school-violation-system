@@ -3,36 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\MeetingMinute;
+use App\Models\StudentCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class MeetingMinuteController extends Controller
 {
-    public function index()
+    public function create(Request $request)
     {
-        $minutes = MeetingMinute::with('creator')->orderBy('meeting_date', 'desc')->paginate(10);
-        return inertia('Minutes/Index', [
-            'minutes' => $minutes
-        ]);
-    }
+        $this->authorize('create', StudentCase::class);
 
-    public function create()
-    {
-        $cases = \App\Models\StudentCase::with('student', 'violation')->latest()->get();
+        $casesQuery = StudentCase::with('student', 'violation')->latest();
+        if ($request->user()->isDean()) {
+            $casesQuery->forUser($request->user());
+        }
+
         return inertia('Minutes/Create', [
-            'cases' => $cases
+            'cases' => $casesQuery->get(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreMeetingMinuteRequest $request)
     {
-        $validated = $request->validate([
-            'case_id' => 'nullable|exists:cases,id',
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'meeting_date' => 'required|date',
-            'venue' => 'required|string|max:255',
-        ]);
+        $validated = $request->validated();
+
+        $this->authorizeMinuteMutation($validated['case_id'] ?? null);
 
         $validated['created_by'] = Auth::id();
 
@@ -44,26 +39,27 @@ class MeetingMinuteController extends Controller
     public function show(MeetingMinute $meetingMinute)
     {
         $meetingMinute->load(['case.student', 'creator']);
+        $this->authorizeMinuteView($meetingMinute);
+
         return inertia('Minutes/Show', [
-            'meetingMinute' => $meetingMinute
+            'meetingMinute' => $meetingMinute,
         ]);
     }
 
     public function edit(MeetingMinute $meetingMinute)
     {
+        $this->authorizeMinuteMutation($meetingMinute->case_id);
+
         return inertia('Minutes/Edit', [
-            'meetingMinute' => $meetingMinute
+            'meetingMinute' => $meetingMinute,
         ]);
     }
 
-    public function update(Request $request, MeetingMinute $meetingMinute)
+    public function update(\App\Http\Requests\UpdateMeetingMinuteRequest $request, MeetingMinute $meetingMinute)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'meeting_date' => 'required|date',
-            'venue' => 'required|string|max:255',
-        ]);
+        $this->authorizeMinuteMutation($meetingMinute->case_id);
+
+        $validated = $request->validated();
 
         $meetingMinute->update($validated);
 
@@ -72,7 +68,33 @@ class MeetingMinuteController extends Controller
 
     public function destroy(MeetingMinute $meetingMinute)
     {
+        $this->authorizeMinuteMutation($meetingMinute->case_id);
+
         $meetingMinute->delete();
+
         return redirect()->route('meeting-minutes.index')->with('success', 'Meeting minutes deleted successfully.');
+    }
+
+    protected function authorizeMinuteView(MeetingMinute $meetingMinute): void
+    {
+        if ($meetingMinute->case_id) {
+            $this->authorize('view', $meetingMinute->case);
+
+            return;
+        }
+
+        $this->authorize('create', StudentCase::class);
+    }
+
+    protected function authorizeMinuteMutation(?int $caseId): void
+    {
+        if ($caseId) {
+            $case = StudentCase::findOrFail($caseId);
+            $this->authorize('update', $case);
+
+            return;
+        }
+
+        $this->authorize('create', StudentCase::class);
     }
 }

@@ -41,4 +41,6 @@ URL: **https://school-violation-system.onrender.com/dean-app/**
 ## Notifications on iPhone
 
 - **In-app alerts** (Alerts tab + badge): works like Android
-- **Push pop-up when app is closed**: requires native iOS app (Mac + Apple Developer)
+- **Near real-time while app is open**: badge refreshes every ~15 seconds; instant refresh when you return to the app
+- **New alert cue**: brief banner when unread count increases while you're on another tab
+- **Push pop-up when app is closed**: requires native iOS app (Mac + Apple Developer) or Web Push setup

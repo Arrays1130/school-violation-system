@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -15,7 +15,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final ApiService _apiService = ApiService();
 
   Map<String, dynamic>? _stats;
-  List<dynamic> _allViolations = [];
   bool _isLoading = true;
   int? _touchedIndex;
 
@@ -38,93 +37,49 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Future<void> _loadData({bool forcedRefresh = false}) async {
     if (mounted) setState(() => _isLoading = true);
     try {
-      final results = await Future.wait([
-        _apiService.getStats(forcedRefresh: forcedRefresh),
-        _apiService.getViolations(forcedRefresh: forcedRefresh),
-      ]);
-
-      final stats = results[0];
-      final violationsRaw = results[1];
-
-      List<dynamic> violations = [];
-      if (violationsRaw is Map) {
-        violations = (violationsRaw['data'] ?? violationsRaw['violations'] ?? []) as List<dynamic>;
-      } else if (violationsRaw is List) {
-        violations = violationsRaw;
-      }
-
-      _computeMetrics(violations);
-
-      if (mounted) {
-        if (mounted) setState(() {
-          _stats = stats;
-          _allViolations = violations;
-          _isLoading = false;
-        });
-      }
+      final analytics = await _apiService.getAnalytics(forcedRefresh: forcedRefresh);
+      _applyAnalytics(analytics);
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _computeMetrics(List<dynamic> violations) {
-    int total = 0, pending = 0, resolved = 0, major = 0, minor = 0;
-    final Map<String, int> violationCount = {};
-    final Map<String, int> studentCount = {};
-    final Map<String, int> monthCount = {};
+  void _applyAnalytics(dynamic analytics) {
+    if (analytics is! Map) return;
 
-    for (var v in violations) {
-      total++;
-      final status = (v['status'] ?? '').toString().toLowerCase();
-      final severity = (v['severity'] ?? v['violation']?['severity'] ?? '').toString().toLowerCase();
-      final violationTitle = v['violation']?['title'] ?? v['violation']?['name'] ?? 'Unknown';
-      final studentName = v['student']?['full_name'] ?? 'Unknown';
-      final dateStr = v['created_at'] ?? '';
+    final summary = Map<String, dynamic>.from(analytics['summary'] ?? {});
+    _totalCases = (summary['total'] as num?)?.toInt() ?? 0;
+    _pendingCases = (summary['pending'] as num?)?.toInt() ?? 0;
+    _resolvedCases = (summary['resolved'] as num?)?.toInt() ?? 0;
+    _majorCases = (summary['major'] as num?)?.toInt() ?? 0;
+    _minorCases = (summary['minor'] as num?)?.toInt() ?? 0;
 
-      if (status == 'pending') pending++;
-      if (status == 'resolved' || status == 'closed') resolved++;
-      if (severity == 'major') major++;
-      if (severity == 'minor') minor++;
+    final topRaw = analytics['top_violations'] as List<dynamic>? ?? [];
+    _topViolations = topRaw
+        .map((e) => MapEntry(
+              (e['title'] ?? 'Unknown').toString(),
+              (e['count'] as num?)?.toInt() ?? 0,
+            ))
+        .toList();
 
-      violationCount[violationTitle] = (violationCount[violationTitle] ?? 0) + 1;
-      studentCount[studentName] = (studentCount[studentName] ?? 0) + 1;
+    final repeatRaw = analytics['repeat_offenders'] as List<dynamic>? ?? [];
+    _repeatOffenders = repeatRaw
+        .map((e) => MapEntry(
+              (e['name'] ?? 'Unknown').toString(),
+              (e['count'] as num?)?.toInt() ?? 0,
+            ))
+        .toList();
 
-      if (dateStr.isNotEmpty) {
-        try {
-          final date = DateTime.parse(dateStr);
-          final monthKey = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-          monthCount[monthKey] = (monthCount[monthKey] ?? 0) + 1;
-        } catch (_) {}
-      }
-    }
+    final trendRaw = analytics['monthly_trends'] as List<dynamic>? ?? [];
+    _monthlyTrend = trendRaw
+        .map((e) => {
+              'month': e['month']?.toString() ?? '',
+              'count': (e['count'] as num?)?.toInt() ?? 0,
+            })
+        .toList();
 
-    // Top 5 violations
-    final sortedViolations = violationCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    _topViolations = sortedViolations.take(5).toList();
-
-    // Top 5 repeat offenders (more than 1 violation)
-    final sortedStudents = studentCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    _repeatOffenders = sortedStudents.where((e) => e.value > 1).take(5).toList();
-
-    // Monthly trend â€” last 6 months
-    final now = DateTime.now();
-    _monthlyTrend = List.generate(6, (i) {
-      final date = DateTime(now.year, now.month - 5 + i, 1);
-      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return {
-        'month': months[date.month - 1],
-        'count': monthCount[key] ?? 0,
-      };
-    });
-
-    _totalCases = total;
-    _pendingCases = pending;
-    _resolvedCases = resolved;
-    _majorCases = major;
-    _minorCases = minor;
+    _stats = Map<String, dynamic>.from(analytics);
   }
 
   @override
@@ -154,7 +109,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         color: AppTheme.primaryNavy,
         child: _isLoading
             ? _buildSkeleton()
-            : _allViolations.isEmpty
+            : _totalCases == 0
                 ? _buildErrorState()
                 : _buildContent(),
       ),
@@ -215,31 +170,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // â”€â”€ Summary Cards â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ Summary Cards Ã¢â€â‚¬Ã¢â€â‚¬
           _buildSectionLabel("OVERVIEW"),
           const SizedBox(height: 12),
           _buildStatCards(),
           const SizedBox(height: 28),
 
-          // â”€â”€ Monthly Trend Bar Chart â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ Monthly Trend Bar Chart Ã¢â€â‚¬Ã¢â€â‚¬
           _buildSectionLabel("MONTHLY TREND"),
           const SizedBox(height: 12),
           _buildTrendCard(),
           const SizedBox(height: 28),
 
-          // â”€â”€ Top Violations â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ Top Violations Ã¢â€â‚¬Ã¢â€â‚¬
           _buildSectionLabel("TOP VIOLATIONS"),
           const SizedBox(height: 12),
           _buildTopViolationsCard(),
           const SizedBox(height: 28),
 
-          // â”€â”€ Severity Pie Chart â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ Severity Pie Chart Ã¢â€â‚¬Ã¢â€â‚¬
           _buildSectionLabel("SEVERITY BREAKDOWN"),
           const SizedBox(height: 12),
           _buildSeverityCard(),
           const SizedBox(height: 28),
 
-          // â”€â”€ Repeat Offenders â”€â”€
+          // Ã¢â€â‚¬Ã¢â€â‚¬ Repeat Offenders Ã¢â€â‚¬Ã¢â€â‚¬
           if (_repeatOffenders.isNotEmpty) ...[
             _buildSectionLabel("REPEAT OFFENDERS"),
             const SizedBox(height: 12),

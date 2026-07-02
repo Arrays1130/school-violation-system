@@ -6,6 +6,7 @@ import 'dart:convert';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
 import '../services/security_service.dart';
+import '../widgets/app_ui.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -108,79 +109,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Column(
+      body: Column(
+        children: [
+          AppUi.gradientHeader(
+            greeting: 'Your account',
+            title: 'Profile',
+            bottom: Row(
               children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: AppTheme.primary,
-                  child: Text(
-                    _userInitials,
-                    style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: AppTheme.softShadow,
+                  ),
+                  child: Center(
+                    child: Text(
+                      _userInitials,
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primary,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  _userName,
-                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: AppTheme.textMain),
-                ),
-                Text(
-                  _userEmail,
-                  style: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 14),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _userName,
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (_userEmail.isNotEmpty)
+                        Text(
+                          _userEmail,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 28),
-            _section('Account'),
-            _tile(Icons.person_outline, 'Name', _userName),
-            if (_userEmail.isNotEmpty) _tile(Icons.email_outlined, 'Email', _userEmail),
-            _tile(Icons.badge_outlined, 'Role', _userRole),
-            if (_userDepartment.isNotEmpty) _tile(Icons.apartment, 'Department', _userDepartment),
-            const SizedBox(height: 20),
-            _section('Security'),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppTheme.inputBorder),
-              ),
-              child: SwitchListTile(
-                title: Text('Biometric login', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                subtitle: Text(
-                  _isHardwareAvailable ? 'Fingerprint or Face ID' : 'Not available',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _section('Account'),
+                _tile(Icons.badge_outlined, 'Role', _userRole),
+                if (_userDepartment.isNotEmpty)
+                  _tile(Icons.apartment_outlined, 'Department', _userDepartment),
+                const SizedBox(height: 16),
+                _section('Security'),
+                Container(
+                  decoration: AppUi.cardDecoration(),
+                  child: SwitchListTile(
+                    title: Text('Biometric login', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                    subtitle: Text(
+                      _isHardwareAvailable ? 'Fingerprint or Face ID' : 'Not available on this device',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+                    ),
+                    value: _isBiometricEnabled,
+                    onChanged: _isHardwareAvailable ? _toggleBiometric : null,
+                    activeColor: AppTheme.primary,
+                  ),
                 ),
-                value: _isBiometricEnabled,
-                onChanged: _isHardwareAvailable ? _toggleBiometric : null,
-                activeColor: AppTheme.primary,
-              ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout_rounded, color: AppTheme.accentRose, size: 20),
+                    label: Text(
+                      'Sign out',
+                      style: GoogleFonts.inter(color: AppTheme.accentRose, fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppTheme.accentRose.withValues(alpha: 0.35)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'VioTrack v2.1',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textHint),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout, color: AppTheme.accentRose),
-              label: Text('Sign out', style: GoogleFonts.inter(color: AppTheme.accentRose, fontWeight: FontWeight.w600)),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                side: BorderSide(color: AppTheme.accentRose.withValues(alpha: 0.4)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'VioTrack v2.0.0',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textHint),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -196,17 +227,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _tile(IconData icon, String label, String value) {
-    return Card(
-      elevation: 0,
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.inputBorder),
-      ),
+      decoration: AppUi.cardDecoration(),
       child: ListTile(
-        leading: Icon(icon, color: AppTheme.primary, size: 22),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryLight,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppTheme.primary, size: 20),
+        ),
         title: Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted)),
-        subtitle: Text(value, style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: AppTheme.textMain)),
+        subtitle: Text(value, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.textMain)),
       ),
     );
   }

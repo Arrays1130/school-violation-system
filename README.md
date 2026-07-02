@@ -7,7 +7,7 @@ Web and mobile platform for recording student violations, scheduling hearings, g
 | Layer | Technology |
 |-------|------------|
 | Backend | Laravel 12, Sanctum, Filament, DomPDF, Maatwebsite Excel |
-| Web UI | Blade, Tailwind, Inertia (auth), Livewire |
+| Web UI | Inertia.js, React 19, Tailwind CSS |
 | Real-time | Laravel Reverb |
 | Automation | n8n webhooks |
 | Mobile | Flutter (`viotrack_flutter/`) |

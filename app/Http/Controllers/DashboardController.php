@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Support\DashboardCache;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -32,7 +33,7 @@ class DashboardController extends Controller
             }
         };
 
-        $cacheKey = 'dashboard.data.' . auth()->id() . '.' . ($selectedAcademicYear === 'All' ? 'all' : md5($selectedAcademicYear));
+        $cacheKey = DashboardCache::adminKey(auth()->id(), $selectedAcademicYear === 'All' ? 'all' : md5($selectedAcademicYear));
 
         // Cache all heavy DB aggregation metrics for lightning-fast capstone dashboard loading
         $cachedData = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($applyFilter, $selectedAcademicYear) {
@@ -128,7 +129,7 @@ class DashboardController extends Controller
             // Chart Data: Violation Trend (Last 6 Months) - Ensure all 6 months are present
             $rawMonthlyTrend = \App\Models\StudentCase::whereHas('student')
                 ->tap($applyFilter)
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
+                ->selectRaw(\App\Support\SqlDate::yearMonth('created_at').' as month, COUNT(*) as count')
                 ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->groupBy('month')
                 ->pluck('count', 'month');

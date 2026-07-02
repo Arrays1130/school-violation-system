@@ -22,7 +22,10 @@ Route::prefix('mobile')->group(function () {
         
         Route::get('/violations', [\App\Http\Controllers\Api\ViolationController::class, 'index']);
         Route::get('/violations/{id}', [\App\Http\Controllers\Api\ViolationController::class, 'show']);
+        Route::post('/cases/{case}/acknowledge', [\App\Http\Controllers\Api\MobileCaseController::class, 'acknowledge']);
+        Route::get('/attachments/{attachment}/download', [\App\Http\Controllers\Api\MobileCaseController::class, 'downloadAttachment']);
         Route::get('/stats', [\App\Http\Controllers\Api\ViolationController::class, 'stats']);
+        Route::get('/analytics', [\App\Http\Controllers\Api\ViolationController::class, 'analytics']);
         
         Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);

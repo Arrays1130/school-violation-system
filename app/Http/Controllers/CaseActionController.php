@@ -39,14 +39,17 @@ class CaseActionController extends Controller
     {
         $this->authorize('endorse', $case);
 
+        if ($case->endorsed_at) {
+            return back()->with('error', 'This case has already been endorsed to the Grievance Committee.');
+        }
+
+        if ($reason = $case->endorseBlockReason()) {
+            return back()->with('error', $reason);
+        }
+
         $request->validate([
             'description' => 'nullable|string|max:2000',
         ]);
-
-        // Guard: major offenses need at least 1 prior OSA action
-        if ($case->isMajorOffense() && !$case->canEndorseToGrievance()) {
-            return back()->with('error', 'Cannot endorse a major offense to the Grievance Committee without first documenting at least one OSA action (e.g., letter sent, counseling, parent conference).');
-        }
 
         // Create the endorsement action
         CaseAction::create([
@@ -59,9 +62,7 @@ class CaseActionController extends Controller
 
         // Note: Status no longer changes to "Endorsed to Grievance". 
         // It remains Pending (or current status) until a hearing is scheduled.
-        $case->update([
-            'endorsed_at' => now(),
-        ]);
+        $case->markEndorsed();
 
         return back()->with('success', 'Case has been officially endorsed to the Grievance Committee.');
     }

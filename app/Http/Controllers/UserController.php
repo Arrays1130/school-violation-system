@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -51,15 +50,9 @@ class UserController extends Controller
     /**
      * Store a newly created user in storage.
      */
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreUserRequest $request)
     {
-        $validated = $request->validate([
-            'name'                  => 'required|string|max:255',
-            'email'                 => 'required|email|unique:users,email',
-            'password'              => 'required|min:8|confirmed',
-            'role'                  => 'required|in:super_admin,admin,dean',
-            'department'            => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $validated['password'] = Hash::make($validated['password']);
 
@@ -80,15 +73,9 @@ class UserController extends Controller
     /**
      * Update the specified user in storage.
      */
-    public function update(Request $request, User $user)
+    public function update(\App\Http\Requests\UpdateUserRequest $request, User $user)
     {
-        $validated = $request->validate([
-            'name'                  => 'required|string|max:255',
-            'email'                 => ['required', 'email', Rule::unique('users')->ignore($user->id)],
-            'role'                  => 'required|in:super_admin,admin,dean',
-            'department'            => 'nullable|string|max:255',
-            'password'              => 'nullable|min:8|confirmed',
-        ]);
+        $validated = $request->validated();
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);

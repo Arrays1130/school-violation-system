@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// VioTrack v2 — Sky Blue & Slate, clean and modern UI
+/// VioTrack — I-LINK CST Dean Portal
 class AppTheme {
-  static const Color primary = Color(0xFF0284C7);
-  static const Color primaryDark = Color(0xFF075985);
-  static const Color primaryLight = Color(0xFFE0F2FE);
+  static const Color primary = Color(0xFF4F46E5);
+  static const Color primaryDark = Color(0xFF312E81);
+  static const Color primaryIndigo = Color(0xFF4F46E5);
+  static const Color primaryLight = Color(0xFFEEF2FF);
 
   static const Color primaryNavy = Color(0xFF0F172A);
   static const Color primarySlate = Color(0xFF475569);
@@ -29,7 +30,7 @@ class AppTheme {
   static const Color inputBorderFocus = primary;
 
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF0284C7), Color(0xFF38BDF8)],
+    colors: [Color(0xFF0F172A), Color(0xFF312E81), Color(0xFF4F46E5)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

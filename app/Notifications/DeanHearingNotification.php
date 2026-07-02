@@ -19,7 +19,11 @@ class DeanHearingNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        $channels = ['database', 'mail'];
+        if (config('services.fcm.server_key')) {
+            $channels[] = 'fcm';
+        }
+        return $channels;
     }
 
     public function toMail(object $notifiable): MailMessage

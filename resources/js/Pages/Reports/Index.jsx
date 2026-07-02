@@ -145,7 +145,7 @@ export default function Index({ cases, departments, filters }) {
                                         <option value="">All Statuses</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Hearing Scheduled">Hearing Scheduled</option>
-                                        <option value="Endorsed to Grievance">Endorsed</option>
+                                        <option value="endorsed">Endorsed</option>
                                         <option value="Closed">Closed</option>
                                     </select>
                                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
@@ -207,9 +207,9 @@ export default function Index({ cases, departments, filters }) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5 whitespace-nowrap text-center">
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusStyle(item.status)} shadow-sm shadow-slate-100/50`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusStyle(item.endorsed_at ? 'Endorsed to Grievance' : item.status)} shadow-sm shadow-slate-100/50`}>
                                                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                                    {item.status}
+                                                    {item.endorsed_at ? 'Endorsed' : item.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 whitespace-nowrap text-right">

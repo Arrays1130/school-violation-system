@@ -24,6 +24,9 @@ class DeanViolationNotification extends Notification implements ShouldQueue
         if (env('ENABLE_EMAILS', false)) {
             $channels[] = 'mail';
         }
+        if (config('services.fcm.server_key')) {
+            $channels[] = 'fcm';
+        }
         return $channels;
     }
 

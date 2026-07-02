@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\User;
 use App\Support\DepartmentResolver;
+use App\Support\DashboardCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,26 +16,70 @@ class StudentCase extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    public static function clearDashboardCache($case = null)
+    public static function clearDashboardCache($case = null): void
     {
-        try {
-            \Illuminate\Support\Facades\Cache::flush();
-        } catch (\Exception $e) {}
+        DashboardCache::bust();
+    }
+
+    /**
+     * Create a case with workflow fields set outside mass assignment.
+     */
+    public static function createForStaff(array $attributes, int $createdBy): self
+    {
+        $case = new static($attributes);
+        $case->forceFill([
+            'status' => 'Pending',
+            'created_by' => $createdBy,
+        ]);
+        $case->save();
+
+        return $case->fresh();
+    }
+
+    public function transitionStatus(string $status): void
+    {
+        $this->forceFill(['status' => $status])->save();
+    }
+
+    public function markClosed(int $closedBy): void
+    {
+        $this->forceFill([
+            'status' => 'Closed',
+            'closed_at' => now(),
+            'closed_by' => $closedBy,
+        ])->save();
+    }
+
+    public function markEndorsed(): void
+    {
+        $this->forceFill(['endorsed_at' => now()])->save();
     }
 
     protected static function booted()
     {
         static::created(function ($case) {
             static::clearDashboardCache($case);
-            try { event(new \App\Events\DashboardUpdated('New case recorded')); } catch (\Exception $e) {}
+            try {
+                event(new \App\Events\DashboardUpdated('New case recorded'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after case create', ['error' => $e->getMessage()]);
+            }
         });
         static::updated(function ($case) {
             static::clearDashboardCache($case);
-            try { event(new \App\Events\DashboardUpdated('Case updated')); } catch (\Exception $e) {}
+            try {
+                event(new \App\Events\DashboardUpdated('Case updated'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after case update', ['error' => $e->getMessage()]);
+            }
         });
         static::deleted(function ($case) {
             static::clearDashboardCache($case);
-            try { event(new \App\Events\DashboardUpdated('Case deleted')); } catch (\Exception $e) {}
+            try {
+                event(new \App\Events\DashboardUpdated('Case deleted'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after case delete', ['error' => $e->getMessage()]);
+            }
         });
     }
 
@@ -56,14 +101,8 @@ class StudentCase extends Model
         'description',
         'witness',
         'occurred_at',
-        'status',
-        'created_by',
         'offense_level',
         'sanction',
-        'endorsed_at',
-        'closed_at',
-        'closed_by',
-        'is_archived',
     ];
 
     protected $casts = [
@@ -169,6 +208,42 @@ class StudentCase extends Model
     public function isMajorOffense(): bool
     {
         return in_array($this->violation?->severity, ['Major', 'Critical']);
+    }
+
+    public function endorseBlockReason(): ?string
+    {
+        if ($this->endorsed_at) {
+            return 'This case has already been endorsed to the Grievance Committee.';
+        }
+
+        if ($this->isMajorOffense() && ! $this->canEndorseToGrievance()) {
+            return 'Document at least one OSA intervention before endorsing a major offense.';
+        }
+
+        return null;
+    }
+
+    public function canEndorse(): bool
+    {
+        return $this->endorseBlockReason() === null;
+    }
+
+    public function closureBlockReason(): ?string
+    {
+        if ($this->status === 'Closed') {
+            return 'This case is already closed.';
+        }
+
+        if ($this->isMajorOffense() && ! $this->canEndorseToGrievance() && ! in_array($this->status, ['Hearing', 'Hearing Scheduled'], true)) {
+            return 'Major offenses require at least one OSA intervention before closing without a hearing.';
+        }
+
+        return null;
+    }
+
+    public function canClose(): bool
+    {
+        return $this->closureBlockReason() === null;
     }
 
     /**

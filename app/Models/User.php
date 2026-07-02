@@ -7,12 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, LogsActivity;
@@ -90,13 +88,5 @@ class User extends Authenticatable implements FilamentUser
     public function casesCreated()
     {
         return $this->hasMany(StudentCase::class, 'created_by');
-    }
-
-    /**
-     * Determine if the user can access the Filament panel.
-     */
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return $this->isAdmin() || $this->isSuperAdmin();
     }
 }

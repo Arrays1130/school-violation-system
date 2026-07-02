@@ -11,15 +11,17 @@ import 'main_layout.dart';
 import '../providers/api_service_provider.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
+import '../widgets/app_ui.dart';
+import '../services/notification_poller.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => DashboardScreenState();
 }
 
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+class DashboardScreenState extends ConsumerState<DashboardScreen> {
   List<dynamic> _violations = [];
   Map<String, dynamic> _stats = {};
   List<dynamic> _topOffenses = [];
@@ -32,12 +34,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _unreadCount = NotificationPoller.instance.unreadCount.value;
+    NotificationPoller.instance.unreadCount.addListener(_syncUnreadFromPoller);
     _loadUserName();
     _loadInitialData();
     _autoRefreshTimer = Timer.periodic(
       const Duration(seconds: 45),
       (_) => _refreshData(showLoading: false),
     );
+  }
+
+  void _syncUnreadFromPoller() {
+    if (mounted) {
+      setState(() => _unreadCount = NotificationPoller.instance.unreadCount.value);
+    }
+  }
+
+  void refreshFromPoller() {
+    if (!mounted) return;
+    _refreshData(showLoading: false);
   }
 
   Future<void> _loadUserName() async {
@@ -81,6 +96,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
+    NotificationPoller.instance.unreadCount.removeListener(_syncUnreadFromPoller);
     _autoRefreshTimer?.cancel();
     super.dispose();
   }
@@ -92,7 +108,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final api = ref.read(apiServiceProvider);
       final vResult = await api.getViolations(forcedRefresh: true);
       final sResult = await api.getStats(forcedRefresh: true);
-      final uCount = await api.getUnreadCount();
 
       if (!mounted) return;
       setState(() {
@@ -104,7 +119,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _stats = Map<String, dynamic>.from(sResult['summary'] ?? {});
         _topOffenses = List<dynamic>.from(sResult['top_offenses'] ?? []);
         _alerts = List<dynamic>.from(sResult['upcoming_hearings'] ?? []);
-        _unreadCount = uCount;
+        _unreadCount = NotificationPoller.instance.unreadCount.value;
         _isLoading = false;
       });
     } catch (e) {
@@ -126,14 +141,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(child: _buildHeader()),
-              SliverToBoxAdapter(child: _buildSearchBar()),
               SliverToBoxAdapter(child: _buildStatsRow()),
+              SliverToBoxAdapter(
+                child: AppUi.searchBar(
+                  hint: 'Search student or case...',
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    MainLayout.of(context)?.navigateToTab(1);
+                  },
+                ),
+              ),
               if (_alerts.isNotEmpty) ...[
-                SliverToBoxAdapter(child: _sectionTitle('Upcoming Hearings')),
+                SliverToBoxAdapter(child: AppUi.sectionHeader('Upcoming Hearings')),
                 SliverToBoxAdapter(child: _buildHearingsRow()),
               ],
               if (_topOffenses.isNotEmpty) ...[
-                SliverToBoxAdapter(child: _sectionTitle('Top Offenses')),
+                SliverToBoxAdapter(child: AppUi.sectionHeader('Top Offenses')),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   sliver: SliverList(
@@ -145,7 +168,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
               SliverToBoxAdapter(
-                child: _sectionTitle(
+                child: AppUi.sectionHeader(
                   'Recent Cases',
                   action: 'View all',
                   onAction: () => MainLayout.of(context)?.navigateToTab(1),
@@ -185,94 +208,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello, $_userName',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: AppTheme.textMuted,
-                    fontWeight: FontWeight.w500,
+    return AppUi.gradientHeader(
+      greeting: 'Hello, $_userName',
+      title: 'Dashboard',
+      trailing: IconButton(
+        onPressed: () => MainLayout.of(context)?.navigateToTab(3),
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+            ),
+            if (_unreadCount > 0)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentRose,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Dashboard',
-                  style: GoogleFonts.inter(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textMain,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => MainLayout.of(context)?.navigateToTab(3),
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(Icons.notifications_outlined, color: AppTheme.textMain),
-                if (_unreadCount > 0)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.accentRose,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        elevation: 0,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            MainLayout.of(context)?.navigateToTab(1);
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.inputBorder),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 20, color: AppTheme.textMuted),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Search student or case...',
-                    style: GoogleFonts.inter(color: AppTheme.textHint, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -287,101 +253,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Row(
         children: [
-          _statChip('Total', '${_stats['total'] ?? 0}', AppTheme.primary, Icons.folder_outlined,
-              () => MainLayout.of(context)?.navigateToTab(1)),
-          const SizedBox(width: 8),
-          _statChip('Pending', '${_stats['pending'] ?? 0}', AppTheme.accentAmber, Icons.schedule,
-              () => MainLayout.of(context)?.navigateToTab(1, status: 'Pending')),
-          const SizedBox(width: 8),
-          _statChip('Closed', '${_stats['resolved'] ?? 0}', AppTheme.accentEmerald, Icons.check_circle_outline,
-              () => MainLayout.of(context)?.navigateToTab(1, status: 'Closed')),
-        ],
-      ),
-    );
-  }
-
-  Widget _statChip(String label, String value, Color color, IconData icon, VoidCallback onTap) {
-    return Expanded(
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.inputBorder),
-            ),
-            child: Column(
-              children: [
-                Icon(icon, size: 18, color: color),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textMain,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppTheme.textMuted,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+          AppUi.statCard(
+            label: 'Total',
+            value: '${_stats['total'] ?? 0}',
+            icon: Icons.folder_outlined,
+            color: AppTheme.primary,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              MainLayout.of(context)?.navigateToTab(1);
+            },
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title, {String? action, VoidCallback? onAction}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 16, 10),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textMain,
-            ),
+          const SizedBox(width: 10),
+          AppUi.statCard(
+            label: 'Pending',
+            value: '${_stats['pending'] ?? 0}',
+            icon: Icons.schedule,
+            color: AppTheme.accentAmber,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              MainLayout.of(context)?.navigateToTab(1, status: 'Pending');
+            },
           ),
-          if (action != null && onAction != null) ...[
-            const Spacer(),
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                action,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primary,
-                ),
-              ),
-            ),
-          ],
+          const SizedBox(width: 10),
+          AppUi.statCard(
+            label: 'Closed',
+            value: '${_stats['resolved'] ?? 0}',
+            icon: Icons.check_circle_outline,
+            color: AppTheme.accentEmerald,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              MainLayout.of(context)?.navigateToTab(1, status: 'Closed');
+            },
+          ),
         ],
       ),
     );
@@ -408,10 +314,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final venue = alert['venue']?.toString() ?? 'Guidance Office';
 
     return SizedBox(
-      width: 220,
+      width: 230,
       child: Material(
-        color: AppTheme.primaryLight,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () {
             if (caseId == null) return;
@@ -422,20 +327,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(14),
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.15)),
+              gradient: AppTheme.heroGradient,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withValues(alpha: 0.12),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -443,19 +355,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.primary,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
                   studentName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textMain,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -463,20 +375,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   violation,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
                 const Spacer(),
-                Text(
-                  schedule,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textSub),
-                ),
-                Text(
-                  venue,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textHint),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 12, color: Colors.white.withValues(alpha: 0.8)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        schedule,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.9)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -548,11 +465,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.inputBorder),
-      ),
+      decoration: AppUi.cardDecoration(),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -617,32 +530,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _statusPill(status),
+                AppUi.statusBadge(status),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _statusPill(String status) {
-    Color color = AppTheme.accentAmber;
-    if (status == 'Closed' || status == 'Resolved') color = AppTheme.accentEmerald;
-    if (status.contains('Hearing')) color = AppTheme.primary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        status.length > 10 ? status.substring(0, 8) + '…' : status,
-        style: GoogleFonts.inter(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: color,
         ),
       ),
     );

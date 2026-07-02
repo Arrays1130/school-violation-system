@@ -6,17 +6,101 @@ import {
     ArrowLeft, FolderOpen, Edit3, Printer, ArrowUpRight, 
     Check, FileWarning, Calendar, UserCheck, Gavel, 
     ChevronRight, CalendarX, CalendarPlus, CheckCircle2, 
-    ExternalLink, Trash2 
+    ExternalLink, Trash2, ClipboardList, Plus
 } from 'lucide-react';
 
-export default function Show({ auth, caseRecord, offenseHistory, offenseSummary }) {
+const OSA_LABELS = {
+    letter_sent: 'Letter Sent',
+    counseling: 'Counseling',
+    parent_conference: 'Parent Conference',
+    verbal_warning: 'Verbal Warning',
+    written_warning: 'Written Warning',
+    other: 'Other',
+};
+
+export default function Show({ auth, caseRecord, offenseHistory, offenseSummary, workflow = {} }) {
     const stages = ['Pending', 'Hearing Scheduled', 'Hearing', 'Closed'];
     let currentIndex = stages.indexOf(caseRecord.status);
     if (currentIndex === -1) currentIndex = 0;
-    const isEndorsed = caseRecord.status === 'Endorsed to Grievance';
+    const isEndorsed = Boolean(caseRecord.endorsed_at);
+    const latestHearing = caseRecord.hearings?.length ? caseRecord.hearings[caseRecord.hearings.length - 1] : null;
+    const osaActions = (caseRecord.actions || []).filter((a) => !a.endorsed_to_grievance);
+
+    const handleRecordOsa = () => {
+        Swal.fire({
+            title: 'Record OSA Intervention',
+            html: `
+                <select id="osa-type" class="swal2-select w-full rounded-lg border border-slate-200 p-2 mb-3 text-sm">
+                    <option value="letter_sent">Letter Sent</option>
+                    <option value="counseling">Counseling</option>
+                    <option value="parent_conference">Parent Conference</option>
+                    <option value="verbal_warning">Verbal Warning</option>
+                    <option value="written_warning">Written Warning</option>
+                    <option value="other">Other</option>
+                </select>
+                <textarea id="osa-desc" class="swal2-textarea w-full rounded-lg border border-slate-200 p-2 text-sm" placeholder="Describe the intervention..." rows="4"></textarea>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            confirmButtonText: 'Save Action',
+            preConfirm: () => {
+                const description = document.getElementById('osa-desc')?.value?.trim();
+                const action_type = document.getElementById('osa-type')?.value;
+                if (!description) {
+                    Swal.showValidationMessage('Description is required.');
+                    return false;
+                }
+                return { action_type, description };
+            },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('cases.actions.store', caseRecord.id), result.value);
+            }
+        });
+    };
+
+    const handleStartHearing = () => {
+        if (!latestHearing) return;
+        Swal.fire({
+            title: 'Start Hearing?',
+            text: 'This will mark the case as currently in hearing.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Start Hearing',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('hearings.start', latestHearing.id));
+            }
+        });
+    };
+
+    const handleCompleteHearing = () => {
+        if (!latestHearing) return;
+        Swal.fire({
+            title: 'Complete Hearing',
+            input: 'text',
+            inputLabel: 'Sanction / Resolution',
+            inputPlaceholder: 'Enter the sanction or resolution...',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Close Case',
+            inputValidator: (value) => (!value ? 'Sanction is required.' : undefined),
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('hearings.complete', latestHearing.id), { sanction: result.value });
+            }
+        });
+    };
 
     const handleEndorse = (e) => {
         e.preventDefault();
+        if (workflow.endorse_block_reason && !workflow.can_endorse) {
+            Swal.fire({ icon: 'warning', title: 'Cannot Endorse', text: workflow.endorse_block_reason });
+            return;
+        }
         Swal.fire({
             title: 'Endorse to Grievance?',
             text: "Are you sure you want to endorse this case?",
@@ -34,6 +118,10 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
 
     const handleClose = (e) => {
         e.preventDefault();
+        if (workflow.close_block_reason && !workflow.can_close) {
+            Swal.fire({ icon: 'warning', title: 'Cannot Close Case', text: workflow.close_block_reason });
+            return;
+        }
         Swal.fire({
             title: 'Close this case?',
             text: "This action marks the case as resolved.",
@@ -224,10 +312,10 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Case Hearings</h3>
                                 {caseRecord.status !== 'Closed' && (
-                                    <a href={route('hearings.create', { case: caseRecord.id })} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
+                                    <Link href={route('hearings.create', { case: caseRecord.id })} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
                                         <Gavel className="w-4 h-4" />
                                         Schedule Hearing
-                                    </a>
+                                    </Link>
                                 )}
                             </div>
 
@@ -248,7 +336,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 shadow-sm">
-                                                    {hearing.location || "Dean's Office"}
+                                                    {hearing.venue || "Dean's Office"}
                                                 </span>
                                                 <a href={route('hearings.show', hearing.id)} className="p-2 text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 rounded-lg transition-all" title="View Hearing">
                                                     <ChevronRight className="w-5 h-5" />
@@ -267,6 +355,42 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
                                 )}
                             </div>
                         </div>
+
+                        {/* OSA Interventions */}
+                        {caseRecord.status !== 'Closed' && (
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <ClipboardList className="w-5 h-5 text-indigo-500" />
+                                        OSA Interventions
+                                    </h3>
+                                    <button type="button" onClick={handleRecordOsa} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors">
+                                        <Plus className="w-4 h-4" />
+                                        Record Action
+                                    </button>
+                                </div>
+                                {workflow.needs_osa_action && (
+                                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                                        This is a major offense. Record at least one OSA intervention before endorsing or closing without a hearing.
+                                    </p>
+                                )}
+                                {osaActions.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {osaActions.map((action) => (
+                                            <div key={action.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                                <div className="flex items-center justify-between gap-2 mb-1">
+                                                    <span className="text-sm font-bold text-slate-900">{OSA_LABELS[action.action_type] || action.action_type}</span>
+                                                    <span className="text-xs text-slate-500">{action.user?.name || 'Staff'}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-600">{action.description}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500">No OSA interventions recorded yet.</p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Case Info & Quick Actions */}
@@ -277,17 +401,43 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary 
                                 <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/20/50 rounded-full blur-3xl -z-10"></div>
                                 <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-5">Quick Actions</h3>
                                 <div className="space-y-3">
+                                    {caseRecord.status === 'Hearing Scheduled' && latestHearing && (
+                                        <button type="button" onClick={handleStartHearing} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-100 hover:-translate-y-0.5 transition-all duration-200">
+                                            <Gavel className="w-4.5 h-4.5" />
+                                            Start Hearing
+                                        </button>
+                                    )}
+                                    {caseRecord.status === 'Hearing' && latestHearing && (
+                                        <button type="button" onClick={handleCompleteHearing} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-100 hover:-translate-y-0.5 transition-all duration-200">
+                                            <CheckCircle2 className="w-4.5 h-4.5" />
+                                            Complete Hearing
+                                        </button>
+                                    )}
                                     {caseRecord.status === 'Pending' && (
-                                        <a href={route('hearings.create', { case: caseRecord.id })} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-bold shadow-sm hover:bg-blue-100 hover:-translate-y-0.5 transition-all duration-200">
+                                        <Link href={route('hearings.create', { case: caseRecord.id })} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-bold shadow-sm hover:bg-blue-100 hover:-translate-y-0.5 transition-all duration-200">
                                             <CalendarPlus className="w-4.5 h-4.5" />
                                             Schedule Hearing
-                                        </a>
+                                        </Link>
                                     )}
-                                    <button onClick={handleEndorse} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 text-amber-700 rounded-xl text-sm font-bold shadow-sm hover:bg-amber-100 hover:-translate-y-0.5 transition-all duration-200">
+                                    {!isEndorsed && (
+                                    <button
+                                        type="button"
+                                        onClick={handleEndorse}
+                                        disabled={workflow.can_endorse === false}
+                                        title={workflow.endorse_block_reason || ''}
+                                        className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 text-amber-700 rounded-xl text-sm font-bold shadow-sm hover:bg-amber-100 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                         <ArrowUpRight className="w-4.5 h-4.5" />
                                         Endorse to Grievance
                                     </button>
-                                    <button onClick={handleClose} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-100 hover:-translate-y-0.5 transition-all duration-200">
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleClose}
+                                        disabled={workflow.can_close === false}
+                                        title={workflow.close_block_reason || ''}
+                                        className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-100 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                         <CheckCircle2 className="w-4.5 h-4.5" />
                                         Close Case
                                     </button>

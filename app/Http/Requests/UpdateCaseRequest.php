@@ -25,7 +25,6 @@ class UpdateCaseRequest extends FormRequest
             'description' => 'required|string',
             'witness' => 'nullable|string|max:255',
             'occurred_at' => 'required|date',
-            'status' => 'required|in:Pending,Hearing Scheduled,Hearing,Closed',
         ];
     }
 }

@@ -45,7 +45,7 @@ class ViolationController extends Controller
 
     public function create()
     {
-        return view('violations.create');
+        return inertia('Violations/Create');
     }
 
     public function store(\App\Http\Requests\StoreViolationRequest $request)
@@ -56,12 +56,12 @@ class ViolationController extends Controller
 
     public function show(\App\Models\Violation $violation)
     {
-        return view('violations.show', compact('violation'));
+        return inertia('Violations/Show', compact('violation'));
     }
 
     public function edit(\App\Models\Violation $violation)
     {
-        return view('violations.edit', compact('violation'));
+        return inertia('Violations/Edit', compact('violation'));
     }
 
     public function update(\App\Http\Requests\UpdateViolationRequest $request, \App\Models\Violation $violation)

@@ -74,13 +74,11 @@ class AuthorizationTest extends TestCase
         StudentCase::factory()->create([
             'student_id' => $cceStudent->id,
             'violation_id' => $violation->id,
-            'created_by' => User::factory()->admin()->create()->id,
         ]);
 
         StudentCase::factory()->create([
             'student_id' => $ccjeStudent->id,
             'violation_id' => $violation->id,
-            'created_by' => User::factory()->admin()->create()->id,
         ]);
 
         $response = $this->actingAs($dean)->get(route('cases.index'));

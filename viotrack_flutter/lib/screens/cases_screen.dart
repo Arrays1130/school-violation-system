@@ -7,6 +7,8 @@ import '../theme/app_theme.dart';
 import 'case_details_screen.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
+import '../widgets/app_ui.dart';
+import '../widgets/vt_ui.dart';
 
 class CasesScreen extends StatefulWidget {
   const CasesScreen({super.key});
@@ -27,13 +29,50 @@ class CasesScreenState extends State<CasesScreen> {
   Timer? _debounce;
   Timer? _autoRefreshTimer;
   bool _isAscending = false;
+  final ScrollController _scrollController = ScrollController();
+  int _page = 1;
+  bool _hasMore = true;
+  bool _loadingMore = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadInitialData();
     _autoRefreshTimer =
         Timer.periodic(const Duration(seconds: 30), (_) => _fetchData(showLoading: false));
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _isLoading) return;
+    setState(() => _loadingMore = true);
+    final nextPage = _page + 1;
+    try {
+      final result = await _apiService.getViolations(forcedRefresh: true, page: nextPage);
+      if (!mounted) return;
+      if (result is Map) {
+        final data = (result['data'] as List<dynamic>?) ?? [];
+        final current = result['current_page'] as int? ?? nextPage;
+        final last = result['last_page'] as int? ?? current;
+        setState(() {
+          _page = current;
+          _allViolations = [..._allViolations, ...data];
+          _hasMore = current < last;
+          _applyFilters();
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -58,6 +97,7 @@ class CasesScreenState extends State<CasesScreen> {
   void dispose() {
     _debounce?.cancel();
     _autoRefreshTimer?.cancel();
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -68,17 +108,27 @@ class CasesScreenState extends State<CasesScreen> {
     _applyFilters();
   }
 
+  void refreshFromPoller() {
+    if (!mounted) return;
+    _fetchData(showLoading: false);
+  }
+
   Future<void> _fetchData({bool showLoading = true}) async {
     if (showLoading && mounted) setState(() => _isLoading = true);
     try {
       final dynamic result =
-          await _apiService.getViolations(forcedRefresh: true);
+          await _apiService.getViolations(forcedRefresh: true, page: 1);
       if (mounted) {
         if (mounted) setState(() {
+          _page = 1;
           if (result is Map) {
-            _allViolations = result['data'] as List<dynamic>;
+            _allViolations = (result['data'] as List<dynamic>?) ?? [];
+            final current = result['current_page'] as int? ?? 1;
+            final last = result['last_page'] as int? ?? current;
+            _hasMore = current < last;
           } else if (result is List) {
             _allViolations = result;
+            _hasMore = false;
           }
           _applyFilters();
           _isLoading = false;
@@ -161,7 +211,7 @@ class CasesScreenState extends State<CasesScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _fetchData,
-              color: AppTheme.accentCyan,
+              color: AppTheme.primary,
               child: _isLoading
                   ? Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -177,12 +227,20 @@ class CasesScreenState extends State<CasesScreen> {
                           ),
                         )
                       : ListView.builder(
+                          controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          itemCount: _filteredViolations.length,
-                          itemBuilder: (context, index) =>
-                              _buildViolationCard(
-                                  _filteredViolations[index], index),
+                          itemCount: _filteredViolations.length + (_loadingMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index >= _filteredViolations.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            return _buildViolationCard(
+                                _filteredViolations[index], index);
+                          },
                         ),
             ),
           ),
@@ -192,91 +250,45 @@ class CasesScreenState extends State<CasesScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      color: Colors.white,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Case Explorer",
-                        style: GoogleFonts.outfit(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.textMain)),
-                    Text(
-                        "${_filteredViolations.length} records found",
-                        style: GoogleFonts.outfit(
-                            fontSize: 12, color: AppTheme.textMuted)),
-                  ],
-                ),
-              ),
-              // Refresh button
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  _fetchData();
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.bgLight,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.inputBorder),
-                  ),
-                  child: const Icon(Icons.refresh_rounded,
-                      color: AppTheme.textSub, size: 20),
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Sort button with active indicator
-              Stack(
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      _showSortSheet();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryNavy,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        _isAscending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  if (_hasActiveFilters())
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accentRose,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+    return AppUi.gradientHeader(
+      greeting: 'Violation records',
+      title: 'Cases',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _headerIconButton(Icons.refresh_rounded, AppTheme.textSub, _fetchData),
+          const SizedBox(width: 8),
+          _headerIconButton(
+            _isAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+            Colors.white,
+            _showSortSheet,
+            filled: true,
           ),
+        ],
+      ),
+      bottom: Text(
+        '${_filteredViolations.length} records found',
+        style: GoogleFonts.inter(
+          fontSize: 13,
+          color: Colors.white.withValues(alpha: 0.85),
         ),
+      ),
+    );
+  }
+
+  Widget _headerIconButton(IconData icon, Color color, VoidCallback onTap, {bool filled = false}) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: filled ? Colors.white.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: filled ? Colors.white : color, size: 20),
       ),
     );
   }
@@ -607,11 +619,12 @@ class CasesScreenState extends State<CasesScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.8)),
         boxShadow: AppTheme.softShadow,
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         onTap: () {
           HapticFeedback.mediumImpact();
           Navigator.push(
@@ -677,9 +690,9 @@ class CasesScreenState extends State<CasesScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildStatusBadge(status),
+                  VtStatusChip.fromStatus(status),
                   const SizedBox(height: 4),
-                  Text("#${violation['id']}",
+                  Text("#${(violation['id'] ?? 0).toString().padLeft(4, '0')}",
                       style: GoogleFonts.outfit(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -705,18 +718,7 @@ class CasesScreenState extends State<CasesScreen> {
   }
 
   Widget _buildStatusBadge(String status) {
-    Color color = AppTheme.accentAmber;
-    if (status == 'Resolved' || status == 'Closed') color = AppTheme.accentEmerald;
-    if (status == 'Hearing Scheduled') color = AppTheme.accentCyan;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8)),
-      child: Text(status.toUpperCase(),
-          style: GoogleFonts.outfit(
-              fontSize: 8, fontWeight: FontWeight.w900, color: color)),
-    );
+    return VtStatusChip.fromStatus(status);
   }
 
   Color _getSeverityColor(String severity) {

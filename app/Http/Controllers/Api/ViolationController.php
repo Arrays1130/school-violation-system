@@ -26,7 +26,8 @@ class ViolationController extends Controller
             });
         }
 
-        $violations = $query->latest()->paginate(15);
+        $perPage = min((int) $request->input('per_page', 15), 50);
+        $violations = $query->latest()->paginate($perPage);
 
         return response()->json($violations);
     }
@@ -35,7 +36,7 @@ class ViolationController extends Controller
     {
         $user = $request->user();
         
-        $case = StudentCase::with(['student', 'violation', 'creator', 'attachments', 'hearings'])->findOrFail($id);
+        $case = StudentCase::with(['student', 'violation', 'creator', 'attachments', 'hearings', 'actions.user'])->findOrFail($id);
 
         // Access control for Dean
         if ($user->isDean()) {
@@ -45,7 +46,15 @@ class ViolationController extends Controller
             }
         }
 
-        return response()->json($case);
+        $payload = $case->toArray();
+        $payload['attachments'] = $case->attachments->map(function ($attachment) {
+            $data = $attachment->toArray();
+            $data['mobile_download_url'] = url('/api/mobile/attachments/'.$attachment->id.'/download');
+
+            return $data;
+        })->values()->all();
+
+        return response()->json($payload);
     }
 
     public function stats(Request $request)
@@ -120,7 +129,7 @@ class ViolationController extends Controller
 
             // 5. Monthly Trends (Last 6 Months for Bar Chart)
             $rawMonthlyTrend = $applyDeptScope(StudentCase::query())
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
+                ->selectRaw(\App\Support\SqlDate::yearMonth('created_at').' as month, COUNT(*) as count')
                 ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->groupBy('month')
                 ->pluck('count', 'month');
@@ -144,6 +153,103 @@ class ViolationController extends Controller
                 'severity_stats' => $severityStats->isEmpty() ? (object)[] : $severityStats,
                 'monthly_trends' => $monthlyTrends,
                 'upcoming_hearings' => $upcomingHearings,
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    public function analytics(Request $request)
+    {
+        $user = $request->user();
+        $scope = $user->isDean() && $user->department
+            ? 'dean_analytics:' . $user->department
+            : 'all_analytics';
+
+        $cacheKey = 'mobile_analytics_' . md5($scope);
+
+        $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($user) {
+            $applyDeptScope = function ($query) use ($user) {
+                if (! $user->isDean() || ! $user->department) {
+                    return $query;
+                }
+
+                $dept = $user->department;
+                $longDept = \App\Models\Student::resolveDepartmentLongName($dept);
+
+                return $query->whereHas('student', function ($q) use ($dept, $longDept) {
+                    $q->where(function ($sub) use ($dept, $longDept) {
+                        $sub->where('department', $dept)->orWhere('department', $longDept);
+                    });
+                });
+            };
+
+            $counts = $applyDeptScope(StudentCase::query())
+                ->selectRaw('status, count(*) as count')
+                ->groupBy('status')
+                ->pluck('count', 'status');
+
+            $total = $counts->sum();
+            $pending = $counts->get('Pending', 0) + $counts->get('Hearing Scheduled', 0) + $counts->get('Hearing', 0);
+            $resolved = $counts->get('Closed', 0);
+
+            $severityStats = $applyDeptScope(StudentCase::query())
+                ->join('violations', 'cases.violation_id', '=', 'violations.id')
+                ->selectRaw('violations.severity, count(*) as count')
+                ->groupBy('violations.severity')
+                ->pluck('count', 'severity');
+
+            $major = (int) ($severityStats->get('Major', 0) + $severityStats->get('major', 0));
+            $minor = (int) ($severityStats->get('Minor', 0) + $severityStats->get('minor', 0));
+
+            $topViolations = $applyDeptScope(StudentCase::query())
+                ->join('violations', 'cases.violation_id', '=', 'violations.id')
+                ->selectRaw('violations.title as title, count(*) as count')
+                ->groupBy('violations.title')
+                ->orderByDesc('count')
+                ->limit(5)
+                ->get()
+                ->map(fn ($row) => ['title' => $row->title, 'count' => (int) $row->count])
+                ->values();
+
+            $repeatOffenders = $applyDeptScope(StudentCase::query())
+                ->join('students', 'cases.student_id', '=', 'students.id')
+                ->selectRaw('students.full_name as name, count(*) as count')
+                ->groupBy('students.id', 'students.full_name')
+                ->having('count', '>', 1)
+                ->orderByDesc('count')
+                ->limit(5)
+                ->get()
+                ->map(fn ($row) => ['name' => $row->name, 'count' => (int) $row->count])
+                ->values();
+
+            $rawMonthlyTrend = $applyDeptScope(StudentCase::query())
+                ->selectRaw(\App\Support\SqlDate::yearMonth('created_at').' as month, COUNT(*) as count')
+                ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
+                ->groupBy('month')
+                ->pluck('count', 'month');
+
+            $monthlyTrends = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $month = now()->startOfMonth()->subMonths($i);
+                $monthlyTrends[] = [
+                    'month' => $month->format('M'),
+                    'count' => (int) $rawMonthlyTrend->get($month->format('Y-m'), 0),
+                ];
+            }
+
+            return [
+                'summary' => [
+                    'total' => $total,
+                    'pending' => $pending,
+                    'resolved' => $resolved,
+                    'major' => $major,
+                    'minor' => $minor,
+                ],
+                'top_violations' => $topViolations,
+                'repeat_offenders' => $repeatOffenders,
+                'severity_stats' => $severityStats->isEmpty() ? (object) [] : $severityStats,
+                'monthly_trends' => $monthlyTrends,
             ];
         });
 

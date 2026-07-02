@@ -1,7 +1,10 @@
 import React from 'react';
+import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Gavel, Edit3, ShieldAlert, Calendar, MapPin, Users, Quote, FileCheck2, Printer, FileEdit } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { 
+    ArrowLeft, Gavel, Edit3, ShieldAlert, Calendar, MapPin, Users, Quote, FileCheck2, Printer, FileEdit, Play, CheckCircle2
+} from 'lucide-react';
 
 export default function Show({ auth, hearing }) {
     
@@ -9,6 +12,34 @@ export default function Show({ auth, hearing }) {
     const scheduledDateObj = new Date(hearing.scheduled_at);
     const scheduledDateStr = isNaN(scheduledDateObj) ? 'N/A' : scheduledDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const scheduledTimeStr = isNaN(scheduledDateObj) ? 'N/A' : scheduledDateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const caseStatus = hearing.case?.status;
+    const isStaff = auth?.user?.role === 'admin' || auth?.user?.role === 'super_admin';
+
+    const handleStartHearing = () => {
+        Swal.fire({
+            title: 'Start Hearing?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            confirmButtonText: 'Start Hearing',
+        }).then((result) => {
+            if (result.isConfirmed) router.post(route('hearings.start', hearing.id));
+        });
+    };
+
+    const handleCompleteHearing = () => {
+        Swal.fire({
+            title: 'Complete Hearing',
+            input: 'text',
+            inputLabel: 'Sanction / Resolution',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Close Case',
+            inputValidator: (value) => (!value ? 'Sanction is required.' : undefined),
+        }).then((result) => {
+            if (result.isConfirmed) router.post(route('hearings.complete', hearing.id), { sanction: result.value });
+        });
+    };
 
     return (
         <AuthenticatedLayout
@@ -42,6 +73,18 @@ export default function Show({ auth, hearing }) {
                         </div>
 
                         <div className="flex items-center gap-3">
+                            {isStaff && caseStatus === 'Hearing Scheduled' && (
+                                <button type="button" onClick={handleStartHearing} className="px-5 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-400 transition-all flex items-center gap-2">
+                                    <Play className="w-4.5 h-4.5" />
+                                    Start Hearing
+                                </button>
+                            )}
+                            {isStaff && caseStatus === 'Hearing' && (
+                                <button type="button" onClick={handleCompleteHearing} className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-400 transition-all flex items-center gap-2">
+                                    <CheckCircle2 className="w-4.5 h-4.5" />
+                                    Complete Hearing
+                                </button>
+                            )}
                             <Link href={route('hearings.edit', hearing.id)} className="px-5 py-2.5 bg-white/10 dark:bg-slate-900/10 border border-white/20 text-white rounded-xl text-sm font-bold shadow-sm backdrop-blur-md hover:bg-white/20 dark:bg-slate-900/20 transition-all flex items-center gap-2">
                                 <Edit3 className="w-4.5 h-4.5" />
                                 Edit Hearing Setup

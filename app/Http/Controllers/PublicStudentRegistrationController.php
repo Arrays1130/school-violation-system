@@ -53,7 +53,7 @@ class PublicStudentRegistrationController extends Controller
 
         try {
             $body = (new StudentRegistrationOtpMail($otp))->render();
-            \Illuminate\Support\Facades\Http::post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
+            \Illuminate\Support\Facades\Http::timeout(10)->post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
                 'to' => $validated['email'],
                 'subject' => 'Your SVS Registration OTP',
                 'body' => $body
@@ -141,7 +141,7 @@ class PublicStudentRegistrationController extends Controller
 
         try {
             $body = (new StudentRegistrationOtpMail($otp))->render();
-            \Illuminate\Support\Facades\Http::post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
+            \Illuminate\Support\Facades\Http::timeout(10)->post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
                 'to' => $email,
                 'subject' => 'Your SVS Registration OTP',
                 'body' => $body

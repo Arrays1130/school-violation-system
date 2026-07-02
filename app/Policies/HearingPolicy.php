@@ -22,7 +22,17 @@ class HearingPolicy
 
     public function view(User $user, Hearing $hearing): bool
     {
-        return $this->viewAny($user);
+        if ($this->isStaff($user)) {
+            return true;
+        }
+
+        if ($user->isDean()) {
+            $hearing->loadMissing('case.student');
+
+            return $this->deanCanAccessStudent($user, $hearing->case->student);
+        }
+
+        return false;
     }
 
     public function create(User $user): bool

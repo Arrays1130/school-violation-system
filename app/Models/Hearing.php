@@ -16,15 +16,27 @@ class Hearing extends Model
     {
         static::created(function ($hearing) {
             \App\Models\StudentCase::clearDashboardCache($hearing->case);
-            try { event(new \App\Events\DashboardUpdated('Hearing scheduled')); } catch (\Exception $e) {}
+            try {
+                event(new \App\Events\DashboardUpdated('Hearing scheduled'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after hearing create', ['error' => $e->getMessage()]);
+            }
         });
         static::updated(function ($hearing) {
             \App\Models\StudentCase::clearDashboardCache($hearing->case);
-            try { event(new \App\Events\DashboardUpdated('Hearing updated')); } catch (\Exception $e) {}
+            try {
+                event(new \App\Events\DashboardUpdated('Hearing updated'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after hearing update', ['error' => $e->getMessage()]);
+            }
         });
         static::deleted(function ($hearing) {
             \App\Models\StudentCase::clearDashboardCache($hearing->case);
-            try { event(new \App\Events\DashboardUpdated('Hearing deleted')); } catch (\Exception $e) {}
+            try {
+                event(new \App\Events\DashboardUpdated('Hearing deleted'));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after hearing delete', ['error' => $e->getMessage()]);
+            }
         });
     }
 

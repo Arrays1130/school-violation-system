@@ -34,7 +34,8 @@ export default function Index({ auth, cases, summary, filters }) {
         router.get(route('cases.index'));
     };
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (item) => {
+        const status = item?.endorsed_at ? 'Endorsed to Grievance' : item?.status;
         switch (status) {
             case 'Pending':
                 return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200"><Clock className="w-3 h-3"/> Pending</span>;
@@ -162,6 +163,7 @@ export default function Index({ auth, cases, summary, filters }) {
                             >
                                 <option value="">All Statuses</option>
                                 <option value="Pending">Pending</option>
+                                <option value="endorsed">Endorsed</option>
                                 <option value="Hearing Scheduled">Hearing Scheduled</option>
                                 <option value="Closed">Closed</option>
                             </select>
@@ -209,7 +211,7 @@ export default function Index({ auth, cases, summary, filters }) {
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
                                                 <div className="flex flex-col gap-1.5">
                                                     <span className="text-sm font-bold text-slate-900 dark:text-white">{new Date(item.occurred_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                                    <div>{getStatusBadge(item.status)}</div>
+                                                    <div>{getStatusBadge(item)}</div>
                                                 </div>
                                             </td>
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">

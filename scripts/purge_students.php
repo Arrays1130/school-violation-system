@@ -4,7 +4,7 @@ use App\Models\Student;
 use App\Models\StudentCase;
 use App\Models\Hearing;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
+use App\Support\DashboardCache;
 
 require __DIR__.'/../vendor/autoload.php';
 $app = require_once __DIR__.'/../bootstrap/app.php';
@@ -49,7 +49,7 @@ try {
 
     // Clear dashboard cache
     StudentCase::clearDashboardCache();
-    Cache::flush();
+    DashboardCache::bust();
     echo "Cleared application cache.\n";
 
     DB::commit();
