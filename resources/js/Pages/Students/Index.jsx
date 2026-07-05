@@ -187,10 +187,13 @@ export default function Index({ auth, students, departments, summary, filterAcad
                 <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 dark:border-slate-800 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                         <div className="md:col-span-2">
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Records</label>
+                            <label htmlFor="student-search" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Records</label>
                             <div className="relative">
                                 <input 
-                                    type="text" 
+                                    id="student-search"
+                                    name="search"
+                                    type="search"
+                                    autoComplete="off"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search by name, ID, or email..." 
@@ -203,8 +206,10 @@ export default function Index({ auth, students, departments, summary, filterAcad
                         </div>
                         
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Department</label>
+                            <label htmlFor="student-department" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Department</label>
                             <select 
+                                id="student-department"
+                                name="department"
                                 value={department}
                                 onChange={(e) => setDepartment(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
@@ -217,8 +222,10 @@ export default function Index({ auth, students, departments, summary, filterAcad
                         </div>
                         
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Year Level</label>
+                            <label htmlFor="student-year-level" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Year Level</label>
                             <select 
+                                id="student-year-level"
+                                name="yearLevel"
                                 value={yearLevel}
                                 onChange={(e) => setYearLevel(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
@@ -231,8 +238,10 @@ export default function Index({ auth, students, departments, summary, filterAcad
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">A. Year</label>
+                            <label htmlFor="student-academic-year" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">A. Year</label>
                             <select 
+                                id="student-academic-year"
+                                name="academicYear"
                                 value={academicYear}
                                 onChange={(e) => setAcademicYear(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"

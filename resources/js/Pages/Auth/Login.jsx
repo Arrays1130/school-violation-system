@@ -1,27 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
-
-// #region agent log
-const sendDebugLog = ({ runId, hypothesisId, location, message, data }) =>
-    fetch("http://127.0.0.1:7838/ingest/5714356e-9543-446a-827f-867f64ea1851", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "762331",
-        },
-        body: JSON.stringify({
-            sessionId: "762331",
-            runId,
-            hypothesisId,
-            location,
-            message,
-            data,
-            timestamp: Date.now(),
-        }),
-    }).catch(() => {});
-// #endregion
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -32,80 +12,6 @@ export default function Login({ status, canResetPassword }) {
 
     const [showPassword, setShowPassword] = useState(false);
     const [logoSrc, setLogoSrc] = useState(asset("brand_logo.png"));
-    const logoImgRef = useRef(null);
-
-    useEffect(() => {
-        // #region agent log
-        sendDebugLog({
-            runId: "initial",
-            hypothesisId: "H4",
-            location: "resources/js/Pages/Auth/Login.jsx:20",
-            message: "Login logo initialized",
-            data: {
-                assetUrl: window.assetUrl ?? null,
-                initialLogoSrc: asset("brand_logo.png"),
-                currentLogoSrc: logoSrc,
-            },
-        });
-        // #endregion
-    }, [logoSrc]);
-
-    const inspectLoadedLogo = (img) => {
-        let sampledPixels = null;
-        let sampleError = null;
-
-        try {
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-
-            if (!context) {
-                throw new Error("canvas-context-unavailable");
-            }
-
-            canvas.width = img.naturalWidth || 1;
-            canvas.height = img.naturalHeight || 1;
-            context.drawImage(img, 0, 0);
-
-            const sampleAt = (x, y) => {
-                const pixel = context.getImageData(x, y, 1, 1).data;
-                return Array.from(pixel);
-            };
-
-            sampledPixels = {
-                topLeft: sampleAt(0, 0),
-                center: sampleAt(
-                    Math.max(0, Math.floor((canvas.width - 1) / 2)),
-                    Math.max(0, Math.floor((canvas.height - 1) / 2)),
-                ),
-                bottomRight: sampleAt(
-                    Math.max(0, canvas.width - 1),
-                    Math.max(0, canvas.height - 1),
-                ),
-            };
-        } catch (error) {
-            sampleError = error instanceof Error ? error.message : "unknown-sample-error";
-        }
-
-        // #region agent log
-        sendDebugLog({
-            runId: "initial",
-            hypothesisId: "H1",
-            location: "resources/js/Pages/Auth/Login.jsx:50",
-            message: "Login logo loaded",
-            data: {
-                requestedSrc: logoSrc,
-                currentSrc: img.currentSrc,
-                naturalWidth: img.naturalWidth,
-                naturalHeight: img.naturalHeight,
-                clientWidth: img.clientWidth,
-                clientHeight: img.clientHeight,
-                objectFit: window.getComputedStyle(img).objectFit,
-                sampledPixels,
-                sampleError,
-            },
-        });
-        // #endregion
-    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -124,33 +30,13 @@ export default function Login({ status, canResetPassword }) {
                 <div className="mb-6 flex flex-col items-center">
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-2 border-white shadow-sm">
                         <img
-                            ref={logoImgRef}
                             src={logoSrc}
                             alt="I-Link CST Logo"
                             className="h-16 w-16 object-contain"
-                            onLoad={(event) => inspectLoadedLogo(event.currentTarget)}
                             onError={() => {
-                                setLogoSrc((current) => {
-                                    const fallbackSrc = current.includes("brand_logo.png")
-                                        ? asset("images/logo.png")
-                                        : current;
-
-                                    // #region agent log
-                                    sendDebugLog({
-                                        runId: "initial",
-                                        hypothesisId: "H2",
-                                        location: "resources/js/Pages/Auth/Login.jsx:95",
-                                        message: "Login logo failed to load",
-                                        data: {
-                                            failedSrc: current,
-                                            fallbackSrc,
-                                            assetUrl: window.assetUrl ?? null,
-                                        },
-                                    });
-                                    // #endregion
-
-                                    return fallbackSrc;
-                                });
+                                setLogoSrc((current) =>
+                                    current.includes("brand_logo.png") ? asset("images/logo.png") : current
+                                );
                             }}
                         />
                     </div>
@@ -171,6 +57,7 @@ export default function Login({ status, canResetPassword }) {
                                 id="email"
                                 type="email"
                                 name="email"
+                                autoComplete="username"
                                 value={data.email}
                                 className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 shadow-sm transition-all"
                                 placeholder="admin@ilink.edu.ph"
@@ -192,6 +79,7 @@ export default function Login({ status, canResetPassword }) {
                                 id="password"
                                 type={showPassword ? "text" : "password"}
                                 name="password"
+                                autoComplete="current-password"
                                 value={data.password}
                                 className="block w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 shadow-sm transition-all"
                                 placeholder="••••••••"
@@ -214,8 +102,9 @@ export default function Login({ status, canResetPassword }) {
                     </div>
 
                     <div className="flex items-center justify-between mt-5 px-1">
-                        <label className="flex items-center">
+                        <label htmlFor="remember" className="flex items-center">
                             <input
+                                id="remember"
                                 type="checkbox"
                                 name="remember"
                                 checked={data.remember}

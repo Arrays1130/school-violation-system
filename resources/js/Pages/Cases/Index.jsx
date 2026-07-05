@@ -139,10 +139,13 @@ export default function Index({ auth, cases, summary, filters }) {
                 <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                         <div className="md:col-span-2">
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Records</label>
+                            <label htmlFor="case-search" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Records</label>
                             <div className="relative">
                                 <input 
-                                    type="text" 
+                                    id="case-search"
+                                    name="search"
+                                    type="search"
+                                    autoComplete="off"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search by student name or violation..." 
@@ -155,8 +158,10 @@ export default function Index({ auth, cases, summary, filters }) {
                         </div>
                         
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Status</label>
+                            <label htmlFor="case-status" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Status</label>
                             <select 
+                                id="case-status"
+                                name="status"
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
@@ -170,8 +175,10 @@ export default function Index({ auth, cases, summary, filters }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Severity</label>
+                            <label htmlFor="case-severity" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Severity</label>
                             <select 
+                                id="case-severity"
+                                name="severity"
                                 value={severity}
                                 onChange={(e) => setSeverity(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"

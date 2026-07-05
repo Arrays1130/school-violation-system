@@ -39,10 +39,16 @@ Route::get('/', function () {
 // Public student self-registration (OTP via institutional email)
 Route::prefix('student')->name('student.')->group(function () {
     Route::get('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showRegistrationForm'])->name('register.form');
-    Route::post('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'sendOtp'])->name('register.send');
+    Route::post('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'sendOtp'])
+        ->middleware('throttle:5,1')
+        ->name('register.send');
     Route::get('/register/verify', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showVerifyForm'])->name('register.verify_form');
-    Route::post('/register/verify', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'verifyOtp'])->name('register.verify');
-    Route::post('/register/resend-otp', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'resendOtp'])->name('register.resend');
+    Route::post('/register/verify', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1')
+        ->name('register.verify');
+    Route::post('/register/resend-otp', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'resendOtp'])
+        ->middleware('throttle:3,1')
+        ->name('register.resend');
     Route::get('/register/success', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showSuccess'])->name('register.success');
 });
 
