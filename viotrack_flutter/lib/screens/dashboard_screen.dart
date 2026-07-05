@@ -46,7 +46,9 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _syncUnreadFromPoller() {
     if (mounted) {
-      setState(() => _unreadCount = NotificationPoller.instance.unreadCount.value);
+      setState(
+        () => _unreadCount = NotificationPoller.instance.unreadCount.value,
+      );
     }
   }
 
@@ -96,7 +98,9 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
-    NotificationPoller.instance.unreadCount.removeListener(_syncUnreadFromPoller);
+    NotificationPoller.instance.unreadCount.removeListener(
+      _syncUnreadFromPoller,
+    );
     _autoRefreshTimer?.cancel();
     super.dispose();
   }
@@ -141,6 +145,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(child: _buildHeader()),
+              SliverToBoxAdapter(child: _buildHeroCard()),
               SliverToBoxAdapter(child: _buildStatsRow()),
               SliverToBoxAdapter(
                 child: AppUi.searchBar(
@@ -152,24 +157,29 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
               if (_alerts.isNotEmpty) ...[
-                SliverToBoxAdapter(child: AppUi.sectionHeader('Upcoming Hearings')),
+                SliverToBoxAdapter(
+                  child: AppUi.sectionHeader('Upcoming hearings'),
+                ),
                 SliverToBoxAdapter(child: _buildHearingsRow()),
               ],
               if (_topOffenses.isNotEmpty) ...[
-                SliverToBoxAdapter(child: AppUi.sectionHeader('Top Offenses')),
+                SliverToBoxAdapter(child: AppUi.sectionHeader('Top offenses')),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildOffenseItem(_topOffenses[index], index),
-                      childCount: _topOffenses.length > 3 ? 3 : _topOffenses.length,
+                      (context, index) =>
+                          _buildOffenseItem(_topOffenses[index], index),
+                      childCount: _topOffenses.length > 3
+                          ? 3
+                          : _topOffenses.length,
                     ),
                   ),
                 ),
               ],
               SliverToBoxAdapter(
                 child: AppUi.sectionHeader(
-                  'Recent Cases',
+                  'Recent cases',
                   action: 'View all',
                   onAction: () => MainLayout.of(context)?.navigateToTab(1),
                 ),
@@ -177,7 +187,9 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (_isLoading)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverToBoxAdapter(child: ShimmerLoader.buildListSkeleton()),
+                  sliver: SliverToBoxAdapter(
+                    child: ShimmerLoader.buildListSkeleton(),
+                  ),
                 )
               else if (_recentViolations.isEmpty)
                 const SliverToBoxAdapter(
@@ -192,10 +204,16 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    0,
+                    20,
+                    AppTheme.bottomNavClearance,
+                  ),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildCaseCard(_recentViolations[index]),
+                      (context, index) =>
+                          _buildCaseCard(_recentViolations[index]),
                       childCount: _recentViolations.length,
                     ),
                   ),
@@ -208,33 +226,47 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader() {
-    return AppUi.gradientHeader(
+    return AppUi.pageHeader(
       greeting: 'Hello, $_userName',
       title: 'Dashboard',
+      subtitle:
+          'Monitor case volume, hearings, alerts, and recent offense activity.',
+      badge: AppUi.iconCircle(
+        icon: Icons.dashboard_outlined,
+        color: AppTheme.primaryNavy,
+        size: 36,
+        iconSize: 18,
+        backgroundColor: Colors.white,
+      ),
       trailing: IconButton(
         onPressed: () => MainLayout.of(context)?.navigateToTab(3),
         icon: Stack(
           clipBehavior: Clip.none,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.bgCard,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: AppTheme.softShadow,
               ),
-              child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+              child: const Icon(
+                Icons.notifications_outlined,
+                color: AppTheme.textMain,
+                size: 22,
+              ),
             ),
             if (_unreadCount > 0)
               Positioned(
-                top: 4,
-                right: 4,
+                top: 6,
+                right: 6,
                 child: Container(
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
                     color: AppTheme.accentRose,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: AppTheme.bgCard, width: 1.5),
                   ),
                 ),
               ),
@@ -244,33 +276,49 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  Widget _buildHeroCard() {
+    final total = _isLoading ? '—' : '${_stats['total'] ?? 0}';
+    final pending = _isLoading ? '—' : '${_stats['pending'] ?? 0}';
+    final closed = _isLoading ? '—' : '${_stats['resolved'] ?? 0}';
+
+    return AppUi.heroMetricCard(
+      eyebrow: 'VioTrack command center',
+      label: 'Total cases',
+      value: total,
+      subtitle: _isLoading
+          ? 'Loading overview…'
+          : '$pending pending · $closed closed',
+      badge: AppUi.iconCircle(
+        icon: Icons.arrow_outward_rounded,
+        color: Colors.white,
+        size: 46,
+        iconSize: 22,
+        backgroundColor: Colors.white.withValues(alpha: 0.14),
+      ),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        MainLayout.of(context)?.navigateToTab(1);
+      },
+    );
+  }
+
   Widget _buildStatsRow() {
     if (_isLoading) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
         child: ShimmerLoader.buildStatGridSkeleton(),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
       child: Row(
         children: [
-          AppUi.statCard(
-            label: 'Total',
-            value: '${_stats['total'] ?? 0}',
-            icon: Icons.folder_outlined,
-            color: AppTheme.primary,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              MainLayout.of(context)?.navigateToTab(1);
-            },
-          ),
-          const SizedBox(width: 10),
-          AppUi.statCard(
+          AppUi.statChip(
             label: 'Pending',
             value: '${_stats['pending'] ?? 0}',
-            icon: Icons.schedule,
+            icon: Icons.schedule_rounded,
             color: AppTheme.accentAmber,
             onTap: () {
               HapticFeedback.lightImpact();
@@ -278,14 +326,25 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           const SizedBox(width: 10),
-          AppUi.statCard(
+          AppUi.statChip(
             label: 'Closed',
             value: '${_stats['resolved'] ?? 0}',
-            icon: Icons.check_circle_outline,
+            icon: Icons.check_circle_outline_rounded,
             color: AppTheme.accentEmerald,
             onTap: () {
               HapticFeedback.lightImpact();
               MainLayout.of(context)?.navigateToTab(1, status: 'Closed');
+            },
+          ),
+          const SizedBox(width: 10),
+          AppUi.statChip(
+            label: 'Alerts',
+            value: '$_unreadCount',
+            icon: Icons.notifications_outlined,
+            color: AppTheme.accentRose,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              MainLayout.of(context)?.navigateToTab(3);
             },
           ),
         ],
@@ -295,12 +354,12 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildHearingsRow() {
     return SizedBox(
-      height: 130,
+      height: 194,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _alerts.length > 5 ? 5 : _alerts.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) => _buildHearingCard(_alerts[index]),
       ),
     );
@@ -308,89 +367,104 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildHearingCard(dynamic alert) {
     final caseId = alert['case_id'];
-    final studentName = alert['case']?['student']?['full_name']?.toString() ?? 'Student';
-    final violation = alert['case']?['violation']?['title']?.toString() ?? 'Hearing';
+    final studentName =
+        alert['case']?['student']?['full_name']?.toString() ?? 'Student';
+    final violation =
+        alert['case']?['violation']?['title']?.toString() ?? 'Hearing';
     final schedule = _formatDateTime(alert['scheduled_at']?.toString() ?? '');
     final venue = alert['venue']?.toString() ?? 'Guidance Office';
 
     return SizedBox(
-      width: 230,
+      width: 276,
       child: Material(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         child: InkWell(
           onTap: () {
             if (caseId == null) return;
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => CaseDetailsScreen(caseId: int.parse(caseId.toString())),
+                builder: (_) =>
+                    CaseDetailsScreen(caseId: int.parse(caseId.toString())),
               ),
             );
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(22),
           child: Ink(
             decoration: BoxDecoration(
               gradient: AppTheme.heroGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              boxShadow: AppTheme.floatShadow,
             ),
             padding: const EdgeInsets.all(16),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Hearing',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        AppUi.brandPill(
+                          label: 'Scheduled hearing',
+                          leading: Icon(
+                            Icons.gavel_rounded,
+                            size: 14,
+                            color: Colors.white.withValues(alpha: 0.92),
+                          ),
+                        ),
+                        const Spacer(),
+                        AppUi.iconCircle(
+                          icon: Icons.arrow_outward_rounded,
+                          color: Colors.white,
+                          size: 36,
+                          iconSize: 16,
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Text(
+                      studentName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      violation,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        height: 1.35,
+                        color: Colors.white.withValues(alpha: 0.82),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  studentName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  violation,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-                const Spacer(),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 12, color: Colors.white.withValues(alpha: 0.8)),
-                    const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        schedule,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.9)),
+                      child: _buildHearingMetaTile(
+                        icon: Icons.calendar_today_rounded,
+                        label: 'Schedule',
+                        value: schedule,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildHearingMetaTile(
+                        icon: Icons.place_outlined,
+                        label: 'Venue',
+                        value: venue,
                       ),
                     ),
                   ],
@@ -403,15 +477,60 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  Widget _buildHearingMetaTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.8)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withValues(alpha: 0.72),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOffenseItem(dynamic offense, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.inputBorder),
-      ),
+      decoration: AppUi.cardDecoration(radius: AppTheme.radiusMd),
       child: Row(
         children: [
           Container(
@@ -460,82 +579,36 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildCaseCard(dynamic violation) {
     final status = violation['status']?.toString() ?? 'Pending';
     final severity = violation['violation']?['severity']?.toString() ?? 'Minor';
-    final studentName = violation['student']?['full_name']?.toString() ?? 'Unknown';
-    final violationTitle = violation['violation']?['title']?.toString() ?? 'N/A';
+    final studentName =
+        violation['student']?['full_name']?.toString() ?? 'Unknown';
+    final violationTitle =
+        violation['violation']?['title']?.toString() ?? 'N/A';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: AppUi.cardDecoration(),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CaseDetailsScreen(
-                  caseId: violation['id'],
-                  initialData: {
-                    'id': violation['id'],
-                    'student': violation['student'],
-                    'violation': violation['violation'],
-                    'status': violation['status'],
-                  },
-                ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: _severityColor(severity).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    severity == 'Major' ? Icons.warning_amber_rounded : Icons.info_outline,
-                    color: _severityColor(severity),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        studentName,
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppTheme.textMain,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        violationTitle,
-                        style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                AppUi.statusBadge(status),
-              ],
+    return AppUi.listRow(
+      title: studentName,
+      subtitle: violationTitle,
+      icon: severity == 'Major'
+          ? Icons.warning_amber_rounded
+          : Icons.gavel_outlined,
+      iconColor: _severityColor(severity),
+      trailing: AppUi.statusBadge(status),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CaseDetailsScreen(
+              caseId: violation['id'],
+              initialData: {
+                'id': violation['id'],
+                'student': violation['student'],
+                'violation': violation['violation'],
+                'status': violation['status'],
+              },
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -547,8 +620,23 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (dateTimeStr.isEmpty) return 'Schedule TBA';
     try {
       final date = DateTime.parse(dateTimeStr).toLocal();
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final hour = date.hour > 12
+          ? date.hour - 12
+          : (date.hour == 0 ? 12 : date.hour);
       final minute = date.minute.toString().padLeft(2, '0');
       final ampm = date.hour >= 12 ? 'PM' : 'AM';
       return '${months[date.month - 1]} ${date.day} · $hour:$minute $ampm';

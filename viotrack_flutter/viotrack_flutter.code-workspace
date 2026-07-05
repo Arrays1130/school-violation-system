@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "dart.vmServiceTimeout": 180,
+    "dart.deviceTimeout": 120,
+    "dart.flutterHotReloadOnSave": "never"
+  }
+}

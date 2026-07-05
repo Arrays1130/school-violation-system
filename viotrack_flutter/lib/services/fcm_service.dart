@@ -1,108 +1,162 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
-import '../api_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import '../api_service.dart';
+import 'auth_storage_service.dart';
+import 'notification_poller.dart';
+import 'push_navigation_service.dart';
 
 class FCMService {
+  FCMService._();
+
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'high_importance_channel', // id
-    'High Importance Notifications', // title
-    description: 'This channel is used for important school violation alerts.', // description
+    'high_importance_channel',
+    'High Importance Notifications',
+    description: 'School violation and hearing alerts for deans.',
     importance: Importance.max,
   );
 
-  static Future<void> initialize() async {
-    // 1. Initialzie Local Notifications for foreground
-    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
-    await _localNotifications.initialize(initializationSettings);
+  static bool _handlersRegistered = false;
 
-    // Create the channel on Android
+  static Future<void> initialize() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidSettings);
+
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onLocalNotificationTap,
+    );
+
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_channel);
 
-    // 2. Request Permission (for iOS/Android 13+)
-    NotificationSettings settings = await _messaging.requestPermission(
+    _registerInteractionHandlers();
+
+    final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('User granted notification permission');
-      
-      // 3. Get Token and Sync with Backend
-      await syncTokenWithBackend();
-      
-      // 4. Setup Foreground Message Listener
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        RemoteNotification? notification = message.notification;
-        AndroidNotification? android = message.notification?.android;
+    final allowed =
+        settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
 
-        if (notification != null && android != null) {
-          _localNotifications.show(
-            notification.hashCode,
-            notification.title,
-            notification.body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                _channel.id,
-                _channel.name,
-                channelDescription: _channel.description,
-                icon: android.smallIcon,
-                importance: Importance.max,
-                priority: Priority.high,
-                ticker: 'ticker',
-              ),
-            ),
-          );
-        }
-      });
+    if (!allowed) {
+      debugPrint('FCM permission not granted: ${settings.authorizationStatus}');
+    }
+
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+    _messaging.onTokenRefresh.listen((_) => syncTokenWithBackend());
+
+    await syncTokenWithBackend();
+  }
+
+  static void _registerInteractionHandlers() {
+    if (_handlersRegistered) return;
+    _handlersRegistered = true;
+
+    FirebaseMessaging.onMessageOpenedApp.listen(
+      PushNavigationService.handleRemoteMessage,
+    );
+  }
+
+  static Future<void> handleLaunchNotification() async {
+    final initial = await _messaging.getInitialMessage();
+    if (initial != null) {
+      PushNavigationService.handleRemoteMessage(initial);
+    }
+  }
+
+  static void _onForegroundMessage(RemoteMessage message) {
+    unawaited(
+      NotificationPoller.instance.poll(immediate: true, refreshLists: true),
+    );
+    _showLocalNotification(message);
+  }
+
+  static Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    final android = notification.android;
+    await _localNotifications.show(
+      notification.hashCode,
+      notification.title,
+      notification.body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channel.id,
+          _channel.name,
+          channelDescription: _channel.description,
+          icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      payload: message.data.isNotEmpty ? jsonEncode(message.data) : null,
+    );
+  }
+
+  static void _onLocalNotificationTap(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map) {
+        PushNavigationService.handleData(
+          Map<String, dynamic>.from(decoded),
+        );
+      }
+    } catch (e) {
+      debugPrint('Invalid local notification payload: $e');
     }
   }
 
   static Future<void> syncTokenWithBackend() async {
     try {
-      String? token = await _messaging.getToken();
-      
-      if (token != null) {
-        print('FCM Token: $token');
-        
-        final prefs = await SharedPreferences.getInstance();
-        final loginToken = prefs.getString('token');
-        
-        if (loginToken != null) {
-          final response = await http.post(
-            Uri.parse('${ApiService.baseUrl}/mobile/update-fcm-token'),
-            headers: {
-              'Accept': 'application/json',
-              'Authorization': 'Bearer $loginToken',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({'fcm_token': token}),
-          );
-          
-          if (response.statusCode == 200) {
-            print('FCM Token synced successfully');
-          } else {
-            print('Failed to sync FCM Token: ${response.statusCode}');
-          }
-        }
+      final token = await _messaging.getToken();
+      if (token == null) return;
+
+      final loginToken = await AuthStorageService.getToken();
+      if (loginToken == null) return;
+
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/mobile/update-fcm-token'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $loginToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'fcm_token': token}),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('FCM token synced with backend');
+      } else {
+        debugPrint('FCM token sync failed: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error syncing FCM Token: $e');
+      debugPrint('Error syncing FCM token: $e');
     }
   }
 }
 
 @pragma('vm:entry-point')
 Future<void> handleBackgroundMessage(RemoteMessage message) async {
-  print("Handling a background message: ${message.messageId}");
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  debugPrint('Background FCM message: ${message.messageId}');
 }
-

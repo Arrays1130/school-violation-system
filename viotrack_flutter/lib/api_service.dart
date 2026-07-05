@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viotrack_flutter/config/api_config.dart';
+import 'package:viotrack_flutter/services/auth_storage_service.dart';
 import 'package:viotrack_flutter/services/session_service.dart';
 
 class ApiService {
@@ -25,8 +26,7 @@ class ApiService {
   }
 
   Future<Map<String, String>> _authHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await AuthStorageService.getToken();
 
     return {
       'Accept': 'application/json',
@@ -80,7 +80,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', data['token']);
+        await AuthStorageService.saveToken(data['token'] as String);
         await prefs.setString('user', jsonEncode(data['user']));
         SessionService.reset();
         isOfflineNotifier.value = false;
@@ -118,8 +118,7 @@ class ApiService {
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await AuthStorageService.getToken();
 
     if (token != null) {
       try {
@@ -137,7 +136,8 @@ class ApiService {
 
     clearCache();
     await _clearPersistentCache();
-    await prefs.remove('token');
+    await AuthStorageService.clearToken();
+    final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user');
     SessionService.reset();
   }

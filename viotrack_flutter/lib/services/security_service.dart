@@ -1,13 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecurityService {
   static final LocalAuthentication _auth = LocalAuthentication();
   static const _storage = FlutterSecureStorage();
   static const String _biometricKey = 'biometric_enabled';
-  
+
   static const String _keyEmail = 'user_email';
   static const String _keyPassword = 'user_password';
 
@@ -43,7 +43,8 @@ class SecurityService {
   static Future<bool> isBiometricsSupported() async {
     try {
       final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
       return canAuthenticate;
     } catch (_) {
       return false;
@@ -53,16 +54,18 @@ class SecurityService {
   /// Pag-authenticate gamit ang biometrics
   static Future<bool> authenticate() async {
     try {
-      return await _auth.authenticate(
-        localizedReason: 'Please authenticate to access the Dean Dashboard',
+      final result = await _auth.authenticate(
+        localizedReason:
+            'Verify your identity to unlock the I-LINK dean portal.',
         options: const AuthenticationOptions(
-          stickyAuth: true,
+          stickyAuth: false,
           biometricOnly: true,
           useErrorDialogs: true,
         ),
       );
+      return result;
     } catch (e) {
-      print("Auth error: $e");
+      debugPrint("Auth error: $e");
       return false;
     }
   }

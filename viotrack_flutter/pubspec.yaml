@@ -36,7 +36,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.0
   shared_preferences: ^2.3.0
-  web_socket_channel: ^3.0.0
   flutter_riverpod: ^2.6.0
   google_fonts: ^6.2.1
   flutter_animate: ^4.5.0
@@ -44,11 +43,9 @@ dependencies:
   firebase_core: ^4.11.0
   firebase_messaging: ^16.4.0
   shimmer: ^3.0.0
-  lottie: ^3.1.0
   local_auth: ^2.3.0
   flutter_secure_storage: ^9.0.0
   flutter_local_notifications: ^17.1.2
-  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
@@ -78,8 +75,8 @@ flutter:
   assets:
     - assets/images/
     - assets/images/login-campus-bg.png
-    - assets/images/viotrack_logo.png
     - assets/images/ilink_logo.png
+    - assets/images/ilink_college_logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -110,11 +107,11 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/viotrack_logo.png"
+  image_path: "assets/images/ilink_college_logo.png"
 
 flutter_native_splash:
   color: "#FAFBFC"
-  image: "assets/images/viotrack_logo.png"
+  image: "assets/images/ilink_college_logo.png"
   android_12:
     color: "#FAFBFC"
-    image: "assets/images/viotrack_logo.png"
+    image: "assets/images/ilink_college_logo.png"

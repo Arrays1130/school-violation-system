@@ -114,6 +114,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           AppUi.gradientHeader(
             greeting: 'Your account',
             title: 'Profile',
+            subtitle: 'Manage identity, security, and sign-in preferences.',
+            badge: AppUi.iconCircle(
+              icon: Icons.person_outline_rounded,
+              color: AppTheme.primaryNavy,
+              size: 36,
+              iconSize: 18,
+              backgroundColor: Colors.white,
+            ),
             bottom: Row(
               children: [
                 Container(
@@ -157,29 +165,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: Colors.white.withValues(alpha: 0.85),
                           ),
                         ),
+                      const SizedBox(height: 8),
+                      AppUi.brandPill(
+                        label: _userRole.toUpperCase(),
+                        leading: Icon(
+                          Icons.verified_user_outlined,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
+            watermark: AppUi.ilinkWatermark(),
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                AppTheme.bottomNavClearance,
+              ),
               children: [
                 _section('Account'),
                 _tile(Icons.badge_outlined, 'Role', _userRole),
                 if (_userDepartment.isNotEmpty)
-                  _tile(Icons.apartment_outlined, 'Department', _userDepartment),
+                  _tile(
+                    Icons.apartment_outlined,
+                    'Department',
+                    _userDepartment,
+                  ),
                 const SizedBox(height: 16),
                 _section('Security'),
-                Container(
-                  decoration: AppUi.cardDecoration(),
+                AppUi.surfaceCard(
+                  padding: EdgeInsets.zero,
                   child: SwitchListTile(
-                    title: Text('Biometric login', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                    title: Text(
+                      'Biometric login',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
                     subtitle: Text(
-                      _isHardwareAvailable ? 'Fingerprint or Face ID' : 'Not available on this device',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+                      _isHardwareAvailable
+                          ? 'Fingerprint or Face ID'
+                          : 'Not available on this device',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppTheme.textMuted,
+                      ),
                     ),
                     value: _isBiometricEnabled,
                     onChanged: _isHardwareAvailable ? _toggleBiometric : null,
@@ -191,22 +226,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 50,
                   child: OutlinedButton.icon(
                     onPressed: _logout,
-                    icon: const Icon(Icons.logout_rounded, color: AppTheme.accentRose, size: 20),
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      color: AppTheme.accentRose,
+                      size: 20,
+                    ),
                     label: Text(
                       'Sign out',
-                      style: GoogleFonts.inter(color: AppTheme.accentRose, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                        color: AppTheme.accentRose,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.accentRose.withValues(alpha: 0.35)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      side: BorderSide(
+                        color: AppTheme.accentRose.withValues(alpha: 0.35),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'VioTrack v2.1',
+                  'VioTrack v3.0.0 · I-LINK Dean Portal',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textHint),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppTheme.textHint,
+                  ),
                 ),
               ],
             ),
@@ -221,7 +270,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textMuted),
+        style: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textMuted,
+        ),
       ),
     );
   }
@@ -240,8 +293,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           child: Icon(icon, color: AppTheme.primary, size: 20),
         ),
-        title: Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted)),
-        subtitle: Text(value, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.textMain)),
+        title: Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+        ),
+        subtitle: Text(
+          value,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textMain,
+          ),
+        ),
       ),
     );
   }

@@ -78,13 +78,18 @@ class NotificationScreenState extends State<NotificationScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchNotifications({bool showLoading = true, bool reset = true}) async {
+  Future<void> _fetchNotifications({
+    bool showLoading = true,
+    bool reset = true,
+  }) async {
     if (showLoading && mounted) {
       setState(() => _isLoading = true);
     }
     try {
-      final dynamic result =
-          await _apiService.getNotifications(forcedRefresh: true, page: 1);
+      final dynamic result = await _apiService.getNotifications(
+        forcedRefresh: true,
+        page: 1,
+      );
       if (mounted) {
         setState(() {
           _applyPageResult(result, reset: reset);
@@ -101,8 +106,10 @@ class NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isLoadingMore = true);
     final nextPage = _currentPage + 1;
     try {
-      final result =
-          await _apiService.getNotifications(forcedRefresh: true, page: nextPage);
+      final result = await _apiService.getNotifications(
+        forcedRefresh: true,
+        page: nextPage,
+      );
       if (mounted) {
         setState(() {
           _applyPageResult(result, reset: false);
@@ -124,7 +131,10 @@ class NotificationScreenState extends State<NotificationScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('All notifications marked as read', style: GoogleFonts.outfit()),
+          content: Text(
+            'All notifications marked as read',
+            style: GoogleFonts.inter(),
+          ),
           backgroundColor: AppTheme.accentCyan,
           behavior: SnackBarBehavior.floating,
         ),
@@ -135,7 +145,10 @@ class NotificationScreenState extends State<NotificationScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to mark all as read', style: GoogleFonts.outfit()),
+          content: Text(
+            'Failed to mark all as read',
+            style: GoogleFonts.inter(),
+          ),
           backgroundColor: AppTheme.accentRose,
           behavior: SnackBarBehavior.floating,
         ),
@@ -158,7 +171,10 @@ class NotificationScreenState extends State<NotificationScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to mark as read', style: GoogleFonts.outfit()),
+            content: Text(
+              'Failed to mark as read',
+              style: GoogleFonts.inter(),
+            ),
             backgroundColor: AppTheme.accentRose,
             behavior: SnackBarBehavior.floating,
           ),
@@ -199,14 +215,18 @@ class NotificationScreenState extends State<NotificationScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(title,
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(data['message'] ?? 'No additional details.',
-                style: GoogleFonts.outfit()),
+            Text(
+              data['message'] ?? 'No additional details.',
+              style: GoogleFonts.inter(),
+            ),
             const SizedBox(height: 16),
             if (data.containsKey('student_name'))
               _buildDialogInfo("Student", data['student_name']),
@@ -223,10 +243,13 @@ class NotificationScreenState extends State<NotificationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("CLOSE",
-                style: GoogleFonts.outfit(
-                    color: AppTheme.accentCyan,
-                    fontWeight: FontWeight.bold)),
+            child: Text(
+              "CLOSE",
+              style: GoogleFonts.inter(
+                color: AppTheme.accentCyan,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -238,11 +261,12 @@ class NotificationScreenState extends State<NotificationScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: RichText(
         text: TextSpan(
-          style: GoogleFonts.outfit(color: AppTheme.textMain),
+          style: GoogleFonts.inter(color: AppTheme.textMain),
           children: [
             TextSpan(
-                text: "$label: ",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+              text: "$label: ",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             TextSpan(text: value),
           ],
         ),
@@ -252,7 +276,9 @@ class NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.where((n) => n['read_at'] == null).length;
+    final unreadCount = _notifications
+        .where((n) => n['read_at'] == null)
+        .length;
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
@@ -269,36 +295,43 @@ class NotificationScreenState extends State<NotificationScreen> {
                       child: ShimmerLoader.buildListSkeleton(),
                     )
                   : _notifications.isEmpty
-                      ? SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: Container(
-                            height: MediaQuery.of(context).size.height * 0.65,
-                            alignment: Alignment.center,
-                            child: _buildEmptyState(),
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          itemCount:
-                              _notifications.length + (_isLoadingMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= _notifications.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppTheme.primary,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              );
-                            }
-                            return _buildNotificationItem(
-                                _notifications[index], index);
-                          },
-                        ),
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.65,
+                        alignment: Alignment.center,
+                        child: _buildEmptyState(),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                        16,
+                        8,
+                        16,
+                        AppTheme.bottomNavClearance,
+                      ),
+                      itemCount:
+                          _notifications.length + (_isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= _notifications.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: AppTheme.primary,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          );
+                        }
+                        return _buildNotificationItem(
+                          _notifications[index],
+                          index,
+                        );
+                      },
+                    ),
             ),
           ),
         ],
@@ -308,23 +341,52 @@ class NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildHeader(int unreadCount) {
     return AppUi.gradientHeader(
-      greeting: unreadCount > 0 ? '$unreadCount unread updates' : 'All caught up',
+      greeting: unreadCount > 0
+          ? '$unreadCount unread updates'
+          : 'All caught up',
       title: 'Notifications',
+      subtitle: 'Stay on top of hearings, endorsements, and case activity.',
+      badge: AppUi.iconCircle(
+        icon: Icons.notifications_active_outlined,
+        color: AppTheme.primaryNavy,
+        size: 36,
+        iconSize: 18,
+        backgroundColor: Colors.white,
+      ),
       trailing: unreadCount > 0
           ? TextButton(
               onPressed: _markAllAsRead,
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.white.withValues(alpha: 0.12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: Text(
                 'Mark all read',
-                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             )
           : null,
+      bottom: AppUi.brandPill(
+        label: unreadCount > 0 ? 'Review recommended' : 'No urgent alerts',
+        leading: Icon(
+          unreadCount > 0
+              ? Icons.notifications_active_outlined
+              : Icons.check_circle_outline_rounded,
+          size: 14,
+          color: Colors.white.withValues(alpha: 0.92),
+        ),
+      ),
+      watermark: AppUi.ilinkWatermark(),
     );
   }
 
@@ -332,7 +394,8 @@ class NotificationScreenState extends State<NotificationScreen> {
     return const EmptyStateWidget(
       icon: Icons.notifications_off_rounded,
       title: "All caught up!",
-      message: "You have no new notifications at the moment. We'll alert you when there's an update.",
+      message:
+          "You have no new notifications at the moment. We'll alert you when there's an update.",
     );
   }
 
@@ -342,16 +405,13 @@ class NotificationScreenState extends State<NotificationScreen> {
         ? Map<String, dynamic>.from(jsonDecode(notif['data']))
         : Map<String, dynamic>.from(notif['data']);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: isUnread ? AppTheme.softShadow : null,
-        border: isUnread
-            ? Border.all(color: AppTheme.accentCyan.withOpacity(0.22))
-            : Border.all(color: AppTheme.inputBorder.withOpacity(0.5)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppUi.surfaceCard(
+      padding: EdgeInsets.zero,
+      borderColor: isUnread
+          ? AppTheme.accentCyan.withValues(alpha: 0.22)
+          : AppTheme.inputBorder.withValues(alpha: 0.5),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -374,19 +434,26 @@ class NotificationScreenState extends State<NotificationScreen> {
                         gradient: isUnread
                             ? AppTheme.accentGradient
                             : const LinearGradient(
-                                colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)]),
+                                colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
+                              ),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: isUnread
                             ? [
                                 BoxShadow(
-                                    color: AppTheme.accentCyan.withOpacity(0.3),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4)),
+                                  color: AppTheme.accentCyan.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
                               ]
                             : null,
                       ),
-                      child: const Icon(Icons.gavel_rounded,
-                          color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.gavel_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     if (isUnread)
                       Positioned(
@@ -401,8 +468,11 @@ class NotificationScreenState extends State<NotificationScreen> {
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                  color: AppTheme.accentRose.withOpacity(0.5),
-                                  blurRadius: 4),
+                                color: AppTheme.accentRose.withValues(
+                                  alpha: 0.5,
+                                ),
+                                blurRadius: 4,
+                              ),
                             ],
                           ),
                         ),
@@ -418,58 +488,66 @@ class NotificationScreenState extends State<NotificationScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              notif['title'] ?? data['title'] ?? 'Record Update',
-                              style: GoogleFonts.outfit(
-                                  fontWeight: isUnread
-                                      ? FontWeight.w800
-                                      : FontWeight.w600,
-                                  fontSize: 14,
-                                  color: isUnread
-                                      ? AppTheme.textMain
-                                      : AppTheme.textMuted),
+                              notif['title'] ??
+                                  data['title'] ??
+                                  'Record Update',
+                              style: GoogleFonts.inter(
+                                fontWeight: isUnread
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                fontSize: 14,
+                                color: isUnread
+                                    ? AppTheme.textMain
+                                    : AppTheme.textMuted,
+                              ),
                             ),
                           ),
                           if (isUnread)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentCyan.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
+                            AppUi.brandPill(
+                              label: 'NEW',
+                              textColor: AppTheme.accentCyan,
+                              backgroundColor: AppTheme.accentCyan.withValues(
+                                alpha: 0.1,
                               ),
-                              child: Text("NEW",
-                                  style: GoogleFonts.outfit(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppTheme.accentCyan,
-                                      letterSpacing: 0.5)),
+                              borderColor: AppTheme.accentCyan.withValues(
+                                alpha: 0.16,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 4,
+                              ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         data['message'] ?? 'Action required on case record.',
-                        style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            color: isUnread
-                                ? AppTheme.textSub
-                                : AppTheme.textMuted,
-                            height: 1.4),
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: isUnread
+                              ? AppTheme.textSub
+                              : AppTheme.textMuted,
+                          height: 1.4,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Icon(Icons.access_time_rounded,
-                              size: 10, color: AppTheme.textHint),
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 10,
+                            color: AppTheme.textHint,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _formatDate(notif['created_at']),
-                            style: GoogleFonts.outfit(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textHint),
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textHint,
+                            ),
                           ),
                         ],
                       ),
@@ -481,6 +559,7 @@ class NotificationScreenState extends State<NotificationScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

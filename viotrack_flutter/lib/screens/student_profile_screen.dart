@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 import '../api_service.dart';
+import '../widgets/app_ui.dart';
+import '../widgets/empty_state_widget.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   final Map<String, dynamic> student;
@@ -78,16 +80,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         if (severity == 'minor') minor++;
       }
 
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _studentCases = filteredCases;
         _majorCount = major;
         _minorCount = minor;
         _isLoading = false;
-      });
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isLoading = false;
-      });
+        });
+      }
     }
   }
 
@@ -104,7 +110,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String fullName = widget.student['full_name'] ?? 'Unknown Student';
+    final String fullName = widget.student['full_name'] ?? 'Student name unavailable';
     final String? studentNo = widget.student['student_number']?.toString();
     final String? course = widget.student['course']?.toString();
     // Build subtitle only from available fields
@@ -129,7 +135,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ),
         title: Text(
           "Student Profile",
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             color: AppTheme.primaryNavy,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -155,26 +161,18 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                    child: Text(
-                      "VIOLATION HISTORY",
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.textMuted,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
+                    child: AppUi.sectionHeader('Violation history'),
                   ),
                 ),
                 if (_studentCases.isEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Center(
-                        child: Text(
-                          "No violations recorded.",
-                          style: GoogleFonts.outfit(color: AppTheme.textHint),
-                        ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: EmptyStateWidget(
+                        icon: Icons.verified_user_outlined,
+                        title: 'Clean record',
+                        message:
+                            'No violations recorded for this student in the current academic period.',
                       ),
                     ),
                   )
@@ -206,7 +204,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppTheme.bgCard,
-              border: Border.all(color: AppTheme.primarySlate.withOpacity(0.2), width: 1.5),
+              border: Border.all(color: AppTheme.primarySlate.withValues(alpha: 0.2), width: 1.5),
             ),
             child: const Icon(Icons.person_outline_rounded, size: 40, color: AppTheme.primaryNavy),
           ),
@@ -214,7 +212,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           Text(
             name,
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
               fontSize: 26,
               fontWeight: FontWeight.w800,
               color: AppTheme.primaryNavy,
@@ -225,7 +225,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             const SizedBox(height: 6),
             Text(
               subtitle,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textSub,
                 fontWeight: FontWeight.w500,
@@ -253,18 +253,15 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   Widget _buildStatCard(String label, String value, Color color) {
-    return Container(
+    return AppUi.surfaceCard(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.1)),
-      ),
+      borderColor: color.withValues(alpha: 0.1),
+      color: color.withValues(alpha: 0.05),
       child: Column(
         children: [
           Text(
             value,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w800,
               color: color,
@@ -273,10 +270,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: color.withOpacity(0.7),
+              color: color.withValues(alpha: 0.7),
               letterSpacing: 1.0,
             ),
           ),
@@ -292,11 +289,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ?? caseData['violation']?['name']
         ?? caseData['title']
         ?? caseData['name']
-        ?? 'Unspecified Violation';
+        ?? 'Violation title unavailable';
     final dateStr = caseData['created_at'] ?? '';
     final date = dateStr.isNotEmpty ? DateTime.tryParse(dateStr) : null;
     final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    final formattedDate = date != null ? '${months[date.month - 1]} ${date.day}, ${date.year}' : 'Unknown Date';
+    final formattedDate = date != null ? '${months[date.month - 1]} ${date.day}, ${date.year}' : 'Date not recorded';
     final color = _getSeverityColor(severity);
 
     return Padding(
@@ -311,7 +308,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               bottom: 0,
               child: Container(
                 width: 2,
-                color: AppTheme.primarySlate.withOpacity(0.1),
+                color: AppTheme.primarySlate.withValues(alpha: 0.1),
               ),
             ),
           // Timeline Dot
@@ -331,14 +328,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           // Card Content
           Padding(
             padding: const EdgeInsets.only(left: 32, bottom: 16, top: 12),
-            child: Container(
-              width: double.infinity,
+            child: AppUi.surfaceCard(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.bgCard,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.5), width: 1.5),
-              ),
+              borderColor: color.withValues(alpha: 0.5),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,8 +341,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          title.isNotEmpty ? title : 'Unspecified Violation',
-                          style: GoogleFonts.outfit(
+                          title.isNotEmpty ? title : 'Violation title unavailable',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.textMain,
@@ -358,20 +352,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          severity.toUpperCase(),
-                          style: GoogleFonts.outfit(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: color,
-                            letterSpacing: 0.5,
-                          ),
+                      AppUi.brandPill(
+                        label: severity.toUpperCase(),
+                        textColor: color,
+                        backgroundColor: color.withValues(alpha: 0.1),
+                        borderColor: color.withValues(alpha: 0.2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                       ),
                     ],
@@ -383,7 +371,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       const SizedBox(width: 4),
                       Text(
                         formattedDate,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: AppTheme.textSub,
                         ),

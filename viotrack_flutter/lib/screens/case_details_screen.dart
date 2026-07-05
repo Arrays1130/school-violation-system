@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'student_profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
+import '../widgets/app_ui.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/vt_ui.dart';
 
 class CaseDetailsScreen extends StatefulWidget {
   final int caseId;
   final Map<String, dynamic>? initialData;
-  const CaseDetailsScreen({Key? key, required this.caseId, this.initialData}) : super(key: key);
+  const CaseDetailsScreen({super.key, required this.caseId, this.initialData});
 
   @override
-  _CaseDetailsScreenState createState() => _CaseDetailsScreenState();
+  State<CaseDetailsScreen> createState() => _CaseDetailsScreenState();
 }
 
 class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
@@ -43,9 +43,12 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Future<void> _fetchDetails({bool force = false}) async {
     try {
-      final result = await _apiService.getCaseDetails(widget.caseId, forcedRefresh: force);
+      final result = await _apiService.getCaseDetails(
+        widget.caseId,
+        forcedRefresh: force,
+      );
       if (mounted) {
-        if (mounted) setState(() {
+        setState(() {
           _case = result;
           _isLoading = false;
         });
@@ -63,7 +66,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Case acknowledged.', style: GoogleFonts.outfit()),
+          content: Text('Case acknowledged.', style: GoogleFonts.inter()),
           backgroundColor: AppTheme.accentEmerald,
           behavior: SnackBarBehavior.floating,
         ),
@@ -73,7 +76,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not acknowledge case.', style: GoogleFonts.outfit()),
+          content: Text(
+            'Could not acknowledge case.',
+            style: GoogleFonts.inter(),
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -87,30 +93,26 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   Widget build(BuildContext context) {
     final endorsed = _case?['endorsed_at'] != null;
     final status = _case?['status']?.toString() ?? 'Pending';
-    final showAcknowledge = endorsed && status != 'Closed' && status != 'Resolved';
+    final showAcknowledge =
+        endorsed && status != 'Closed' && status != 'Resolved';
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      floatingActionButton: showAcknowledge
-          ? FloatingActionButton.extended(
-              onPressed: _acknowledging ? null : _acknowledgeCase,
-              backgroundColor: AppTheme.primaryNavy,
-              icon: _acknowledging
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.check_circle_outline_rounded),
-              label: Text('Acknowledge', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-            )
-          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: showAcknowledge ? _buildAcknowledgeBar() : null,
       body: _isLoading
           ? SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: ShimmerLoader.buildListSkeleton(),
               ),
             )
           : _case == null
-              ? _buildError()
-              : _buildMainContent(),
+          ? _buildError()
+          : _buildMainContent(),
     );
   }
 
@@ -122,19 +124,28 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           const EmptyStateWidget(
             icon: Icons.error_outline_rounded,
             title: "Data Unavailable",
-            message: "We couldn't load the details for this case. Please check your connection or try again.",
+            message:
+                "We couldn't load the details for this case. Please check your connection or try again.",
           ),
           const SizedBox(height: 24),
           TextButton.icon(
             onPressed: _fetchDetails,
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentCyan),
-            label: Text("Try Again", style: GoogleFonts.outfit(color: AppTheme.accentCyan, fontWeight: FontWeight.bold)),
-            style: TextButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan.withOpacity(0.1),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            label: Text(
+              "Try Again",
+              style: GoogleFonts.inter(
+                color: AppTheme.accentCyan,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          )
+            style: TextButton.styleFrom(
+              backgroundColor: AppTheme.accentCyan.withValues(alpha: 0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -152,62 +163,70 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       color: AppTheme.accentCyan,
       child: CustomScrollView(
         slivers: [
-        // Sticky header with refined gradient
-        SliverAppBar(
-          expandedHeight: 220,
-          pinned: true,
-          elevation: 0,
-          stretch: true,
-          backgroundColor: AppTheme.primaryNavy,
-          leading: IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), shape: BoxShape.circle),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Colors.white),
+          // Sticky header with refined gradient
+          SliverAppBar(
+            expandedHeight: 236,
+            pinned: true,
+            elevation: 0,
+            stretch: true,
+            backgroundColor: AppTheme.primaryNavy,
+            leading: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          flexibleSpace: FlexibleSpaceBar(
-            stretchModes: const [StretchMode.zoomBackground],
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryNavy,
-                        AppTheme.primaryIndigo,
-                        _getSeverityColor(severity).withOpacity(0.9),
-                      ],
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [StretchMode.zoomBackground],
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primaryNavy,
+                          AppTheme.primaryIndigo,
+                          _getSeverityColor(severity).withValues(alpha: 0.9),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                _buildPattern(),
-                // User Profile Header
-                Positioned(
-                  bottom: 34,
-                  left: 24,
-                  right: 24,
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StudentProfileScreen(student: student),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        Hero(
-                          tag: 'case_${widget.caseId}_avatar',
-                          child: Material(
-                            color: Colors.transparent,
-                            child: Container(
+                  _buildPattern(),
+                  // User Profile Header
+                  Positioned(
+                    bottom: 34,
+                    left: 24,
+                    right: 24,
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                StudentProfileScreen(student: student),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Hero(
+                            tag: 'case_${widget.caseId}_avatar',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: Container(
                                 width: 76,
                                 height: 76,
                                 decoration: BoxDecoration(
@@ -215,15 +234,19 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                                   borderRadius: BorderRadius.circular(22),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: _getSeverityColor(severity).withOpacity(0.5),
+                                      color: _getSeverityColor(
+                                        severity,
+                                      ).withValues(alpha: 0.5),
                                       blurRadius: 24,
                                       offset: const Offset(0, 12),
                                     ),
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
-                                    )
+                                    ),
                                   ],
                                 ),
                                 child: Center(
@@ -234,17 +257,29 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                                   ),
                                 ),
                               ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                  student['full_name'] ?? 'Unknown Student',
-                                  style: GoogleFonts.outfit(
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AppUi.brandPill(
+                                  label: 'Case overview',
+                                  leading: Icon(
+                                    Icons.shield_outlined,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  student['full_name'] ??
+                                      'Student name unavailable',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
@@ -252,133 +287,142 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                                     height: 1.1,
                                     shadows: [
                                       Shadow(
-                                        color: Colors.black.withOpacity(0.15),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.15,
+                                        ),
                                         blurRadius: 10,
                                         offset: const Offset(0, 4),
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ),
-                              const SizedBox(height: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.14),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white.withOpacity(0.28)),
-                                ),
-                                child: Text(
-                                  severity.toUpperCase(),
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white.withOpacity(0.95),
-                                    letterSpacing: 1.0,
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.28,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    severity.toUpperCase(),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.95,
+                                      ),
+                                      letterSpacing: 1.0,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: Colors.white70,
-                          size: 16,
-                        ),
-                      ],
+                          AppUi.iconCircle(
+                            icon: Icons.arrow_outward_rounded,
+                            color: Colors.white,
+                            size: 46,
+                            iconSize: 20,
+                            backgroundColor: Colors.white12,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // â”€â”€ Main Body â”€â”€
-        SliverToBoxAdapter(
-          child: Transform.translate(
-            offset: const Offset(0, -32),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: AppTheme.bgLight,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 32, 20, 100),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Status Badge Card
-                    _buildStatusCard(status, statusColor, severity),
-                    const SizedBox(height: 24),
-
-                    // Violation info
-                    _buildSectionHeader("CASE DETAILS", Icons.dashboard_rounded),
-                    const SizedBox(height: 12),
-                    _buildBentoGrid(violation, severity),
-                    const SizedBox(height: 24),
-
-                    // Schedule timeline
-                    _buildSectionHeader("Process Timeline", Icons.timeline_rounded),
-                    const SizedBox(height: 16),
-                    _buildTimeline(status),
-                    const SizedBox(height: 24),
-
-                    // Hearing details
-                    if (_case!['hearings'] != null && (_case!['hearings'] as List).isNotEmpty) ...[
-                      _buildSectionHeader("Official Hearing", Icons.calendar_month_rounded),
-                      const SizedBox(height: 12),
-                      _buildHearingCard((_case!['hearings'] as List).first),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Evidence
-                    if (_case!['attachments'] != null && (_case!['attachments'] as List).isNotEmpty) ...[
-                      _buildSectionHeader("Digital Evidence", Icons.collections_rounded),
-                      const SizedBox(height: 12),
-                      _buildEvidenceGallery(),
-                      const SizedBox(height: 24),
-                    ],
-                  ],
-                ),
+                ],
               ),
             ),
           ),
-        ),
-      ],
-    ),
+
+          // â”€â”€ Main Body â”€â”€
+          SliverToBoxAdapter(
+            child: Transform.translate(
+              offset: const Offset(0, -32),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: AppTheme.bgLight,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 32, 20, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatusCard(status, statusColor, severity),
+                      const SizedBox(height: 24),
+
+                      _buildSectionHeader(
+                        "CASE DETAILS",
+                        Icons.dashboard_rounded,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildBentoGrid(violation, severity, status),
+                      const SizedBox(height: 24),
+
+                      _buildSectionHeader(
+                        "Process Timeline",
+                        Icons.timeline_rounded,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTimeline(status),
+                      const SizedBox(height: 24),
+
+                      if (_case!['hearings'] != null &&
+                          (_case!['hearings'] as List).isNotEmpty) ...[
+                        _buildSectionHeader(
+                          "Official Hearing",
+                          Icons.calendar_month_rounded,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildHearingCard((_case!['hearings'] as List).first),
+                        const SizedBox(height: 24),
+                      ],
+
+                      if (_case!['attachments'] != null &&
+                          (_case!['attachments'] as List).isNotEmpty) ...[
+                        _buildSectionHeader(
+                          "Digital Evidence",
+                          Icons.collections_rounded,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildEvidenceGallery(),
+                        const SizedBox(height: 24),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildPattern() {
-    return Opacity(
-      opacity: 0.035,
-      child: CustomPaint(
-        painter: GridPainter(),
-      ),
-    );
+    return Opacity(opacity: 0.035, child: CustomPaint(painter: GridPainter()));
   }
 
   Widget _buildStatusCard(String status, Color color, String severity) {
-    return Container(
+    return AppUi.surfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.7)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          )
-        ],
-      ),
+      radius: 24,
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
             child: Icon(Icons.shield_rounded, color: color, size: 22),
           ),
           const SizedBox(width: 14),
@@ -386,22 +430,33 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Case Status", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textMuted, letterSpacing: 0.5)),
-                const SizedBox(height: 4),
-                Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5)),
+                Text(
+                  'Case status',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textMuted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                VtStatusChip.fromStatus(status),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: severity == 'Major' ? AppTheme.accentRose.withOpacity(0.1) : AppTheme.primaryNavy.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: (severity == 'Major' ? AppTheme.accentRose : AppTheme.primaryNavy).withOpacity(0.15)),
-            ),
-            child: Text(severity.toUpperCase(), 
-              style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.0,
-              color: severity == 'Major' ? AppTheme.accentRose : AppTheme.primaryNavy)),
+          AppUi.brandPill(
+            label: severity,
+            textColor: severity == 'Major'
+                ? AppTheme.accentRose
+                : AppTheme.primaryNavy,
+            backgroundColor: (severity == 'Major'
+                    ? AppTheme.accentRose
+                    : AppTheme.primaryNavy)
+                .withValues(alpha: 0.1),
+            borderColor: (severity == 'Major'
+                    ? AppTheme.accentRose
+                    : AppTheme.primaryNavy)
+                .withValues(alpha: 0.15),
           ),
         ],
       ),
@@ -415,7 +470,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: AppTheme.primaryIndigo.withOpacity(0.08),
+            color: AppTheme.primaryIndigo.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 14, color: AppTheme.primaryIndigo),
@@ -423,7 +478,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         const SizedBox(width: 10),
         Text(
           title.toUpperCase(),
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w800,
             color: AppTheme.textMuted,
@@ -436,10 +491,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   String _formatSeverityLevel() {
     final level = _case?['offense_level'];
-    if (level == null) return 'N/A';
+    if (level == null) return 'Not specified';
 
     final raw = level.toString().trim();
-    if (raw.isEmpty) return 'N/A';
+    if (raw.isEmpty) return 'Not specified';
 
     if (RegExp(r'^\d+$').hasMatch(raw)) {
       return 'Level $raw';
@@ -452,7 +507,11 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     return raw;
   }
 
-  Widget _buildBentoGrid(Map<String, dynamic> violation, String severity) {
+  Widget _buildBentoGrid(
+    Map<String, dynamic> violation,
+    String severity,
+    String status,
+  ) {
     return Column(
       children: [
         Row(
@@ -461,7 +520,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
               flex: 2,
               child: _buildBentoCard(
                 title: "Offense Title",
-                content: violation['title']?.toString() ?? 'N/A',
+                content:
+                    violation['title']?.toString() ??
+                    'Violation title unavailable',
                 icon: Icons.gavel_rounded,
                 color: AppTheme.primaryNavy,
               ),
@@ -484,7 +545,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             Expanded(
               child: _buildBentoCard(
                 title: "Recorded By",
-                content: _case!['creator']?['name']?.toString() ?? 'System',
+                content:
+                    _case!['creator']?['name']?.toString() ??
+                    'Dean office staff',
                 icon: Icons.person_outline_rounded,
                 color: AppTheme.accentAmber,
               ),
@@ -503,27 +566,115 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         const SizedBox(height: 12),
         _buildBentoCard(
           title: "Description Details",
-          content: _case!['description']?.toString() ?? 'No additional details recorded.',
+          content:
+              _case!['description']?.toString() ??
+              'No additional details recorded.',
           icon: Icons.subject_rounded,
           color: AppTheme.primarySlate,
         ),
+        const SizedBox(height: 12),
+        _buildSanctionCard(status),
       ],
     );
   }
 
-  Widget _buildBentoCard({required String title, required String content, required IconData icon, required Color color}) {
+  Widget _buildSanctionCard(String status) {
+    final sanction = _case?['sanction']?.toString().trim();
+    final display = (sanction != null && sanction.isNotEmpty)
+        ? sanction
+        : 'Sanction pending determination.';
+    final isServed = status == 'Closed' && sanction != null && sanction.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFCD34D).withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDE68A),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.balance_rounded,
+                  size: 20,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'ASSIGNED SANCTION',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFB45309),
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ),
+              if (isServed)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentEmerald.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'SERVED',
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.accentEmerald,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            display,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF78350F),
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBentoCard({
+    required String title,
+    required String content,
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.08), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.08), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.04),
+            color: color.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 6),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -534,17 +685,38 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, size: 14, color: color),
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(title.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 1.1), overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textMuted,
+                    letterSpacing: 1.1,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(content, style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.textMain, height: 1.3)),
+          Text(
+            content,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textMain,
+              height: 1.3,
+            ),
+          ),
         ],
       ),
     );
@@ -561,19 +733,21 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     } else if (currentStatus == 'Hearing Scheduled') {
       currentIdx = 1;
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(28), 
-        border: Border.all(color: AppTheme.primarySlate.withOpacity(0.04)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppTheme.primarySlate.withValues(alpha: 0.04),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 20,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -594,27 +768,56 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                         color: isDone ? AppTheme.accentCyan : Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDone ? AppTheme.accentCyan : AppTheme.inputBorder, 
-                          width: isDone ? 0 : 2
+                          color: isDone
+                              ? AppTheme.accentCyan
+                              : AppTheme.inputBorder,
+                          width: isDone ? 0 : 2,
                         ),
-                        boxShadow: isDone ? [
-                          BoxShadow(color: AppTheme.accentCyan.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))
-                        ] : [],
+                        boxShadow: isDone
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.accentCyan.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : [],
                       ),
-                      child: Icon(isDone ? Icons.check_rounded : Icons.circle, color: isDone ? Colors.white : Colors.transparent, size: 20),
+                      child: Icon(
+                        isDone ? Icons.check_rounded : Icons.circle,
+                        color: isDone ? Colors.white : Colors.transparent,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    Text(stages[i].split(" ").first, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w800, color: isDone ? AppTheme.textMain : AppTheme.textMuted, letterSpacing: 0.5)),
+                    Text(
+                      stages[i].split(" ").first,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: isDone ? AppTheme.textMain : AppTheme.textMuted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ],
                 ),
-                if (!isLast) Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    height: 3, 
-                    color: isDone ? AppTheme.accentCyan : AppTheme.inputBorder.withOpacity(0.5), 
-                    margin: const EdgeInsets.only(bottom: 26, left: 8, right: 8)
-                  )
-                ),
+                if (!isLast)
+                  Expanded(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      height: 3,
+                      color: isDone
+                          ? AppTheme.accentCyan
+                          : AppTheme.inputBorder.withValues(alpha: 0.5),
+                      margin: const EdgeInsets.only(
+                        bottom: 26,
+                        left: 8,
+                        right: 8,
+                      ),
+                    ),
+                  ),
               ],
             ),
           );
@@ -624,51 +827,167 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Widget _buildHearingCard(dynamic hearing) {
-    final scheduledAt = hearing['scheduled_at']?.toString() ?? hearing['scheduledAt']?.toString() ?? '';
-    final venue = hearing['venue']?.toString() ?? hearing['location']?.toString() ?? 'Location TBA';
+    final scheduledAt =
+        hearing['scheduled_at']?.toString() ??
+        hearing['scheduledAt']?.toString() ??
+        '';
+    final venue =
+        hearing['venue']?.toString() ??
+        hearing['location']?.toString() ??
+        'Venue not yet assigned';
     final notes = hearing['notes']?.toString() ?? 'No agenda details provided.';
 
-    return Container(
+    return AppUi.surfaceCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppTheme.heroGradient,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppTheme.glassShadow,
-      ),
-      child: Row(
+      radius: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
-            child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 24),
+          Row(
+            children: [
+              AppUi.iconCircle(
+                icon: Icons.calendar_month_rounded,
+                color: Colors.white,
+                size: 48,
+                iconSize: 22,
+                backgroundColor: Colors.white.withValues(alpha: 0.15),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  'Scheduled hearing',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textMain,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Scheduled Hearing', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-                const SizedBox(height: 4),
-                Text(notes, style: GoogleFonts.outfit(fontSize: 13, color: Colors.white.withOpacity(0.8))),
-                const SizedBox(height: 8),
-                Text(_formatDateTime(scheduledAt), style: GoogleFonts.outfit(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-              ],
+          const SizedBox(height: 14),
+          Text(
+            notes,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: AppTheme.textMuted,
+              height: 1.4,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Venue", style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1)),
-                const SizedBox(height: 4),
-                Text(venue, style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w600)),
-              ],
+          const SizedBox(height: 14),
+          AppUi.brandPill(
+            label: _formatDateTime(scheduledAt),
+            textColor: AppTheme.primaryNavy,
+            backgroundColor: AppTheme.primaryLight,
+            borderColor: AppTheme.primary.withValues(alpha: 0.12),
+            leading: Icon(
+              Icons.schedule_rounded,
+              size: 14,
+              color: AppTheme.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Venue',
+            style: GoogleFonts.inter(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            venue,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              color: AppTheme.textMain,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAcknowledgeBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            onTap: _acknowledging ? null : _acknowledgeCase,
+            borderRadius: BorderRadius.circular(24),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              decoration: BoxDecoration(
+                gradient: AppTheme.heroGradient,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                boxShadow: AppTheme.floatShadow,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppUi.iconCircle(
+                    icon: Icons.check_circle_outline_rounded,
+                    color: Colors.white,
+                    size: 40,
+                    iconSize: 18,
+                    backgroundColor: Colors.white12,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Acknowledge case',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Confirm that the student has seen the endorsed case.',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.76),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _acknowledging
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.check_circle_outline_rounded,
+                          color: Colors.white,
+                        ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -682,8 +1001,12 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         itemCount: attachments.length,
         itemBuilder: (context, index) {
           final att = attachments[index];
-          final url = (att['mobile_download_url'] ?? att['file_path'])?.toString() ?? '';
-          final isImage = url.contains(RegExp(r'\.(jpg|jpeg|png|webp)', caseSensitive: false));
+          final url =
+              (att['mobile_download_url'] ?? att['file_path'])?.toString() ??
+              '';
+          final isImage = url.contains(
+            RegExp(r'\.(jpg|jpeg|png|webp)', caseSensitive: false),
+          );
           return Container(
             width: 140,
             margin: const EdgeInsets.only(right: 12),
@@ -698,22 +1021,46 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     url,
                     headers: _authHeaders,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image_rounded, color: AppTheme.textMuted)),
+                    errorBuilder: (context, error, stackTrace) => const Center(
+                      child: Icon(
+                        Icons.broken_image_rounded,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
                   )
-                : const Center(child: Icon(Icons.insert_drive_file_rounded, color: AppTheme.textMuted)),
+                : const Center(
+                    child: Icon(
+                      Icons.insert_drive_file_rounded,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
           );
         },
       ),
     );
   }
 
-
   String _formatDateTime(String dateTimeStr) {
-    if (dateTimeStr.isEmpty) return 'Date & Time TBA';
+    if (dateTimeStr.isEmpty) return 'Schedule not yet set';
     try {
       final date = DateTime.parse(dateTimeStr).toLocal();
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final hour = date.hour > 12
+          ? date.hour - 12
+          : (date.hour == 0 ? 12 : date.hour);
       final minute = date.minute.toString().padLeft(2, '0');
       final ampm = date.hour >= 12 ? 'PM' : 'AM';
       return "${months[date.month - 1]} ${date.day}, ${date.year} at $hour:$minute $ampm";
@@ -723,7 +1070,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Color _getStatusColor(String status) {
-    if (status == 'Resolved' || status == 'Closed') return AppTheme.accentEmerald;
+    if (status == 'Resolved' || status == 'Closed') {
+      return AppTheme.accentEmerald;
+    }
     if (status == 'Hearing Scheduled') return AppTheme.accentCyan;
     return AppTheme.accentAmber;
   }
@@ -744,7 +1093,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white..strokeWidth = 1;
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 1;
     for (double i = 0; i < size.width; i += 20) {
       canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
     }
@@ -752,6 +1103,7 @@ class GridPainter extends CustomPainter {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
     }
   }
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

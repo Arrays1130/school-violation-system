@@ -9,6 +9,8 @@ Dean-focused **view · notify · track** companion for the VioTrack school viola
 
 See also [DEAN_WEB_IOS.md](DEAN_WEB_IOS.md) for iPhone PWA steps.
 
+**Readiness, limitations, and test checklist:** [DEAN_APP_READINESS.md](DEAN_APP_READINESS.md)
+
 ## Features
 
 - Dashboard, cases, insights, alerts, profile
@@ -35,7 +37,7 @@ flutter pub get
 
 Place branding images in `assets/images/`:
 
-- `viotrack_logo.png` — app icon / splash
+- `ilink_college_logo.png` — app icon / splash / branded auth logo
 - `login-campus-bg.png` — login background
 - `ilink_logo.png` — login logo
 
@@ -59,7 +61,15 @@ Application ID: `com.viotrack.dean`
 1. Create Firebase project with package `com.viotrack.dean`
 2. Download `google-services.json` → `android/app/google-services.json`
 3. Set `FCM_SERVER_KEY` in Laravel `.env`
-4. Rebuild APK
+4. Rebuild APK (`flutter build apk --release`)
+
+When configured, the app will:
+- Sync the device FCM token after login and on token refresh
+- Show alerts while the app is open (foreground)
+- Deliver system notifications when the app is backgrounded or closed
+- Open **Case Details** when a dean taps a notification that includes `case_id`
+
+Disable push explicitly with `--dart-define=ENABLE_FCM=false`.
 
 Push is skipped gracefully if Firebase is not configured.
 

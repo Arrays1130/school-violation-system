@@ -1,0 +1,27 @@
+{
+  "dart.vmServiceTimeout": 180,
+  "dart.deviceTimeout": 120,
+  "dart.flutterHotReloadOnSave": "never",
+  "dart.showDebuggerNumbers": false,
+  "dart.openDevTools": "never",
+  "dart.flutterRunAdditionalArgs": [
+    "--device-timeout=120"
+  ],
+  "dart.lineLength": 100,
+  "editor.formatOnSave": true,
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.selectionHighlight": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  },
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/.flutter-plugins-dependencies": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/.dart_tool": true
+  }
+}

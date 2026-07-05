@@ -10,25 +10,24 @@ class VtCard extends StatelessWidget {
   const VtCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(18),
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: padding,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.inputBorder),
+            color: AppTheme.bgCard,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             boxShadow: AppTheme.softShadow,
           ),
+          padding: padding,
           child: child,
         ),
       ),
@@ -65,16 +64,14 @@ class VtStatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
       ),
       child: Text(
-        label.toUpperCase(),
+        label,
         style: GoogleFonts.inter(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
           color: color,
-          letterSpacing: 0.6,
         ),
       ),
     );
@@ -91,15 +88,15 @@ class VtSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppTheme.textMuted),
+        Icon(icon, size: 18, color: AppTheme.textMuted),
         const SizedBox(width: 8),
         Text(
-          title.toUpperCase(),
+          title,
           style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textMuted,
-            letterSpacing: 1.2,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textMain,
+            letterSpacing: -0.2,
           ),
         ),
       ],
