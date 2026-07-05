@@ -6,7 +6,7 @@ import {
     ArrowLeft, FolderOpen, Edit3, Printer, ArrowUpRight, 
     Check, FileWarning, Calendar, UserCheck, Gavel, 
     ChevronRight, CalendarX, CalendarPlus, CheckCircle2, 
-    ExternalLink, Trash2, ClipboardList, Plus
+    ExternalLink, Trash2, ClipboardList, Plus, Scale
 } from 'lucide-react';
 
 const OSA_LABELS = {
@@ -301,6 +301,33 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                         <div className="flex items-center gap-2 text-slate-900 dark:text-white text-sm font-medium">
                                             <UserCheck className="w-4 h-4 text-slate-400" />
                                             {caseRecord.witness || 'No Witness Logged'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 p-5">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                                            <Scale className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Assigned Sanction</h4>
+                                                {caseRecord.offense_level && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-200/60 dark:bg-amber-800/40 text-amber-900 dark:text-amber-200 text-[10px] font-bold uppercase tracking-wide">
+                                                        Offense #{caseRecord.offense_level}
+                                                    </span>
+                                                )}
+                                                {caseRecord.status === 'Closed' && caseRecord.sanction && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wide">
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        Served
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-semibold text-amber-950 dark:text-amber-100 leading-relaxed">
+                                                {caseRecord.sanction || 'Sanction pending determination.'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

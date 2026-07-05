@@ -56,6 +56,8 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 # FCM push (dean mobile app)
 FCM_SERVER_KEY=
+# Flutter: copy viotrack_flutter/android/app/google-services.json.example → google-services.json
+# after creating the Firebase Android app (package: com.viotrack.dean).
 
 # Optional: n8n automation
 N8N_WEBHOOK_URL=
