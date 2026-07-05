@@ -113,7 +113,7 @@ export default function Print({ cases }) {
                 </div>
 
                 <div className="report-print-meta">
-                    <div>DATE GENERATED: {dayjs().format('MMMM D, Y h:mm A')}</div>
+                    <div>DATE GENERATED: {dayjs().format('MMMM D, YYYY h:mm A')}</div>
                     <div>PERIOD: {startDate} TO {endDate}</div>
                     <div>PARAMETERS: {department} | {status}</div>
                 </div>
@@ -133,7 +133,7 @@ export default function Print({ cases }) {
                             <tr key={caseItem.id}>
                                 <td>
                                     {caseItem.occurred_at
-                                        ? dayjs(caseItem.occurred_at).format('MMM D, Y')
+                                        ? dayjs(caseItem.occurred_at).format('MMM D, YYYY')
                                         : '-'}
                                 </td>
                                 <td style={{ fontWeight: 'bold' }}>

@@ -139,7 +139,7 @@ export default function Print({ auth, case: caseRecord }) {
 
                     <div className="case-print-meta">
                         <div><strong>Case Ref No:</strong> #{padId(caseRecord.id)}</div>
-                        <div><strong>Date Generated:</strong> {dayjs().format('MMMM D, Y')}</div>
+                        <div><strong>Date Generated:</strong> {dayjs().format('MMMM D, YYYY')}</div>
                     </div>
 
                     <div className="case-print-section-title">I. Student Information</div>
@@ -169,7 +169,7 @@ export default function Print({ auth, case: caseRecord }) {
                         <tbody>
                             <tr>
                                 <th>Date of Incident:</th>
-                                <td>{caseRecord.occurred_at ? dayjs(caseRecord.occurred_at).format('MMMM D, Y') : '-'}</td>
+                                <td>{caseRecord.occurred_at ? dayjs(caseRecord.occurred_at).format('MMMM D, YYYY') : '-'}</td>
                                 <th>Time of Incident:</th>
                                 <td>{caseRecord.occurred_at ? dayjs(caseRecord.occurred_at).format('h:mm A') : '-'}</td>
                             </tr>
@@ -238,7 +238,7 @@ export default function Print({ auth, case: caseRecord }) {
                                                 <li key={action.id}>
                                                     <strong>{action.action_taken}</strong> — Recorded by{' '}
                                                     {action.user?.name} on{' '}
-                                                    {dayjs(action.created_at).format('MMMM D, Y')}
+                                                    {dayjs(action.created_at).format('MMMM D, YYYY')}
                                                 </li>
                                             ))}
                                         </ul>

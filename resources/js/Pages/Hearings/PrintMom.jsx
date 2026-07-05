@@ -108,7 +108,7 @@ export default function PrintMom({ hearing }) {
                             </tr>
                             <tr>
                                 <td className="label">Date:</td>
-                                <td>{hearing.scheduled_at ? dayjs(hearing.scheduled_at).format('MMMM D, Y') : '-'}</td>
+                                <td>{hearing.scheduled_at ? dayjs(hearing.scheduled_at).format('MMMM D, YYYY') : '-'}</td>
                             </tr>
                             <tr>
                                 <td className="label">Time:</td>

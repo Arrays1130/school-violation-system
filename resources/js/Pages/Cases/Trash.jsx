@@ -135,7 +135,7 @@ export default function Trash({ auth, cases }) {
                                                 <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
                                                     <Clock className="w-4 h-4 text-slate-400" />
                                                     {caseItem.deleted_at
-                                                        ? dayjs(caseItem.deleted_at).format('MMM D, Y h:mm A')
+                                                        ? dayjs(caseItem.deleted_at).format('MMM D, YYYY h:mm A')
                                                         : '-'}
                                                 </div>
                                             </td>

@@ -40,7 +40,7 @@ export default function Print({ auth, student }) {
             <div className="print-header">
                 <h1 className="text-xl font-bold">STUDENT VIOLATION RECORD</h1>
                 <p>I-Link CST Violation System | Official Record</p>
-                <p>Generated: {dayjs().format('MMMM D, Y h:mm A')}</p>
+                <p>Generated: {dayjs().format('MMMM D, YYYY h:mm A')}</p>
             </div>
 
             <div className="print-section">
@@ -77,7 +77,7 @@ export default function Print({ auth, student }) {
                         <tbody>
                             {student.cases.map((caseItem) => (
                                 <tr key={caseItem.id}>
-                                    <td>{caseItem.occurred_at ? dayjs(caseItem.occurred_at).format('MMM D, Y') : '-'}</td>
+                                    <td>{caseItem.occurred_at ? dayjs(caseItem.occurred_at).format('MMM D, YYYY') : '-'}</td>
                                     <td>{caseItem.violation?.code}</td>
                                     <td>
                                         {caseItem.violation?.title} ({caseItem.violation?.severity})
