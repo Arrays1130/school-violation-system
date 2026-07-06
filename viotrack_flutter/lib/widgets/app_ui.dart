@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'vt_ui.dart';
@@ -8,6 +9,8 @@ class AppUi {
   AppUi._();
 
   static const String ilinkLogoAsset = 'assets/images/ilink_college_logo.png';
+  static const String viotrackLogoAsset = 'assets/images/viotrack_logo.png';
+  static const String appIconAsset = 'assets/images/viotrack_logo.png';
 
   static Widget ilinkWatermark({double size = 110, double opacity = 0.11}) {
     return Opacity(
@@ -72,43 +75,129 @@ class AppUi {
     );
   }
 
+  static Widget inlineSectionHeader(
+    String title, {
+    IconData? icon,
+    String? subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            iconCircle(
+              icon: icon,
+              color: AppTheme.primaryIndigo,
+              size: 34,
+              iconSize: 17,
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textMain,
+                    letterSpacing: -0.35,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppTheme.textMuted,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget staggerIn(
+    Widget child,
+    int index, {
+    int baseDelayMs = 45,
+  }) {
+    final delay = (index * baseDelayMs).ms;
+    return child
+        .animate()
+        .fadeIn(duration: 320.ms, delay: delay)
+        .slideY(
+          begin: 0.06,
+          end: 0,
+          duration: 320.ms,
+          delay: delay,
+          curve: Curves.easeOutCubic,
+        );
+  }
+
   static Widget sectionHeader(
     String title, {
+    String? subtitle,
     String? action,
     VoidCallback? onAction,
   }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 16, 8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textMain,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          if (action != null && onAction != null)
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                action,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primary,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textMain,
+                    letterSpacing: -0.4,
+                  ),
                 ),
               ),
+              if (action != null && onAction != null)
+                TextButton(
+                  onPressed: onAction,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    action,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppTheme.textMuted,
+                height: 1.35,
+              ),
             ),
+          ],
         ],
       ),
     );
@@ -263,9 +352,10 @@ class AppUi {
     String? subtitle,
     Widget? badge,
     Widget? trailing,
+    bool compact = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+      padding: EdgeInsets.fromLTRB(20, compact ? 4 : 8, 12, compact ? 0 : 4),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -275,26 +365,19 @@ class AppUi {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      if (badge != null) ...[badge, const SizedBox(width: 10)],
-                      Expanded(
-                        child: Text(
-                          greeting,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: AppTheme.textMuted,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    greeting,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     title,
                     style: GoogleFonts.inter(
-                      fontSize: 28,
+                      fontSize: compact ? 26 : 28,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textMain,
                       letterSpacing: -0.8,
@@ -302,7 +385,7 @@ class AppUi {
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
@@ -313,6 +396,7 @@ class AppUi {
                       ),
                     ),
                   ],
+                  if (badge != null) ...[const SizedBox(height: 10), badge],
                 ],
               ),
             ),
@@ -449,9 +533,11 @@ class AppUi {
     double radius = AppTheme.radiusLg,
     Color? color,
     Color? borderColor,
+    bool clip = false,
   }) {
     return Container(
       padding: padding,
+      clipBehavior: clip ? Clip.antiAlias : Clip.none,
       decoration: BoxDecoration(
         color: color ?? AppTheme.bgCard,
         borderRadius: BorderRadius.circular(radius),
@@ -461,6 +547,381 @@ class AppUi {
         boxShadow: AppTheme.cardShadow,
       ),
       child: child,
+    );
+  }
+
+  static String formatRelativeTime(DateTime? time) {
+    if (time == null) return 'just now';
+    final diff = DateTime.now().difference(time);
+    if (diff.inSeconds < 60) return 'just now';
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} min ago';
+    }
+    if (diff.inHours < 24) {
+      return '${diff.inHours} hr ago';
+    }
+    return '${diff.inDays}d ago';
+  }
+
+  static Widget dataBanner({
+    required IconData icon,
+    required String message,
+    required Color accent,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accent.withValues(alpha: 0.16)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: accent),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textMain,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget subtleMetaLine(String text, {IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 6),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: AppTheme.textHint),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textHint,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget quickActionTile({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    String? value,
+  }) {
+    return Material(
+      color: AppTheme.bgCard,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: color.withValues(alpha: 0.12)),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 21),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (value != null)
+                        Text(
+                          value,
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textMain,
+                            letterSpacing: -0.5,
+                            height: 1,
+                          ),
+                        ),
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: AppTheme.textHint.withValues(alpha: 0.8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget quickActionsGrid({required List<Widget> actions}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: Column(
+        children: [
+          for (var i = 0; i < actions.length; i += 2)
+            Padding(
+              padding: EdgeInsets.only(bottom: i + 2 < actions.length ? 10 : 0),
+              child: Row(
+                children: [
+                  Expanded(child: actions[i]),
+                  if (i + 1 < actions.length) ...[
+                    const SizedBox(width: 10),
+                    Expanded(child: actions[i + 1]),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static Widget quickActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    String? value,
+  }) {
+    return Material(
+      color: AppTheme.bgCard,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: color.withValues(alpha: 0.12),
+            ),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                if (value != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    value,
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textMain,
+                      letterSpacing: -0.5,
+                      height: 1,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textMuted,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget quickActionsRow({required List<Widget> actions}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        children: [
+          for (var i = 0; i < actions.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: actions[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static Widget expandTile({
+    required String title,
+    required String subtitle,
+    required bool expanded,
+    required VoidCallback onToggle,
+    required Widget child,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: AppUi.surfaceCard(
+        padding: EdgeInsets.zero,
+        clip: true,
+        child: Column(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onToggle,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textMain,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppTheme.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (trailing != null) ...[
+                        trailing,
+                        const SizedBox(width: 8),
+                      ],
+                      AnimatedRotation(
+                        turns: expanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: child,
+              ),
+              crossFadeState: expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget retryButton({required VoidCallback onPressed}) {
+    return FilledButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.refresh_rounded, size: 18),
+      label: const Text('Try again'),
+      style: FilledButton.styleFrom(
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
     );
   }
 
@@ -604,35 +1065,74 @@ class AppUi {
     );
   }
 
-  static Widget searchBar({required String hint, required VoidCallback onTap}) {
+  static Widget searchBar({
+    required String hint,
+    required VoidCallback onTap,
+    String? actionLabel,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
       child: Material(
         color: AppTheme.bgCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+              ),
               boxShadow: AppTheme.softShadow,
             ),
-            child: Row(
-              children: [
-                Icon(Icons.search_rounded, size: 20, color: AppTheme.textMuted),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    hint,
-                    style: GoogleFonts.inter(
-                      color: AppTheme.textHint,
-                      fontSize: 15,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: AppTheme.primary,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hint,
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textMain,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          actionLabel ?? 'Tap to search cases',
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textHint,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppTheme.textHint.withValues(alpha: 0.8),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -649,13 +1149,13 @@ class AppUi {
     VoidCallback? onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: cardDecoration(),
+      clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(

@@ -36,7 +36,9 @@ class AppTheme {
   static const double radiusLg = 20;
   static const double radiusXl = 24;
   static const double radiusPill = 100;
-  static const double bottomNavClearance = 96;
+  static const double bottomNavClearance = 78;
+  static const String appVersion = '3.0.0';
+  static const String appName = 'VioTrack';
 
   static const LinearGradient heroGradient = LinearGradient(
     colors: [Color(0xFF0F172A), Color(0xFF1D4ED8), Color(0xFF38BDF8)],
@@ -164,6 +166,13 @@ class AppTheme {
         labelStyle: GoogleFonts.inter(color: textMuted, fontSize: 14),
       ),
       dividerTheme: const DividerThemeData(color: inputBorder, thickness: 0.5),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 }

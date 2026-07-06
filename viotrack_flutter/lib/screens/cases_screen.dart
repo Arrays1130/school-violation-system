@@ -27,22 +27,18 @@ class CasesScreenState extends State<CasesScreen> {
   String _selectedStatus = 'All';
   String _selectedDate = 'All Time';
   Timer? _debounce;
-  Timer? _autoRefreshTimer;
   bool _isAscending = false;
   final ScrollController _scrollController = ScrollController();
   int _page = 1;
   bool _hasMore = true;
   bool _loadingMore = false;
+  bool _showAdvancedFilters = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadInitialData();
-    _autoRefreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _fetchData(showLoading: false),
-    );
   }
 
   void _onScroll() {
@@ -71,7 +67,7 @@ class CasesScreenState extends State<CasesScreen> {
           _page = current;
           _allViolations = [..._allViolations, ...data];
           _hasMore = current < last;
-          _applyFilters();
+          _filteredViolations = _computeFilteredList();
         });
       }
     } catch (_) {
@@ -90,18 +86,21 @@ class CasesScreenState extends State<CasesScreen> {
           } else if (cachedViolations is List) {
             _allViolations = cachedViolations;
           }
-          _applyFilters();
+          _filteredViolations = _computeFilteredList();
           _isLoading = false;
         });
       }
     }
-    await _fetchData(showLoading: _isLoading);
+    final hadCache = cachedViolations != null;
+    await _fetchData(
+      showLoading: _isLoading,
+      forcedRefresh: !hadCache,
+    );
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
-    _autoRefreshTimer?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -115,14 +114,17 @@ class CasesScreenState extends State<CasesScreen> {
 
   void refreshFromPoller() {
     if (!mounted) return;
-    _fetchData(showLoading: false);
+    _fetchData(showLoading: false, forcedRefresh: false);
   }
 
-  Future<void> _fetchData({bool showLoading = true}) async {
+  Future<void> _fetchData({
+    bool showLoading = true,
+    bool forcedRefresh = false,
+  }) async {
     if (showLoading && mounted) setState(() => _isLoading = true);
     try {
       final dynamic result = await _apiService.getViolations(
-        forcedRefresh: true,
+        forcedRefresh: forcedRefresh,
         page: 1,
       );
       if (mounted) {
@@ -137,7 +139,7 @@ class CasesScreenState extends State<CasesScreen> {
             _allViolations = result;
             _hasMore = false;
           }
-          _applyFilters();
+          _filteredViolations = _computeFilteredList();
           _isLoading = false;
         });
       }
@@ -158,69 +160,73 @@ class CasesScreenState extends State<CasesScreen> {
     }
   }
 
-  void _applyFilters() {
-    String query = _searchController.text.toLowerCase();
+  List<dynamic> _computeFilteredList() {
+    final query = _searchController.text.toLowerCase();
     final now = DateTime.now();
-    if (mounted) {
-      setState(() {
-        _filteredViolations = _allViolations.where((v) {
-          final studentName = (v['student']?['full_name'] ?? '')
-              .toString()
-              .toLowerCase();
-          final violationTitle = (v['violation']?['title'] ?? '')
-              .toString()
-              .toLowerCase();
-          final severity = v['violation']?['severity'] ?? 'Minor';
-          final status = v['status'] ?? 'Pending';
-          final dateStr = v['created_at'] ?? '';
 
-          bool matchesSearch =
-              studentName.contains(query) || violationTitle.contains(query);
-          bool matchesSeverity =
-              _selectedSeverity == 'All' || severity == _selectedSeverity;
-          bool matchesStatus =
-              _selectedStatus == 'All' || status == _selectedStatus;
+    final filtered = _allViolations.where((v) {
+      final studentName = (v['student']?['full_name'] ?? '')
+          .toString()
+          .toLowerCase();
+      final violationTitle = (v['violation']?['title'] ?? '')
+          .toString()
+          .toLowerCase();
+      final severity = v['violation']?['severity'] ?? 'Minor';
+      final status = v['status'] ?? 'Pending';
+      final dateStr = v['created_at'] ?? '';
 
-          // Date filter
-          bool matchesDate = true;
-          if (_selectedDate != 'All Time' && dateStr.isNotEmpty) {
-            try {
-              final date = DateTime.parse(dateStr);
-              if (_selectedDate == 'Today') {
-                matchesDate =
-                    date.year == now.year &&
-                    date.month == now.month &&
-                    date.day == now.day;
-              } else if (_selectedDate == 'This Week') {
-                final weekStart = now.subtract(Duration(days: now.weekday - 1));
-                final startOfWeek = DateTime(
-                  weekStart.year,
-                  weekStart.month,
-                  weekStart.day,
-                );
-                matchesDate = date.isAfter(
-                  startOfWeek.subtract(const Duration(seconds: 1)),
-                );
-              } else if (_selectedDate == 'This Month') {
-                matchesDate = date.year == now.year && date.month == now.month;
-              }
-            } catch (_) {
-              matchesDate = true;
-            }
+      final matchesSearch =
+          studentName.contains(query) || violationTitle.contains(query);
+      final matchesSeverity =
+          _selectedSeverity == 'All' || severity == _selectedSeverity;
+      final matchesStatus =
+          _selectedStatus == 'All' || status == _selectedStatus;
+
+      var matchesDate = true;
+      if (_selectedDate != 'All Time' && dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          if (_selectedDate == 'Today') {
+            matchesDate =
+                date.year == now.year &&
+                date.month == now.month &&
+                date.day == now.day;
+          } else if (_selectedDate == 'This Week') {
+            final weekStart = now.subtract(Duration(days: now.weekday - 1));
+            final startOfWeek = DateTime(
+              weekStart.year,
+              weekStart.month,
+              weekStart.day,
+            );
+            matchesDate = date.isAfter(
+              startOfWeek.subtract(const Duration(seconds: 1)),
+            );
+          } else if (_selectedDate == 'This Month') {
+            matchesDate = date.year == now.year && date.month == now.month;
           }
+        } catch (_) {
+          matchesDate = true;
+        }
+      }
 
-          return matchesSearch &&
-              matchesSeverity &&
-              matchesStatus &&
-              matchesDate;
-        }).toList();
-        _filteredViolations.sort((a, b) {
-          final int idA = a['id'] ?? 0;
-          final int idB = b['id'] ?? 0;
-          return _isAscending ? idA.compareTo(idB) : idB.compareTo(idA);
-        });
-      });
-    }
+      return matchesSearch &&
+          matchesSeverity &&
+          matchesStatus &&
+          matchesDate;
+    }).toList();
+
+    filtered.sort((a, b) {
+      final int idA = a['id'] ?? 0;
+      final int idB = b['id'] ?? 0;
+      return _isAscending ? idA.compareTo(idB) : idB.compareTo(idA);
+    });
+
+    return filtered;
+  }
+
+  void _applyFilters() {
+    if (!mounted) return;
+    setState(() => _filteredViolations = _computeFilteredList());
   }
 
   int _statusCount([String? status]) {
@@ -245,68 +251,69 @@ class CasesScreenState extends State<CasesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding =
+        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      body: Column(
-        children: [
-          _buildHeader(),
-          _buildQuickStatusOverview(),
-          _buildSearchAndFilters(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _fetchData,
-              color: AppTheme.primary,
-              child: _isLoading
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: ShimmerLoader.buildListSkeleton(),
-                    )
-                  : _filteredViolations.isEmpty
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.55,
-                        alignment: Alignment.center,
-                        child: _buildEmptyState(),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(
-                        16,
-                        8,
-                        16,
-                        AppTheme.bottomNavClearance,
-                      ),
-                      itemCount:
-                          _filteredViolations.length + (_loadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= _filteredViolations.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        return _buildViolationCard(
+      body: RefreshIndicator(
+        onRefresh: () => _fetchData(showLoading: false, forcedRefresh: true),
+        color: AppTheme.primary,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeader()),
+            SliverToBoxAdapter(child: _buildSearchBar()),
+            SliverToBoxAdapter(child: _buildQuickStatusOverview()),
+            SliverToBoxAdapter(child: _buildAdvancedFilters()),
+            if (_isLoading)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverToBoxAdapter(
+                  child: ShimmerLoader.buildListSkeleton(),
+                ),
+              )
+            else if (_filteredViolations.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _buildEmptyState(),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index >= _filteredViolations.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return RepaintBoundary(
+                        child: _buildViolationCard(
                           _filteredViolations[index],
                           index,
-                        );
-                      },
-                    ),
-            ),
-          ),
-        ],
+                        ),
+                      );
+                    },
+                    childCount: _filteredViolations.length +
+                        (_loadingMore ? 1 : 0),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
     return AppUi.gradientHeader(
-      greeting: 'Violation records',
+      greeting: '${_filteredViolations.length} cases',
       title: 'Cases',
-      subtitle:
-          'Search, filter, and review every student incident in one place.',
+      subtitle: 'Search, filter, and open any case record.',
       badge: AppUi.iconCircle(
         icon: Icons.inventory_2_outlined,
         color: AppTheme.primaryNavy,
@@ -648,171 +655,171 @@ class CasesScreenState extends State<CasesScreen> {
     );
   }
 
-  Widget _buildSearchAndFilters() {
+  Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      child: AppUi.surfaceCard(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Quick filters',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textMain,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Refine by time, severity, and case status.',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppTheme.textMuted,
-                        ),
-                      ),
-                    ],
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.inputBorder),
+          boxShadow: AppTheme.softShadow,
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (_) {
+            if (_debounce?.isActive ?? false) _debounce!.cancel();
+            _debounce = Timer(
+              const Duration(milliseconds: 300),
+              _applyFilters,
+            );
+          },
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _applyFilters(),
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            color: AppTheme.textMain,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Search student name or violation',
+            hintStyle: GoogleFonts.inter(
+              color: AppTheme.textHint,
+              fontSize: 15,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: AppTheme.primary,
+              size: 22,
+            ),
+            suffixIcon: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _searchController,
+              builder: (context, value, _) {
+                if (value.text.isEmpty) return const SizedBox.shrink();
+                return IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    _applyFilters();
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppTheme.textMuted,
                   ),
+                );
+              },
+            ),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdvancedFilters() {
+    return AppUi.expandTile(
+      title: 'More filters',
+      subtitle: _hasActiveFilters()
+          ? '${_filteredViolations.length} results · filters active'
+          : 'Date, severity, and sort options',
+      expanded: _showAdvancedFilters || _hasActiveFilters(),
+      onToggle: () => setState(() => _showAdvancedFilters = !_showAdvancedFilters),
+      trailing: _hasActiveFilters()
+          ? TextButton(
+              onPressed: _clearAllFilters,
+              child: Text(
+                'Clear',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.accentRose,
+                  fontSize: 12,
                 ),
-                if (_hasActiveFilters())
-                  TextButton(
-                    onPressed: _clearAllFilters,
-                    child: Text(
-                      'Clear all',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.accentRose,
-                      ),
+              ),
+            )
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Date range',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ...['All Time', 'Today', 'This Week', 'This Month'].map((opt) {
+                  final isSelected = _selectedDate == opt;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _buildFilterChip(
+                      label: opt,
+                      isSelected: isSelected,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        if (mounted) setState(() => _selectedDate = opt);
+                        _applyFilters();
+                      },
                     ),
-                  ),
+                  );
+                }),
               ],
             ),
-            const SizedBox(height: 14),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.bgLight,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.inputBorder),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  if (mounted) setState(() {});
-                  if (_debounce?.isActive ?? false) _debounce!.cancel();
-                  _debounce = Timer(
-                    const Duration(milliseconds: 300),
-                    () => _applyFilters(),
-                  );
-                },
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _applyFilters(),
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: AppTheme.textMain,
-                ),
-                decoration: InputDecoration(
-                  hintText: "Search student or violation...",
-                  hintStyle: GoogleFonts.inter(
-                    color: AppTheme.textHint,
-                    fontSize: 14,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: AppTheme.textMuted,
-                    size: 20,
-                  ),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            _applyFilters();
-                          },
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: AppTheme.textMuted,
-                            size: 18,
-                          ),
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ...['All Time', 'Today', 'This Week', 'This Month'].map((
-                    opt,
-                  ) {
-                    final isSelected = _selectedDate == opt;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        label: opt,
-                        isSelected: isSelected,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          if (mounted) setState(() => _selectedDate = opt);
-                          _applyFilters();
-                        },
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterGroup(
-                    "Severity",
-                    ["All", "Minor", "Major"],
-                    _selectedSeverity,
-                    (val) {
-                      if (mounted) setState(() => _selectedSeverity = val);
-                      _applyFilters();
-                    },
-                  ),
-                  const SizedBox(width: 16),
-                  _buildFilterGroup(
-                    "Status",
-                    ["All", "Pending", "Hearing Scheduled", "Closed"],
-                    _selectedStatus,
-                    (val) {
-                      if (mounted) setState(() => _selectedStatus = val);
-                      _applyFilters();
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    'Showing ${_filteredViolations.length} matching cases',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textMuted,
-                    ),
+                _buildFilterGroup(
+                  'Severity',
+                  ['All', 'Minor', 'Major'],
+                  _selectedSeverity,
+                  (val) {
+                    if (mounted) setState(() => _selectedSeverity = val);
+                    _applyFilters();
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildFilterGroup(
+                  'Status',
+                  ['All', 'Pending', 'Hearing Scheduled', 'Closed'],
+                  _selectedStatus,
+                  (val) {
+                    if (mounted) setState(() => _selectedStatus = val);
+                    _applyFilters();
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_filteredViolations.length} matching cases',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textMuted,
                   ),
                 ),
-                AppUi.brandPill(
+              ),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _isAscending = !_isAscending);
+                  _applyFilters();
+                },
+                child: AppUi.brandPill(
                   label: _isAscending ? 'Oldest first' : 'Newest first',
                   textColor: AppTheme.primaryNavy,
                   backgroundColor: AppTheme.primaryLight,
@@ -829,10 +836,10 @@ class CasesScreenState extends State<CasesScreen> {
                     vertical: 6,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -945,16 +952,19 @@ class CasesScreenState extends State<CasesScreen> {
     final violationTitle = violation['violation']?['title'] ?? 'N/A';
     final caseId = "#${(violation['id'] ?? 0).toString().padLeft(4, '0')}";
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+    return RepaintBoundary(
+      child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppTheme.inputBorder.withValues(alpha: 0.8)),
         boxShadow: AppTheme.softShadow,
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
         onTap: () {
           HapticFeedback.mediumImpact();
           Navigator.push(
@@ -976,13 +986,6 @@ class CasesScreenState extends State<CasesScreen> {
                       ? AppTheme.warmGradient
                       : AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: severityColor.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   _getSeverityIcon(severity),
@@ -1071,7 +1074,9 @@ class CasesScreenState extends State<CasesScreen> {
             ],
           ),
         ),
+        ),
       ),
+    ),
     );
   }
 

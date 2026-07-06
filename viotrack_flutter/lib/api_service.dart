@@ -13,7 +13,8 @@ class ApiService {
 
   static final Map<String, dynamic> _cache = {};
   static final Map<String, DateTime> _cacheExpiry = {};
-  static const Duration cacheDuration = Duration(seconds: 25);
+  static final Map<String, Future<dynamic>> _inFlight = {};
+  static const Duration cacheDuration = Duration(seconds: 45);
 
   bool _isCacheValid(String key) {
     if (!_cache.containsKey(key)) return false;
@@ -23,6 +24,7 @@ class ApiService {
   void clearCache() {
     _cache.clear();
     _cacheExpiry.clear();
+    _inFlight.clear();
   }
 
   Future<Map<String, String>> _authHeaders() async {
@@ -191,6 +193,26 @@ class ApiService {
       return _cache[cacheKey];
     }
 
+    final existing = _inFlight[cacheKey];
+    if (existing != null) {
+      return existing;
+    }
+
+    final request = _fetchAndCache(cacheKey: cacheKey, uri: uri);
+    _inFlight[cacheKey] = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_inFlight[cacheKey], request)) {
+        _inFlight.remove(cacheKey);
+      }
+    }
+  }
+
+  Future<dynamic> _fetchAndCache({
+    required String cacheKey,
+    required Uri uri,
+  }) async {
     final headers = await _authHeaders();
 
     try {

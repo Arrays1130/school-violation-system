@@ -38,11 +38,11 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   int _unreadCount = 0;
   StreamSubscription<void>? _listRefreshSub;
 
-  static const _labels = ['Home', 'Cases', 'Insights', 'Alerts', 'Profile'];
+  static const _labels = ['Home', 'Cases', 'Stats', 'Alerts', 'Profile'];
   static const _semanticsLabels = [
     'Home dashboard',
     'Cases list',
-    'Analytics insights',
+    'Analytics stats',
     'Notifications and alerts',
     'Profile and settings',
   ];
@@ -202,25 +202,48 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
             builder: (context, offline, _) {
               if (!offline) return const SizedBox.shrink();
               return Material(
-                color: AppTheme.accentAmber,
+                color: AppTheme.accentAmber.withValues(alpha: 0.12),
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.wifi_off,
-                          color: Colors.white,
-                          size: 14,
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentAmber.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.wifi_off_rounded,
+                            color: AppTheme.accentAmber,
+                            size: 18,
+                          ),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Offline mode',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 12,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'You are offline',
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.textMain,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Showing saved data where available.',
+                                style: GoogleFonts.inter(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -242,11 +265,11 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
         ],
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
         child: Container(
           decoration: BoxDecoration(
             color: AppTheme.bgCard.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: AppTheme.inputBorder.withValues(alpha: 0.85),
             ),
@@ -255,7 +278,7 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: Row(
                 children: List.generate(5, (i) {
                   final selected = _selectedIndex == i;
@@ -270,78 +293,89 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
                         child: GestureDetector(
                           onTap: () => _onItemTapped(i),
                           behavior: HitTestBehavior.opaque,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              gradient: selected ? AppTheme.heroGradient : null,
-                              color: selected ? null : Colors.transparent,
-                              borderRadius: BorderRadius.circular(22),
-                              boxShadow: selected ? AppTheme.floatShadow : null,
-                            ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (selected)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Container(
-                                      width: 18,
-                                      height: 4,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.85),
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                    ),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    gradient: selected
+                                        ? AppTheme.heroGradient
+                                        : null,
+                                    color: selected
+                                        ? null
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: selected
+                                        ? [
+                                            BoxShadow(
+                                              color: AppTheme.primary
+                                                  .withValues(alpha: 0.2),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
                                   ),
-                                Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Icon(
-                                      selected ? _iconsActive[i] : _icons[i],
-                                      size: 22,
-                                      color: selected
-                                          ? Colors.white
-                                          : AppTheme.textMuted,
-                                    ),
-                                    if (isAlerts && _unreadCount > 0)
-                                      Positioned(
-                                        top: -5,
-                                        right: -12,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 5,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.accentRose,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            _unreadCount > 99
-                                                ? '99+'
-                                                : '$_unreadCount',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Icon(
+                                        selected ? _iconsActive[i] : _icons[i],
+                                        size: selected ? 17 : 20,
+                                        color: selected
+                                            ? Colors.white
+                                            : AppTheme.textMuted,
+                                      ),
+                                      if (isAlerts && _unreadCount > 0)
+                                        Positioned(
+                                          top: 2,
+                                          right: 2,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 5,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.accentRose,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: AppTheme.bgCard,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              _unreadCount > 99
+                                                  ? '99+'
+                                                  : '$_unreadCount',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   _labels[i],
                                   style: GoogleFonts.inter(
-                                    fontSize: 10,
+                                    fontSize: 9,
+                                    height: 1.1,
                                     fontWeight: selected
-                                        ? FontWeight.w600
+                                        ? FontWeight.w700
                                         : FontWeight.w500,
                                     color: selected
-                                        ? Colors.white
+                                        ? AppTheme.primaryNavy
                                         : AppTheme.textMuted,
                                   ),
                                 ),

@@ -7,6 +7,7 @@ import '../api_service.dart';
 import '../theme/app_theme.dart';
 import '../services/security_service.dart';
 import '../widgets/app_ui.dart';
+import '../widgets/skeleton_loader.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -20,6 +21,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   bool _isBiometricEnabled = false;
   bool _isHardwareAvailable = false;
+  bool _isTogglingBiometric = false;
+  String _biometricLabel = 'Fingerprint';
   bool _isLoading = true;
   String _userName = '';
   String _userEmail = '';
@@ -36,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadSettings() async {
     final available = await SecurityService.isBiometricsSupported();
     final enabled = await SecurityService.isBiometricLockEnabled();
+    final label = await SecurityService.getBiometricLabel();
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('user');
 
@@ -60,6 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _userInitials = initials;
             _isHardwareAvailable = available;
             _isBiometricEnabled = enabled;
+            _biometricLabel = label;
             _isLoading = false;
           });
         }
@@ -71,20 +76,138 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _isHardwareAvailable = available;
         _isBiometricEnabled = enabled;
+        _biometricLabel = label;
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _toggleBiometric(bool value) async {
-    if (value) {
-      final ok = await SecurityService.authenticate();
-      if (!ok) return;
-    } else {
-      await SecurityService.clearCredentials();
+  Future<bool> _promptPasswordForBiometric() async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Confirm your password',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your password once to enable $_biometricLabel login.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppTheme.textMuted,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                prefixIcon: Icon(Icons.lock_outline_rounded),
+              ),
+              onSubmitted: (_) => Navigator.pop(ctx, true),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return false;
+
+    final password = controller.text;
+    controller.dispose();
+    if (password.isEmpty) {
+      _showSnack('Please enter your password.', success: false);
+      return false;
     }
-    await SecurityService.setBiometricLock(value);
-    if (mounted) setState(() => _isBiometricEnabled = value);
+
+    final email = _userEmail;
+    if (email.isEmpty) {
+      _showSnack('Account email not found. Sign in again.', success: false);
+      return false;
+    }
+
+    await SecurityService.saveCredentials(email, password);
+    return true;
+  }
+
+  void _showSnack(String message, {required bool success}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.inter()),
+        backgroundColor: success ? AppTheme.accentEmerald : AppTheme.accentRose,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _testFingerprint() async {
+    if (!_isBiometricEnabled) return;
+    HapticFeedback.lightImpact();
+    final ok = await SecurityService.authenticate(
+      reason: 'Verify your $_biometricLabel is working.',
+    );
+    if (!mounted) return;
+    _showSnack(
+      ok ? '$_biometricLabel verified successfully.' : 'Verification cancelled.',
+      success: ok,
+    );
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (_isTogglingBiometric) return;
+
+    setState(() => _isTogglingBiometric = true);
+    try {
+      if (value) {
+        if (!await SecurityService.hasStoredCredentials()) {
+          final saved = await _promptPasswordForBiometric();
+          if (!saved) return;
+        }
+
+        final ok = await SecurityService.authenticate(
+          reason: 'Enable $_biometricLabel login for your dean account.',
+        );
+        if (!ok) {
+          _showSnack('$_biometricLabel verification failed.', success: false);
+          return;
+        }
+      } else {
+        await SecurityService.clearCredentials();
+      }
+
+      await SecurityService.setBiometricLock(value);
+      if (mounted) {
+        setState(() => _isBiometricEnabled = value);
+        _showSnack(
+          value
+              ? '$_biometricLabel login enabled.'
+              : '$_biometricLabel login disabled.',
+          success: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isTogglingBiometric = false);
+    }
   }
 
   Future<void> _logout() async {
@@ -101,9 +224,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppTheme.bgLight,
-        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        body: Column(
+          children: [
+            Container(
+              height: 220,
+              decoration: const BoxDecoration(
+                gradient: AppTheme.heroGradient,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(28),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  ShimmerLoader.rounded(height: 72, width: double.infinity),
+                  const SizedBox(height: 12),
+                  ShimmerLoader.rounded(height: 72, width: double.infinity),
+                  const SizedBox(height: 12),
+                  ShimmerLoader.rounded(height: 56, width: double.infinity),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -114,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           AppUi.gradientHeader(
             greeting: 'Your account',
             title: 'Profile',
-            subtitle: 'Manage identity, security, and sign-in preferences.',
+            subtitle: 'Identity, security, and sign-out.',
             badge: AppUi.iconCircle(
               icon: Icons.person_outline_rounded,
               color: AppTheme.primaryNavy,
@@ -201,24 +349,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 _section('Security'),
                 AppUi.surfaceCard(
-                  padding: EdgeInsets.zero,
-                  child: SwitchListTile(
-                    title: Text(
-                      'Biometric login',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      _isHardwareAvailable
-                          ? 'Fingerprint or Face ID'
-                          : 'Not available on this device',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppTheme.textMuted,
+                  padding: const EdgeInsets.all(16),
+                  clip: true,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isHardwareAvailable && _isBiometricEnabled
+                                  ? _testFingerprint
+                                  : null,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Ink(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: _isBiometricEnabled
+                                      ? AppTheme.heroGradient
+                                      : null,
+                                  color: _isBiometricEnabled
+                                      ? null
+                                      : AppTheme.bgLight,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: _isBiometricEnabled
+                                        ? Colors.transparent
+                                        : AppTheme.inputBorder,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.fingerprint_rounded,
+                                  size: 30,
+                                  color: _isBiometricEnabled
+                                      ? Colors.white
+                                      : AppTheme.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$_biometricLabel login',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: AppTheme.textMain,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _isHardwareAvailable
+                                      ? (_isBiometricEnabled
+                                          ? 'Tap icon to test · unlock app faster'
+                                          : 'Sign in and unlock with your finger')
+                                      : 'Not available on this device',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: AppTheme.textMuted,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_isTogglingBiometric)
+                            const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            Switch.adaptive(
+                              value: _isBiometricEnabled,
+                              onChanged:
+                                  _isHardwareAvailable ? _toggleBiometric : null,
+                              activeColor: AppTheme.primary,
+                            ),
+                        ],
                       ),
-                    ),
-                    value: _isBiometricEnabled,
-                    onChanged: _isHardwareAvailable ? _toggleBiometric : null,
-                    activeColor: AppTheme.primary,
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -250,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'VioTrack v3.0.0 · I-LINK Dean Portal',
+                  '${AppTheme.appName} v${AppTheme.appVersion} · I-LINK Dean Portal',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 12,
@@ -267,13 +482,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _section(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10, top: 4),
       child: Text(
-        title,
+        title.toUpperCase(),
         style: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.textHint,
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -281,9 +497,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _tile(IconData icon, String label, String value) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: AppUi.cardDecoration(),
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 40,
           height: 40,

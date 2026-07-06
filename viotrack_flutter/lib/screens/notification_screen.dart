@@ -36,7 +36,7 @@ class NotificationScreenState extends State<NotificationScreen> {
 
   void refreshFromPoller() {
     if (!mounted) return;
-    _fetchNotifications(showLoading: false, reset: true);
+    _fetchNotifications(showLoading: false, reset: true, forcedRefresh: false);
   }
 
   void _onScroll() {
@@ -56,7 +56,12 @@ class NotificationScreenState extends State<NotificationScreen> {
         _isLoading = false;
       });
     }
-    await _fetchNotifications(showLoading: _isLoading, reset: true);
+    final hadCache = cachedData != null;
+    await _fetchNotifications(
+      showLoading: _isLoading,
+      reset: true,
+      forcedRefresh: !hadCache,
+    );
   }
 
   void _applyPageResult(dynamic result, {required bool reset}) {
@@ -81,13 +86,14 @@ class NotificationScreenState extends State<NotificationScreen> {
   Future<void> _fetchNotifications({
     bool showLoading = true,
     bool reset = true,
+    bool forcedRefresh = false,
   }) async {
     if (showLoading && mounted) {
       setState(() => _isLoading = true);
     }
     try {
       final dynamic result = await _apiService.getNotifications(
-        forcedRefresh: true,
+        forcedRefresh: forcedRefresh,
         page: 1,
       );
       if (mounted) {
@@ -160,8 +166,8 @@ class NotificationScreenState extends State<NotificationScreen> {
     HapticFeedback.mediumImpact();
     final String id = notification['id'].toString();
     final Map<String, dynamic> data = notification['data'] is String
-        ? Map<String, dynamic>.from(jsonDecode(notification['data']))
-        : Map<String, dynamic>.from(notification['data']);
+        ? _parseNotificationData(notification['data'])
+        : _parseNotificationData(notification['data']);
     if (notification['read_at'] == null) {
       try {
         await _apiService.markNotificationAsRead(id);
@@ -279,62 +285,66 @@ class NotificationScreenState extends State<NotificationScreen> {
     final unreadCount = _notifications
         .where((n) => n['read_at'] == null)
         .length;
+    final bottomPadding =
+        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      body: Column(
-        children: [
-          _buildHeader(unreadCount),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => _fetchNotifications(reset: true),
-              color: AppTheme.accentCyan,
-              child: _isLoading
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: ShimmerLoader.buildListSkeleton(),
-                    )
-                  : _notifications.isEmpty
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.65,
-                        alignment: Alignment.center,
-                        child: _buildEmptyState(),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(
-                        16,
-                        8,
-                        16,
-                        AppTheme.bottomNavClearance,
-                      ),
-                      itemCount:
-                          _notifications.length + (_isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= _notifications.length) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: AppTheme.primary,
-                                strokeWidth: 2,
-                              ),
+      body: RefreshIndicator(
+        onRefresh: () => _fetchNotifications(
+          showLoading: false,
+          reset: true,
+          forcedRefresh: true,
+        ),
+        color: AppTheme.accentCyan,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeader(unreadCount)),
+            if (_isLoading)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                sliver: SliverToBoxAdapter(
+                  child: ShimmerLoader.buildListSkeleton(),
+                ),
+              )
+            else if (_notifications.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _buildEmptyState(),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index >= _notifications.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primary,
+                              strokeWidth: 2,
                             ),
-                          );
-                        }
-                        return _buildNotificationItem(
+                          ),
+                        );
+                      }
+                      return RepaintBoundary(
+                        child: _buildNotificationItem(
                           _notifications[index],
                           index,
-                        );
-                      },
-                    ),
-            ),
-          ),
-        ],
+                        ),
+                      );
+                    },
+                    childCount:
+                        _notifications.length + (_isLoadingMore ? 1 : 0),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -342,10 +352,10 @@ class NotificationScreenState extends State<NotificationScreen> {
   Widget _buildHeader(int unreadCount) {
     return AppUi.gradientHeader(
       greeting: unreadCount > 0
-          ? '$unreadCount unread updates'
+          ? '$unreadCount unread'
           : 'All caught up',
-      title: 'Notifications',
-      subtitle: 'Stay on top of hearings, endorsements, and case activity.',
+      title: 'Alerts',
+      subtitle: 'Hearings, endorsements, and case updates land here.',
       badge: AppUi.iconCircle(
         icon: Icons.notifications_active_outlined,
         color: AppTheme.primaryNavy,
@@ -390,6 +400,18 @@ class NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
+  Map<String, dynamic> _parseNotificationData(dynamic raw) {
+    if (raw == null) return {};
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return {};
+  }
+
   Widget _buildEmptyState() {
     return const EmptyStateWidget(
       icon: Icons.notifications_off_rounded,
@@ -401,21 +423,19 @@ class NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildNotificationItem(dynamic notif, int index) {
     final isUnread = notif['read_at'] == null;
-    final Map<String, dynamic> data = notif['data'] is String
-        ? Map<String, dynamic>.from(jsonDecode(notif['data']))
-        : Map<String, dynamic>.from(notif['data']);
+    final Map<String, dynamic> data = _parseNotificationData(notif['data']);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: AppUi.surfaceCard(
       padding: EdgeInsets.zero,
+      clip: true,
       borderColor: isUnread
           ? AppTheme.accentCyan.withValues(alpha: 0.22)
           : AppTheme.inputBorder.withValues(alpha: 0.5),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
           onTap: () {
             HapticFeedback.mediumImpact();
             _handleNotificationTap(notif);
@@ -425,59 +445,22 @@ class NotificationScreenState extends State<NotificationScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        gradient: isUnread
-                            ? AppTheme.accentGradient
-                            : const LinearGradient(
-                                colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
-                              ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: isUnread
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.accentCyan.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: const Icon(
-                        Icons.gavel_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    if (isUnread)
-                      Positioned(
-                        right: -2,
-                        top: -2,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentRose,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.accentRose.withValues(
-                                  alpha: 0.5,
-                                ),
-                                blurRadius: 4,
-                              ),
-                            ],
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: isUnread
+                        ? AppTheme.accentGradient
+                        : const LinearGradient(
+                            colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
                           ),
-                        ),
-                      ),
-                  ],
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.gavel_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(

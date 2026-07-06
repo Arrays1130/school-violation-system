@@ -19,6 +19,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final ApiService _apiService = ApiService();
 
   bool _isLoading = true;
+  bool _loadFailed = false;
+  DateTime? _lastRefreshedAt;
   int? _touchedIndex;
 
   // Computed from violations
@@ -44,9 +46,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         forcedRefresh: forcedRefresh,
       );
       _applyAnalytics(analytics);
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadFailed = false;
+          _lastRefreshedAt = DateTime.now();
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadFailed = _totalCases == 0;
+        });
+      }
     }
   }
 
@@ -93,23 +106,50 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding =
+        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => _loadData(forcedRefresh: true),
-              color: AppTheme.primaryNavy,
-              child: _isLoading
-                  ? _buildSkeleton()
-                  : _totalCases == 0
-                  ? _buildErrorState()
-                  : _buildContent(),
-            ),
-          ),
-        ],
+      body: RefreshIndicator(
+        onRefresh: () => _loadData(forcedRefresh: true),
+        color: AppTheme.primaryNavy,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeader()),
+            if (_loadFailed)
+              SliverToBoxAdapter(
+                child: AppUi.dataBanner(
+                  icon: Icons.cloud_off_rounded,
+                  message:
+                      'Could not load analytics. Pull down or tap retry.',
+                  accent: AppTheme.accentRose,
+                  actionLabel: 'Retry',
+                  onAction: () => _loadData(forcedRefresh: true),
+                ),
+              )
+            else if (_lastRefreshedAt != null && !_isLoading)
+              SliverToBoxAdapter(
+                child: AppUi.subtleMetaLine(
+                  'Last updated ${AppUi.formatRelativeTime(_lastRefreshedAt)}',
+                  icon: Icons.update_rounded,
+                ),
+              ),
+            if (_isLoading)
+              SliverToBoxAdapter(child: _buildSkeleton())
+            else if (_totalCases == 0)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _buildErrorState(),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPadding),
+                sliver: SliverToBoxAdapter(child: _buildContentBody()),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -117,9 +157,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildHeader() {
     return AppUi.gradientHeader(
       greeting: 'Trend overview',
-      title: 'Analytics',
-      subtitle:
-          'Track case volume, severity, and repeat patterns across the portal.',
+      title: 'Stats',
+      subtitle: 'See patterns in case volume, severity, and repeat offenders.',
       badge: AppUi.iconCircle(
         icon: Icons.insights_outlined,
         color: AppTheme.primaryNavy,
@@ -218,74 +257,56 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   'Case insights will appear here once violation records are available.',
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => _loadData(forcedRefresh: true),
-              child: Text(
-                'Refresh',
-                style: GoogleFonts.inter(
-                  color: AppTheme.primaryNavy,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            AppUi.retryButton(onPressed: () => _loadData(forcedRefresh: true)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        8,
-        20,
-        AppTheme.bottomNavClearance,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppUi.heroMetricCard(
-            eyebrow: 'Case intelligence',
-            label: 'Total case volume',
-            value: '$_totalCases',
-            subtitle:
-                '$_pendingCases pending · $_resolvedCases closed · $_majorCases major',
+  Widget _buildContentBody() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppUi.heroMetricCard(
+          eyebrow: 'Case intelligence',
+          label: 'Total case volume',
+          value: '$_totalCases',
+          subtitle:
+              '$_pendingCases pending · $_resolvedCases closed · $_majorCases major',
+          icon: Icons.query_stats_rounded,
+          badge: AppUi.iconCircle(
             icon: Icons.query_stats_rounded,
-            badge: AppUi.iconCircle(
-              icon: Icons.query_stats_rounded,
-              color: Colors.white,
-              size: 44,
-              iconSize: 20,
-              backgroundColor: Colors.white12,
-            ),
+            color: Colors.white,
+            size: 44,
+            iconSize: 20,
+            backgroundColor: Colors.white12,
           ),
-          const SizedBox(height: 20),
-          AppUi.sectionHeader('Overview'),
-          _buildStatCards(),
-          const SizedBox(height: 28),
-          AppUi.sectionHeader('Monthly trend'),
+        ),
+        const SizedBox(height: 20),
+        AppUi.sectionHeader('Overview'),
+        _buildStatCards(),
+        const SizedBox(height: 28),
+        AppUi.sectionHeader('Monthly trend'),
+        const SizedBox(height: 4),
+        _buildTrendCard(),
+        const SizedBox(height: 28),
+        AppUi.sectionHeader('Top violations'),
+        const SizedBox(height: 4),
+        _buildTopViolationsCard(),
+        const SizedBox(height: 28),
+        AppUi.sectionHeader('Severity breakdown'),
+        const SizedBox(height: 4),
+        _buildSeverityCard(),
+        const SizedBox(height: 28),
+        if (_repeatOffenders.isNotEmpty) ...[
+          AppUi.sectionHeader('Repeat offenders'),
           const SizedBox(height: 4),
-          _buildTrendCard(),
+          _buildRepeatOffendersCard(),
           const SizedBox(height: 28),
-          AppUi.sectionHeader('Top violations'),
-          const SizedBox(height: 4),
-          _buildTopViolationsCard(),
-          const SizedBox(height: 28),
-          AppUi.sectionHeader('Severity breakdown'),
-          const SizedBox(height: 4),
-          _buildSeverityCard(),
-          const SizedBox(height: 28),
-          if (_repeatOffenders.isNotEmpty) ...[
-            AppUi.sectionHeader('Repeat offenders'),
-            const SizedBox(height: 4),
-            _buildRepeatOffendersCard(),
-            const SizedBox(height: 28),
-          ],
         ],
-      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.04, end: 0),
-    );
+      ],
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.04, end: 0);
   }
 
   Widget _buildStatCards() {

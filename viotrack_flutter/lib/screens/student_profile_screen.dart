@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 import '../api_service.dart';
 import '../widgets/app_ui.dart';
+import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
 
 class StudentProfileScreen extends StatefulWidget {
@@ -108,130 +109,241 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     }
   }
 
+  String _initials(String name) {
+    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts.last[0]}'.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String fullName = widget.student['full_name'] ?? 'Student name unavailable';
-    final String? studentNo = widget.student['student_number']?.toString();
-    final String? course = widget.student['course']?.toString();
-    // Build subtitle only from available fields
-    final List<String> subtitleParts = [
+    final fullName =
+        widget.student['full_name']?.toString() ?? 'Student name unavailable';
+    final studentNo = widget.student['student_number']?.toString();
+    final course = widget.student['course']?.toString();
+    final subtitleParts = <String>[
       if (studentNo != null && studentNo.isNotEmpty) studentNo,
       if (course != null && course.isNotEmpty) course,
     ];
-    final String subtitle = subtitleParts.isNotEmpty ? subtitleParts.join('  •  ') : '';
+    final subtitle =
+        subtitleParts.isNotEmpty ? subtitleParts.join('  •  ') : '';
+
+    if (_isLoading) {
+      return _buildLoadingSkeleton();
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.bgLight,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.primaryNavy, size: 20),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          "Student Profile",
-          style: GoogleFonts.inter(
-            color: AppTheme.primaryNavy,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryNavy))
-        : RefreshIndicator(
-            color: AppTheme.primaryNavy,
-            backgroundColor: Colors.white,
-            onRefresh: () => _fetchStudentHistory(forcedRefresh: true),
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _buildProfileHeader(fullName, subtitle),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildStatsRow(),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                    child: AppUi.sectionHeader('Violation history'),
+      body: RefreshIndicator(
+        color: AppTheme.primaryNavy,
+        backgroundColor: Colors.white,
+        onRefresh: () => _fetchStudentHistory(forcedRefresh: true),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 210,
+              pinned: true,
+              stretch: true,
+              backgroundColor: AppTheme.primaryNavy,
+              leading: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 16,
+                    color: Colors.white,
                   ),
                 ),
-                if (_studentCases.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: EmptyStateWidget(
-                        icon: Icons.verified_user_outlined,
-                        title: 'Clean record',
-                        message:
-                            'No violations recorded for this student in the current academic period.',
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(context);
+                },
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                stretchModes: const [StretchMode.zoomBackground],
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: AppTheme.heroGradient,
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -40,
+                        right: -30,
+                        child: Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final c = _studentCases[index];
-                        return _buildTimelineItem(c, index == _studentCases.length - 1);
-                      },
-                      childCount: _studentCases.length,
-                    ),
+                      Positioned(
+                        bottom: 28,
+                        left: 24,
+                        right: 24,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
+                                boxShadow: AppTheme.softShadow,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _initials(fullName),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    fullName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.4,
+                                    ),
+                                  ),
+                                  if (subtitle.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subtitle,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.white.withValues(alpha: 0.82),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                const SliverToBoxAdapter(child: SizedBox(height: 50)),
-              ],
+                ),
+              ),
             ),
-          ),
+            SliverToBoxAdapter(
+              child: Transform.translate(
+                offset: const Offset(0, -20),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: AppTheme.bgLight,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+                    child: _buildStatsRow(),
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: AppUi.sectionHeader(
+                'Violation history',
+                subtitle: 'All recorded cases for this student.',
+              ),
+            ),
+            if (_studentCases.isEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: EmptyStateWidget(
+                    icon: Icons.verified_user_outlined,
+                    title: 'Clean record',
+                    message:
+                        'No violations recorded for this student in the current academic period.',
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final c = _studentCases[index];
+                    return AppUi.staggerIn(
+                      _buildTimelineItem(
+                        c,
+                        index == _studentCases.length - 1,
+                      ),
+                      index,
+                    );
+                  },
+                  childCount: _studentCases.length,
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 50)),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildProfileHeader(String name, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Column(
+  Widget _buildLoadingSkeleton() {
+    return Scaffold(
+      backgroundColor: AppTheme.bgLight,
+      body: Column(
         children: [
           Container(
-            width: 90,
-            height: 90,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.bgCard,
-              border: Border.all(color: AppTheme.primarySlate.withValues(alpha: 0.2), width: 1.5),
-            ),
-            child: const Icon(Icons.person_outline_rounded, size: 40, color: AppTheme.primaryNavy),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.primaryNavy,
-              letterSpacing: -0.5,
-            ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textSub,
-                fontWeight: FontWeight.w500,
+            height: 240,
+            decoration: const BoxDecoration(
+              gradient: AppTheme.heroGradient,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
               ),
-            ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
-          ],
+            ),
+            child: SafeArea(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                ShimmerLoader.buildStatGridSkeleton(),
+                const SizedBox(height: 24),
+                ShimmerLoader.buildListSkeleton(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -242,11 +354,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          Expanded(child: _buildStatCard("Total", _studentCases.length.toString(), AppTheme.primaryNavy)),
+          Expanded(child: _buildStatCard('Total', _studentCases.length.toString(), AppTheme.primaryNavy)),
           const SizedBox(width: 12),
-          Expanded(child: _buildStatCard("Major", _majorCount.toString(), AppTheme.accentRose)),
+          Expanded(child: _buildStatCard('Major', _majorCount.toString(), AppTheme.accentRose)),
           const SizedBox(width: 12),
-          Expanded(child: _buildStatCard("Minor", _minorCount.toString(), AppTheme.accentAmber)),
+          Expanded(child: _buildStatCard('Minor', _minorCount.toString(), AppTheme.accentAmber)),
         ],
       ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
     );
@@ -269,12 +381,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            label.toUpperCase(),
+            label,
             style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: color.withValues(alpha: 0.7),
-              letterSpacing: 1.0,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color.withValues(alpha: 0.75),
             ),
           ),
         ],

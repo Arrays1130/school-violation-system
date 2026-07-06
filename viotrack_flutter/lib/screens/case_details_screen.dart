@@ -118,35 +118,21 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Widget _buildError() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const EmptyStateWidget(
-            icon: Icons.error_outline_rounded,
-            title: "Data Unavailable",
-            message:
-                "We couldn't load the details for this case. Please check your connection or try again.",
-          ),
-          const SizedBox(height: 24),
-          TextButton.icon(
-            onPressed: _fetchDetails,
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentCyan),
-            label: Text(
-              "Try Again",
-              style: GoogleFonts.inter(
-                color: AppTheme.accentCyan,
-                fontWeight: FontWeight.bold,
-              ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const EmptyStateWidget(
+              icon: Icons.error_outline_rounded,
+              title: 'Data unavailable',
+              message:
+                  "We couldn't load the details for this case. Check your connection and try again.",
             ),
-            style: TextButton.styleFrom(
-              backgroundColor: AppTheme.accentCyan.withValues(alpha: 0.1),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            AppUi.retryButton(onPressed: () => _fetchDetails(force: true)),
+          ],
+        ),
       ),
     );
   }
@@ -359,17 +345,18 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                       _buildStatusCard(status, statusColor, severity),
                       const SizedBox(height: 24),
 
-                      _buildSectionHeader(
-                        "CASE DETAILS",
-                        Icons.dashboard_rounded,
+                      AppUi.inlineSectionHeader(
+                        'Case details',
+                        icon: Icons.dashboard_rounded,
                       ),
                       const SizedBox(height: 12),
                       _buildBentoGrid(violation, severity, status),
                       const SizedBox(height: 24),
 
-                      _buildSectionHeader(
-                        "Process Timeline",
-                        Icons.timeline_rounded,
+                      AppUi.inlineSectionHeader(
+                        'Process timeline',
+                        icon: Icons.timeline_rounded,
+                        subtitle: 'Track how this case moved through review.',
                       ),
                       const SizedBox(height: 16),
                       _buildTimeline(status),
@@ -377,9 +364,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
                       if (_case!['hearings'] != null &&
                           (_case!['hearings'] as List).isNotEmpty) ...[
-                        _buildSectionHeader(
-                          "Official Hearing",
-                          Icons.calendar_month_rounded,
+                        AppUi.inlineSectionHeader(
+                          'Official hearing',
+                          icon: Icons.calendar_month_rounded,
                         ),
                         const SizedBox(height: 12),
                         _buildHearingCard((_case!['hearings'] as List).first),
@@ -388,9 +375,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
                       if (_case!['attachments'] != null &&
                           (_case!['attachments'] as List).isNotEmpty) ...[
-                        _buildSectionHeader(
-                          "Digital Evidence",
-                          Icons.collections_rounded,
+                        AppUi.inlineSectionHeader(
+                          'Digital evidence',
+                          icon: Icons.collections_rounded,
+                          subtitle: 'Photos and files attached to this case.',
                         ),
                         const SizedBox(height: 12),
                         _buildEvidenceGallery(),
@@ -463,31 +451,6 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryIndigo.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 14, color: AppTheme.primaryIndigo),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title.toUpperCase(),
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textMuted,
-            letterSpacing: 1.6,
-          ),
-        ),
-      ],
-    );
-  }
 
   String _formatSeverityLevel() {
     final level = _case?['offense_level'];
@@ -1007,6 +970,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           final isImage = url.contains(
             RegExp(r'\.(jpg|jpeg|png|webp)', caseSensitive: false),
           );
+          final cacheSize = (140 * MediaQuery.devicePixelRatioOf(context)).round();
           return Container(
             width: 140,
             margin: const EdgeInsets.only(right: 12),
@@ -1021,6 +985,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     url,
                     headers: _authHeaders,
                     fit: BoxFit.cover,
+                    cacheWidth: cacheSize,
+                    cacheHeight: cacheSize,
+                    filterQuality: FilterQuality.medium,
                     errorBuilder: (context, error, stackTrace) => const Center(
                       child: Icon(
                         Icons.broken_image_rounded,

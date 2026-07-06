@@ -71,6 +71,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _isUnlocking = false;
   bool _didAttemptAutoUnlock = false;
   String? _unlockMessage;
+  String _biometricLabel = 'Fingerprint';
 
   @override
   void initState() {
@@ -103,6 +104,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     try {
       final hasToken = await AuthStorageService.hasToken();
       final biometricEnabled = await SecurityService.isBiometricLockEnabled();
+      final biometricLabel = await SecurityService.getBiometricLabel();
 
       if (!mounted) return;
       setState(() {
@@ -110,6 +112,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         _isLocked = _isLoggedIn && biometricEnabled;
         _isLoading = false;
         _unlockMessage = null;
+        _biometricLabel = biometricLabel;
         if (!_isLocked) {
           _didAttemptAutoUnlock = false;
         }
@@ -216,21 +219,24 @@ class _AuthWrapperState extends State<AuthWrapper> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 92,
-                        height: 92,
-                        padding: const EdgeInsets.all(10),
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Colors.white.withValues(alpha: 0.14),
                           shape: BoxShape.circle,
-                          boxShadow: AppTheme.softShadow,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
                         ),
-                        child: Image.asset(
-                          'assets/images/ilink_college_logo.png',
+                        child: const Icon(
+                          Icons.fingerprint_rounded,
+                          color: Colors.white,
+                          size: 48,
                         ),
                       ),
                       const SizedBox(height: 22),
                       Text(
-                        'Dean portal locked',
+                        'App locked',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: Colors.white,
@@ -241,7 +247,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Authenticate with biometrics to continue reviewing cases securely.',
+                        'Use your $_biometricLabel to continue.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: Colors.white.withValues(alpha: 0.82),
@@ -292,7 +298,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                                 )
                               : const Icon(Icons.fingerprint_rounded),
                           label: Text(
-                            _isUnlocking ? 'Unlocking...' : 'Unlock now',
+                            _isUnlocking
+                                ? 'Verifying...'
+                                : 'Unlock with $_biometricLabel',
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
