@@ -31,9 +31,11 @@ COPY . /var/www
 
 # Dean mobile web app: pre-built in public/dean-app (run scripts/build-dean-web.ps1 before deploy)
 
-# Install PHP dependencies
+# Install PHP dependencies (dist zips — avoids flaky git clones to GitHub in CI)
 ENV COMPOSER_MEMORY_LIMIT=-1
-RUN composer install --no-dev --optimize-autoloader --prefer-source --no-progress --no-interaction
+ENV COMPOSER_PROCESS_TIMEOUT=600
+RUN composer config --global github-protocols https \
+    && composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build
