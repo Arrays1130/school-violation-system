@@ -1,11 +1,16 @@
 import React, { useState, useMemo } from 'react';
+import {
+    handleFlashMessages,
+    showErrorAlert,
+    showSuccessToast,
+} from '@/lib/sweetAlert';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     User, Printer, Edit3, MessageCircle, PlusCircle, Mail, Phone, BadgeCheck,
     Calendar, Eye, ShieldCheck, X, Send,
 } from 'lucide-react';
-
 function getInitials(fullName) {
     if (!fullName) return '??';
     let initials = '';
@@ -93,9 +98,22 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
     const sendMessage = (e) => {
         e.preventDefault();
         post(route('students.sendCustomMessage', student.id), {
-            onSuccess: () => {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const flash = page.props.flash;
+                if (flash?.success || flash?.error || flash?.warning) {
+                    handleFlashMessages(flash);
+                } else {
+                    showSuccessToast('Message sent to guardian successfully.', 'Message Sent');
+                }
                 reset();
                 setShowMessageModal(false);
+            },
+            onError: (formErrors) => {
+                const firstError = Object.values(formErrors)[0];
+                if (firstError) {
+                    showErrorAlert(firstError, 'Message Not Sent');
+                }
             },
         });
     };
@@ -113,6 +131,14 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
             <Head title={`${student.full_name} - Profile`} />
 
             <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
+                <Breadcrumbs
+                    items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Students', href: route('students.index') },
+                        { label: student.full_name },
+                    ]}
+                />
                 <div className="vt-page-hero p-8">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]" />
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -350,7 +376,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                                 type="checkbox"
                                                 checked={data.delivery_method.includes('sms')}
                                                 onChange={() => toggleDelivery('sms')}
-                                                className="rounded border-slate-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                className="h-4 w-4 rounded border border-slate-300 bg-white text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800"
                                             />
                                             <span className="text-sm font-medium text-slate-700">Send via SMS</span>
                                         </label>
@@ -359,7 +385,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                                 type="checkbox"
                                                 checked={data.delivery_method.includes('email')}
                                                 onChange={() => toggleDelivery('email')}
-                                                className="rounded border-slate-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                className="h-4 w-4 rounded border border-slate-300 bg-white text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800"
                                             />
                                             <span className="text-sm font-medium text-slate-700">Send via Email</span>
                                         </label>
@@ -372,7 +398,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                     <select
                                         onChange={handleTemplateChange}
                                         defaultValue=""
-                                        className="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm bg-white"
+                                        className="form-input"
                                     >
                                         <option value="">-- Create Custom Message --</option>
                                         {messageTemplates?.map((template, idx) => (
@@ -391,7 +417,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                         rows={5}
                                         required
                                         placeholder="Type your message here or select a template above..."
-                                        className="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm"
+                                        className="form-input"
                                     />
                                     {errors.message && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.message}</p>}
                                     <p className="text-xs text-slate-500 mt-2">

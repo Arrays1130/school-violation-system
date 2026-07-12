@@ -10,6 +10,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
     PieChart as RechartsPieChart, Pie, Cell, Legend
 } from 'recharts';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function System({ 
     total, pending, hearing, endorsed, closed, 
@@ -65,13 +66,13 @@ export default function System({
         >
             <Head title="System Overview Reports" />
 
-            <div className="relative space-y-6 max-w-[1400px] mx-auto pb-12 pt-6 px-4 sm:px-6 lg:px-8">
+            <PageMotion className="relative space-y-6 max-w-[1400px] mx-auto pb-12 pt-6 px-4 sm:px-6 lg:px-8">
                 
                 {/* Sub-header background element */}
                 <div className="absolute top-0 left-0 w-full h-[40vh] bg-slate-50/50 dark:bg-slate-800/50 -z-10 border-b border-slate-200/50 dark:border-slate-700/50"></div>
 
                 {/* Header */}
-                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 mb-8">
+                <MotionItem className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 mb-8">
                     <div className="flex items-center gap-5">
                         <Link href={route('reports.index')}
                             className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 transition-all hover:-translate-x-1">
@@ -86,17 +87,19 @@ export default function System({
                             <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium text-sm">Overview statistics — total cases, status breakdown & department analysis.</p>
                         </div>
                     </div>
-                    <div className="text-sm px-5 py-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-slate-500 dark:text-slate-400 font-bold shrink-0">
-                        As of {dayjs().format('MMMM DD, YYYY')}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-sm px-5 py-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-slate-500 dark:text-slate-400 font-bold">
+                            As of {dayjs().format('MMMM DD, YYYY')}
+                        </div>
                     </div>
-                </div>
+                </MotionItem>
 
                 {/* ─── Stat Cards ─── */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+                <MotionItem className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
                     {cards.map((card, idx) => {
                         const Icon = card.icon;
                         return (
-                            <div key={idx} className="group relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 ring-1 ring-slate-200/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[140px]">
+                            <div key={idx} className="group relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[140px]">
                                 <div className={`absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br ${card.gradient} opacity-[0.08] group-hover:opacity-[0.15] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150`}></div>
                                 
                                 <div className="flex items-start justify-between relative z-10 mb-4">
@@ -112,13 +115,13 @@ export default function System({
                             </div>
                         );
                     })}
-                </div>
+                </MotionItem>
 
                 {/* ─── Bento Grid Layout ─── */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <MotionItem className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                     {/* 1. Monthly Trend Chart (Spans 2 Cols) */}
-                    <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col min-h-[400px]">
+                    <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col min-h-[400px]">
                         <div className="flex items-center justify-between mb-8">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Comparative Monthly Cases</h3>
@@ -143,7 +146,7 @@ export default function System({
                     </div>
 
                     {/* 2. Status Donut (Spans 1 Col) */}
-                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col min-h-[400px]">
+                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col min-h-[400px]">
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Status Distribution</h3>
@@ -187,8 +190,8 @@ export default function System({
                     </div>
 
                     {/* 3. Department Breakdown (Spans 2 Cols) */}
-                    <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
-                        <div className="p-8 pb-4 flex items-center justify-between bg-white dark:bg-slate-900 z-10 border-b border-slate-50 flex-none">
+                    <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
+                        <div className="p-8 pb-4 flex items-center justify-between bg-white dark:bg-slate-900 z-10 border-b border-slate-50 dark:border-slate-800 flex-none">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Cases by Department</h3>
                                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1">Volume per college</p>
@@ -226,8 +229,8 @@ export default function System({
                     </div>
 
                     {/* 4. Top Violations (Spans 1 Col) */}
-                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
-                        <div className="p-8 pb-4 flex items-center justify-between border-b border-slate-50 flex-none bg-white dark:bg-slate-900 z-10">
+                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
+                        <div className="p-8 pb-4 flex items-center justify-between border-b border-slate-50 dark:border-slate-800 flex-none bg-white dark:bg-slate-900 z-10">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Top Violations</h3>
                                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1">Most frequent infractions</p>
@@ -272,8 +275,9 @@ export default function System({
                         </div>
                     </div>
 
-                </div>
-            </div>
+                </MotionItem>
+
+            </PageMotion>
             
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {

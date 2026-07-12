@@ -21,7 +21,7 @@ class StudentFactory extends Factory
         return [
             'full_name' => fake()->name(),
             'section' => 'A',
-            'year_level' => '1',
+            'year_level' => '1st Year',
             'department' => $department,
             'email' => fake()->unique()->safeEmail(),
             'guardian_name' => fake()->name(),

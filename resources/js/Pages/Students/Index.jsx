@@ -6,9 +6,16 @@ import {
     Users, Search, Filter, X, UploadCloud, UserPlus, 
     Eye, Edit, Trash2, FilePlus, GraduationCap, TrendingUp, Link as LinkIcon
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import useInertiaLoading from '@/hooks/useInertiaLoading';
+import { ListPageSkeleton } from '@/Components/ui/Skeleton';
+import EmptyState from '@/Components/EmptyState';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import FilterBar, { filterFieldClass, filterLabelClass } from '@/Components/FilterBar';
+import { YEAR_LEVELS } from '@/constants/studentForm';
+import showUndoToast from '@/lib/undoToast';
 
 export default function Index({ auth, students, departments, summary, filterAcademicYears, filters }) {
+    const isLoading = useInertiaLoading();
     const [search, setSearch] = useState(filters?.search || '');
     const [department, setDepartment] = useState(filters?.department || '');
     const [yearLevel, setYearLevel] = useState(filters?.yearLevel || '');
@@ -37,83 +44,48 @@ export default function Index({ auth, students, departments, summary, filterAcad
     };
 
 
-    const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Are you sure you want to delete this student profile?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e11d48',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Yes, Delete',
-            cancelButtonText: 'Cancel',
-            customClass: {
-                popup: 'rounded-2xl border border-slate-100 shadow-xl',
-                confirmButton: 'px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150',
-                cancelButton: 'px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150 ml-3',
+    const [deleteStudentId, setDeleteStudentId] = useState(null);
+    const [showGraduateDialog, setShowGraduateDialog] = useState(false);
+    const [graduateYear, setGraduateYear] = useState('');
+    const [graduateError, setGraduateError] = useState('');
+    const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
+
+    const handleDelete = (id) => setDeleteStudentId(id);
+
+    const confirmDelete = () => {
+        const id = deleteStudentId;
+        setDeleteStudentId(null);
+        router.delete(route('students.destroy', id), {
+            onSuccess: () => {
+                showUndoToast('Student moved to trash', () => {
+                    router.post(route('students.restore', id));
+                });
             },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('students.destroy', id));
-            }
         });
     };
 
     const handleGraduate = () => {
-        Swal.fire({
-            title: 'Graduate 4th Years',
-            text: 'Enter the Academic Year for this batch (e.g., SY 2023-2024). This action will graduate and archive ALL 4th-year students.',
-            input: 'text',
-            inputPlaceholder: 'SY 2023-2024',
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Yes, Graduate',
-            cancelButtonText: 'Cancel',
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'You need to write an academic year!';
-                }
-            },
-            customClass: {
-                popup: 'rounded-2xl border border-slate-100 shadow-xl',
-                confirmButton: 'px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150',
-                cancelButton: 'px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150 ml-3',
-                input: 'w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mt-4 mx-auto !w-11/12'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed && result.value) {
-                router.post(route('students.graduate_fourth_years'), {
-                    academic_year: result.value
-                });
-            }
-        });
+        setGraduateYear('');
+        setGraduateError('');
+        setShowGraduateDialog(true);
     };
 
-    const handlePromote = () => {
-        Swal.fire({
-            title: 'Confirm Promotion',
-            text: 'Are you sure you want to promote all 1st, 2nd, and 3rd year students to the next year level?',
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonColor: '#3b82f6',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Yes, Promote',
-            cancelButtonText: 'Cancel',
-            customClass: {
-                popup: 'rounded-2xl border border-slate-100 shadow-xl',
-                confirmButton: 'px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150',
-                cancelButton: 'px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150 ml-3',
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('students.promote'));
-            }
+    const confirmGraduate = () => {
+        if (!graduateYear.trim()) {
+            setGraduateError('Please enter an academic year.');
+            return;
+        }
+        router.post(route('students.graduate_fourth_years'), {
+            academic_year: graduateYear,
         });
+        setShowGraduateDialog(false);
+    };
+
+    const handlePromote = () => setShowPromoteConfirm(true);
+
+    const confirmPromote = () => {
+        router.post(route('students.promote'));
+        setShowPromoteConfirm(false);
     };
 
     const containerVariants = {
@@ -133,6 +105,55 @@ export default function Index({ auth, students, departments, summary, filterAcad
         >
             <Head title="Student Records" />
 
+            <ConfirmDialog
+                open={!!deleteStudentId}
+                onClose={() => setDeleteStudentId(null)}
+                onConfirm={confirmDelete}
+                title="Delete this student profile?"
+                description="The student will be moved to the trash. You can undo this right after, or restore them later from the Trash Bin."
+                confirmLabel="Yes, Delete"
+                destructive
+            />
+
+            <ConfirmDialog
+                open={showGraduateDialog}
+                onClose={() => setShowGraduateDialog(false)}
+                onConfirm={confirmGraduate}
+                title="Graduate 4th Years"
+                description="This will graduate and archive ALL 4th-year students. Enter the academic year for this batch."
+                confirmLabel="Yes, Graduate"
+            >
+                <div>
+                    <label htmlFor="graduate-year" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Academic Year <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                        id="graduate-year"
+                        type="text"
+                        value={graduateYear}
+                        onChange={(e) => { setGraduateYear(e.target.value); setGraduateError(''); }}
+                        placeholder="SY 2023-2024"
+                        className="form-input"
+                        autoFocus
+                    />
+                    {graduateError && <p className="text-rose-500 text-xs mt-1.5 font-semibold">{graduateError}</p>}
+                </div>
+            </ConfirmDialog>
+
+            <ConfirmDialog
+                open={showPromoteConfirm}
+                onClose={() => setShowPromoteConfirm(false)}
+                onConfirm={confirmPromote}
+                title="Confirm Promotion"
+                description="Promote all 1st, 2nd, and 3rd year students to the next year level?"
+                confirmLabel="Yes, Promote"
+            />
+
+            {isLoading ? (
+                <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <ListPageSkeleton />
+                </div>
+            ) : (
             <motion.div 
                 className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
                 variants={containerVariants}
@@ -170,12 +191,12 @@ export default function Index({ auth, students, departments, summary, filterAcad
                             
                             {/* Standard Actions */}
                             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href={route('students.import_form')} className="px-4 sm:px-5 py-2.5 bg-white/10 dark:bg-slate-900/10 border border-white/20 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-white/20 transition-all backdrop-blur-md flex items-center justify-center gap-2 shadow-sm">
-                                    <UploadCloud className="w-4 h-4" />
+                                <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href={route('students.import_form')} className="px-4 sm:px-5 py-2.5 bg-white/10 dark:bg-slate-900/10 border border-white/20 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-white/20 transition-all backdrop-blur-md inline-flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
+                                    <UploadCloud className="w-4 h-4 shrink-0" />
                                     Import Data
                                 </motion.a>
-                                <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href={route('students.create')} className="px-4 sm:px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5">
-                                    <UserPlus className="w-4 h-4" />
+                                <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href={route('students.create')} className="px-4 sm:px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 whitespace-nowrap">
+                                    <UserPlus className="w-4 h-4 shrink-0" />
                                     Add Student
                                 </motion.a>
                             </div>
@@ -184,83 +205,36 @@ export default function Index({ auth, students, departments, summary, filterAcad
                 </motion.div>
 
                 {/* Search & Filters */}
-                <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 dark:border-slate-800 shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                        <div className="md:col-span-2">
-                            <label htmlFor="student-search" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Records</label>
-                            <div className="relative">
-                                <input 
-                                    id="student-search"
-                                    name="search"
-                                    type="search"
-                                    autoComplete="off"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search by name, ID, or email..." 
-                                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-slate-400" 
-                                />
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 dark:text-slate-400">
-                                    <Search className="w-4 h-4" />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label htmlFor="student-department" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Department</label>
-                            <select 
-                                id="student-department"
-                                name="department"
-                                value={department}
-                                onChange={(e) => setDepartment(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
-                                <option value="">All Depts</option>
-                                {departments.map((dept, index) => (
-                                    <option key={index} value={dept}>{dept}</option>
-                                ))}
+                <motion.div variants={itemVariants}>
+                    <FilterBar
+                        search={search}
+                        onSearchChange={setSearch}
+                        onClear={handleClear}
+                        placeholder="Search by name, ID, or email..."
+                        filtersClassName="grid grid-cols-1 sm:grid-cols-3 gap-4 [&>*]:min-w-0"
+                    >
+                        <div className="min-w-0">
+                            <label htmlFor="student-department" className={filterLabelClass}>Department</label>
+                            <select id="student-department" value={department} onChange={(e) => setDepartment(e.target.value)} className={filterFieldClass}>
+                                <option value="">All Departments</option>
+                                {departments.map((dept, index) => <option key={index} value={dept}>{dept}</option>)}
                             </select>
                         </div>
-                        
-                        <div>
-                            <label htmlFor="student-year-level" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Year Level</label>
-                            <select 
-                                id="student-year-level"
-                                name="yearLevel"
-                                value={yearLevel}
-                                onChange={(e) => setYearLevel(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
+                        <div className="min-w-0">
+                            <label htmlFor="student-year-level" className={filterLabelClass}>Year Level</label>
+                            <select id="student-year-level" value={yearLevel} onChange={(e) => setYearLevel(e.target.value)} className={filterFieldClass}>
                                 <option value="">All Levels</option>
-                                {['1st Year', '2nd Year', '3rd Year', '4th Year'].map((year, index) => (
-                                    <option key={index} value={year}>{year}</option>
-                                ))}
+                                {YEAR_LEVELS.map((year) => <option key={year} value={year}>{year}</option>)}
                             </select>
                         </div>
-
-                        <div>
-                            <label htmlFor="student-academic-year" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">A. Year</label>
-                            <select 
-                                id="student-academic-year"
-                                name="academicYear"
-                                value={academicYear}
-                                onChange={(e) => setAcademicYear(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
+                        <div className="min-w-0">
+                            <label htmlFor="student-academic-year" className={filterLabelClass}>Academic Year</label>
+                            <select id="student-academic-year" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className={filterFieldClass}>
                                 <option value="All">All Years</option>
-                                {filterAcademicYears?.map((year, index) => (
-                                    <option key={index} value={year}>{year}</option>
-                                ))}
+                                {filterAcademicYears?.map((year, index) => <option key={index} value={year}>{year}</option>)}
                             </select>
                         </div>
-
-                        <button 
-                            onClick={handleClear}
-                            className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white dark:hover:text-white rounded-xl text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <X className="w-4 h-4" />
-                            Clear
-                        </button>
-                    </div>
+                    </FilterBar>
                 </motion.div>
 
                 {/* Records List */}
@@ -309,7 +283,7 @@ export default function Index({ auth, students, departments, summary, filterAcad
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell text-left md:text-right text-sm font-medium mt-4 md:mt-0 border-t border-slate-100 dark:border-slate-800 md:border-none pt-4 md:pt-4">
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell text-left md:text-right text-sm font-medium mt-4 md:mt-0 border-t border-slate-100 dark:border-slate-800 md:border-none pt-4 md:pt-4 pr-16 lg:pr-6">
                                                 <div className="flex items-center justify-start md:justify-end gap-2">
                                                     <Link 
                                                         href={route('cases.create', { student_id: student.id })} 
@@ -320,22 +294,25 @@ export default function Index({ auth, students, departments, summary, filterAcad
                                                     </Link>
                                                     <a 
                                                         href={route('students.show', student.id)} 
-                                                        className="p-2 text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 dark:hover:bg-indigo-500/10 rounded-xl transition-all duration-150" 
+                                                        className="p-2 text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 dark:hover:bg-indigo-500/10 rounded-xl transition-all duration-150"
                                                         title="View Profile"
+                                                        aria-label={`View profile of ${student.full_name}`}
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </a>
                                                     <a 
                                                         href={route('students.edit', student.id)} 
-                                                        className="p-2 text-slate-400 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:bg-amber-900/20 dark:hover:bg-amber-500/10 rounded-xl transition-all duration-150" 
+                                                        className="p-2 text-slate-400 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:bg-amber-900/20 dark:hover:bg-amber-500/10 rounded-xl transition-all duration-150"
                                                         title="Edit Profile"
+                                                        aria-label={`Edit profile of ${student.full_name}`}
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </a>
                                                     <button 
                                                         onClick={() => handleDelete(student.id)} 
-                                                        className="p-2 text-slate-400 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:bg-rose-900/20 dark:hover:bg-rose-500/10 rounded-xl transition-all duration-150" 
+                                                        className="p-2 text-slate-400 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:bg-rose-900/20 dark:hover:bg-rose-500/10 rounded-xl transition-all duration-150"
                                                         title="Delete Profile"
+                                                        aria-label={`Delete profile of ${student.full_name}`}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -345,17 +322,17 @@ export default function Index({ auth, students, departments, summary, filterAcad
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="px-6 py-16 text-center">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-4 border border-slate-100 dark:border-slate-700">
-                                                    <Users className="w-8 h-8 text-slate-400 dark:text-slate-500 dark:text-slate-400" />
-                                                </div>
-                                                <h3 className="text-base font-bold text-slate-900 dark:text-white">No Students Found</h3>
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xs">Refine your search parameters or add a new student.</p>
-                                                <a href={route('students.create')} className="mt-6 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors">
-                                                    Add First Student
-                                                </a>
-                                            </div>
+                                        <td colSpan="4">
+                                            <EmptyState
+                                                icon={Users}
+                                                title="No Students Found"
+                                                message="Refine your search parameters or add a new student."
+                                                action={
+                                                    <a href={route('students.create')} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors">
+                                                        Add First Student
+                                                    </a>
+                                                }
+                                            />
                                         </td>
                                     </tr>
                                 )}
@@ -389,6 +366,7 @@ export default function Index({ auth, students, departments, summary, filterAcad
                     )}
                 </motion.div>
             </motion.div>
+            )}
         </AuthenticatedLayout>
     );
 }

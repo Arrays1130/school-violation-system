@@ -3,6 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, CalendarPlus, CalendarClock, MapPin, Users, FileCheck2 } from 'lucide-react';
 import InputError from '@/Components/InputError';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function Create({ auth, studentCase }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -26,10 +28,19 @@ export default function Create({ auth, studentCase }) {
         >
             <Head title="Schedule Hearing" />
 
-            <div className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <PageMotion className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+                <MotionItem>
+                    <Breadcrumbs items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Violation Cases', href: route('cases.index') },
+                        { label: `Case #${studentCase.id}`, href: route('cases.show', studentCase.id) },
+                        { label: 'Schedule Hearing' },
+                    ]} />
+                </MotionItem>
                 
                 {/* Modern Header */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-6 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-6 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
                     
@@ -51,8 +62,9 @@ export default function Create({ auth, studentCase }) {
                             </div>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
+                <MotionItem>
                 <form onSubmit={submit} className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden">
                     <div className="p-8 space-y-8">
                         
@@ -157,7 +169,8 @@ export default function Create({ auth, studentCase }) {
                         </button>
                     </div>
                 </form>
-            </div>
+                </MotionItem>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

@@ -11,6 +11,7 @@ import 'services/security_service.dart';
 import 'services/session_service.dart';
 import 'services/push_bootstrap.dart';
 import 'services/push_navigation_service.dart';
+import 'widgets/branded_splash.dart';
 import 'api_service.dart';
 
 void main() {
@@ -167,31 +168,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppTheme.bgLight,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryLight,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.shield_outlined,
-                  color: AppTheme.primary,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const CircularProgressIndicator(color: AppTheme.primary),
-            ],
-          ),
-        ),
-      );
+      return const BrandedSplash();
     }
 
     if (!_isLoggedIn) return const LoginScreen();

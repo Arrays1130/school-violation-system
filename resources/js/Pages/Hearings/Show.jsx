@@ -1,11 +1,12 @@
-import React from 'react';
-import Swal from 'sweetalert2';
+import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
     ArrowLeft, Gavel, Edit3, ShieldAlert, Calendar, MapPin, Users, Quote, FileCheck2, Printer, FileEdit, Play, CheckCircle2
 } from 'lucide-react';
-
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 export default function Show({ auth, hearing }) {
     
     // Format dates
@@ -15,30 +16,31 @@ export default function Show({ auth, hearing }) {
     const caseStatus = hearing.case?.status;
     const isStaff = auth?.user?.role === 'admin' || auth?.user?.role === 'super_admin';
 
-    const handleStartHearing = () => {
-        Swal.fire({
-            title: 'Start Hearing?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#4f46e5',
-            confirmButtonText: 'Start Hearing',
-        }).then((result) => {
-            if (result.isConfirmed) router.post(route('hearings.start', hearing.id));
-        });
+    const [showStartConfirm, setShowStartConfirm] = useState(false);
+    const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+    const [sanction, setSanction] = useState('');
+    const [sanctionError, setSanctionError] = useState('');
+
+    const handleStartHearing = () => setShowStartConfirm(true);
+
+    const confirmStartHearing = () => {
+        router.post(route('hearings.start', hearing.id));
+        setShowStartConfirm(false);
     };
 
     const handleCompleteHearing = () => {
-        Swal.fire({
-            title: 'Complete Hearing',
-            input: 'text',
-            inputLabel: 'Sanction / Resolution',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'Close Case',
-            inputValidator: (value) => (!value ? 'Sanction is required.' : undefined),
-        }).then((result) => {
-            if (result.isConfirmed) router.post(route('hearings.complete', hearing.id), { sanction: result.value });
-        });
+        setSanction('');
+        setSanctionError('');
+        setShowCompleteDialog(true);
+    };
+
+    const confirmCompleteHearing = () => {
+        if (!sanction.trim()) {
+            setSanctionError('Sanction is required.');
+            return;
+        }
+        router.post(route('hearings.complete', hearing.id), { sanction });
+        setShowCompleteDialog(false);
     };
 
     return (
@@ -48,10 +50,55 @@ export default function Show({ auth, hearing }) {
         >
             <Head title={`Hearing - Case #${hearing.case.id}`} />
 
-            <div className="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <ConfirmDialog
+                open={showStartConfirm}
+                onClose={() => setShowStartConfirm(false)}
+                onConfirm={confirmStartHearing}
+                title="Start Hearing?"
+                description="This will mark the hearing as in progress and update the case status."
+                confirmLabel="Start Hearing"
+            />
+
+            <ConfirmDialog
+                open={showCompleteDialog}
+                onClose={() => setShowCompleteDialog(false)}
+                onConfirm={confirmCompleteHearing}
+                title="Complete Hearing"
+                description="Enter the sanction or resolution reached during this hearing. This will close the case."
+                confirmLabel="Close Case"
+            >
+                <div>
+                    <label htmlFor="hearing-sanction" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Sanction / Resolution <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                        id="hearing-sanction"
+                        type="text"
+                        value={sanction}
+                        onChange={(e) => { setSanction(e.target.value); setSanctionError(''); }}
+                        placeholder="e.g. Written apology and community service"
+                        className="form-input"
+                        autoFocus
+                    />
+                    {sanctionError && <p className="text-rose-500 text-xs mt-1.5 font-semibold">{sanctionError}</p>}
+                </div>
+            </ConfirmDialog>
+
+            <PageMotion className="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
+                <MotionItem>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Dashboard', href: route('dashboard') },
+                            { label: 'All Cases', href: route('cases.index') },
+                            { label: `Case #${hearing.case.id}`, href: route('cases.show', hearing.case.id) },
+                            { label: 'Hearing' },
+                        ]}
+                    />
+                </MotionItem>
                 
                 {/* Breadcrumb & Actions Panel */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
                     
@@ -72,7 +119,7 @@ export default function Show({ auth, hearing }) {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             {isStaff && caseStatus === 'Hearing Scheduled' && (
                                 <button type="button" onClick={handleStartHearing} className="px-5 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-400 transition-all flex items-center gap-2">
                                     <Play className="w-4.5 h-4.5" />
@@ -91,10 +138,10 @@ export default function Show({ auth, hearing }) {
                             </Link>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
                 {/* Official Digital Document Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                <MotionItem className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
                     
                     {/* Document Header */}
                     <div className="bg-white dark:bg-slate-900 px-8 py-8 border-b border-gray-100 dark:border-slate-800">
@@ -206,9 +253,9 @@ export default function Show({ auth, hearing }) {
                             )}
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
-            </div>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

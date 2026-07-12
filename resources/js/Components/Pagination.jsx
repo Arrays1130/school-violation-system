@@ -18,7 +18,7 @@ export default function Pagination({ links }) {
                         className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border ${
                             link.active
                                 ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 hover:text-indigo-600 dark:text-indigo-400'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400'
                         }`}
                         dangerouslySetInnerHTML={{ __html: link.label }}
                     />

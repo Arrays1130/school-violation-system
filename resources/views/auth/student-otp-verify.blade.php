@@ -13,17 +13,6 @@
         </div>
 
         <div class="bg-white/95 backdrop-blur-xl rounded-2xl ring-1 ring-slate-200/50 shadow-2xl p-6 sm:p-8">
-            @if (session('error'))
-                <div class="mb-4 bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold border border-red-100 text-center">
-                    {{ session('error') }}
-                </div>
-            @endif
-            @if (session('success'))
-                <div class="mb-4 bg-green-50 text-green-600 p-4 rounded-xl text-sm font-semibold border border-green-100 text-center">
-                    {{ session('success') }}
-                </div>
-            @endif
-
             <form action="{{ route('student.register.verify') }}" method="POST">
                 @csrf
                 <div class="mb-6">

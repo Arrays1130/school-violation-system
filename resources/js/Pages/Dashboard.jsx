@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Users2, FileText, AlertCircle, Gavel, ArrowUpRight, TrendingUp, ShieldAlert, Zap, Layers, Globe, ChevronRight, Plus, Activity, X, FilePlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
+import StatusBadge from '@/Components/StatusBadge';
 import {
     Chart as ChartJS,
     CategoryScale, LinearScale, BarElement,
@@ -12,28 +13,12 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import axios from 'axios';
-
+import useInertiaLoading from '@/hooks/useInertiaLoading';
+import { BentoSkeleton } from '@/Components/ui/Skeleton';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const statusConfig = {
-    'Pending': { bg: 'bg-amber-100 dark:bg-amber-500/10', text: 'text-amber-800 dark:text-amber-400', dot: 'bg-amber-500', border: 'border-amber-200 dark:border-amber-500/20' },
-    'Open': { bg: 'bg-rose-100 dark:bg-rose-500/10', text: 'text-rose-800 dark:text-rose-400', dot: 'bg-rose-500', border: 'border-rose-200 dark:border-rose-500/20' },
-    'Closed': { bg: 'bg-emerald-100 dark:bg-emerald-500/10', text: 'text-emerald-800 dark:text-emerald-400', dot: 'bg-emerald-500', border: 'border-emerald-200 dark:border-emerald-500/20' },
-    'Hearing Scheduled': { bg: 'bg-blue-100 dark:bg-blue-500/10', text: 'text-blue-800 dark:text-blue-400', dot: 'bg-blue-500', border: 'border-blue-200 dark:border-blue-500/20' },
-    'Endorsed': { bg: 'bg-purple-100 dark:bg-purple-500/10', text: 'text-purple-800 dark:text-purple-400', dot: 'bg-purple-500', border: 'border-purple-200 dark:border-purple-500/20' },
-};
-
-function StatusBadge({ status }) {
-    const cfg = statusConfig[status] || { bg: 'bg-slate-100', text: 'text-slate-600 dark:text-slate-400', dot: 'bg-slate-400', border: 'border-slate-200 dark:border-slate-700' };
-    return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase border ${cfg.border} ${cfg.bg} ${cfg.text}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shadow-sm`}></span>
-            {status}
-        </span>
-    );
-}
-
 export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity, studentsWithViolations = [], recentCases = [], monthlyTrend = {}, topViolations = [], trends = {}, academicYears = [], selectedAcademicYear, filterAcademicYears = [] }) {
+    const isLoading = useInertiaLoading();
     const [severityFilter, setSeverityFilter] = useState(null);
     const [selectedYear, setSelectedYear] = useState('');
     const [graduatedStudents, setGraduatedStudents] = useState([]);
@@ -292,6 +277,11 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             {/* Sub-header background element */}
             <div className="absolute top-0 left-0 w-full h-[40vh] bg-slate-50 dark:bg-slate-900 -z-10 border-b border-slate-200 dark:border-slate-800"></div>
 
+            {isLoading ? (
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <BentoSkeleton />
+                </div>
+            ) : (
             <motion.div
                 className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8"
                 variants={containerVariants}
@@ -305,7 +295,8 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                         <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">System Dashboard</h1>
                         <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Welcome back, <span className="text-slate-800 dark:text-white font-bold">{auth.user.name}</span>. Here is your overview.</p>
                     </div>
-                    <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                         <span className="text-sm font-bold text-slate-500 dark:text-slate-400 pl-3 uppercase tracking-wider">A.Y.</span>
                         <select
                             className="text-sm border-0 bg-slate-50 dark:bg-slate-900 font-bold text-slate-900 dark:text-white rounded-lg focus:ring-0 py-2 pl-3 pr-8 cursor-pointer"
@@ -317,6 +308,7 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                 <option key={year} value={year}>{year}</option>
                             ))}
                         </select>
+                        </div>
                     </div>
                 </motion.div>
 
@@ -559,6 +551,7 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                 </motion.div>
 
             </motion.div>
+            )}
         </AuthenticatedLayout>
     );
 }

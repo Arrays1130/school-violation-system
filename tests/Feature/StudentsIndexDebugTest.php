@@ -44,4 +44,43 @@ class StudentsIndexDebugTest extends TestCase
             ->get(route('students.index'))
             ->assertOk();
     }
+
+    public function test_dean_summary_only_counts_own_department_students(): void
+    {
+        $dean = User::factory()->dean('CCE')->create();
+        Student::factory()->inDepartment('CCE')->create(['academic_year' => 'SY 2024-2025']);
+        Student::factory()->inDepartment('CBAE')->create(['academic_year' => 'SY 2024-2025']);
+
+        $this->actingAs($dean)
+            ->get(route('students.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Students/Index')
+                ->where('summary.total', 1)
+                ->where('summary.clean', 1)
+                ->has('students.data', 1)
+            );
+    }
+
+    public function test_year_level_filter_matches_legacy_numeric_values(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $firstYear = Student::factory()->create([
+            'year_level' => '1',
+            'academic_year' => 'SY 2024-2025',
+        ]);
+        Student::factory()->create([
+            'year_level' => '2nd Year',
+            'academic_year' => 'SY 2024-2025',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('students.index', ['yearLevel' => '1st Year']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Students/Index')
+                ->has('students.data', 1)
+                ->where('students.data.0.id', $firstYear->id)
+            );
+    }
 }

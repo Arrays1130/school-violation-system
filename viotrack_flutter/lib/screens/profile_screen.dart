@@ -8,7 +8,9 @@ import '../theme/app_theme.dart';
 import '../services/security_service.dart';
 import '../widgets/app_ui.dart';
 import '../widgets/skeleton_loader.dart';
+import '../utils/page_transitions.dart';
 import 'login_screen.dart';
+import 'policy_lookup_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userEmail = '';
   String _userRole = '';
   String _userDepartment = '';
-  String _userInitials = 'D';
 
   @override
   void initState() {
@@ -50,10 +51,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final email = (user['email'] ?? '').toString().trim();
         final role = (user['role'] ?? 'dean').toString();
         final dept = (user['department'] ?? '').toString().trim();
-        final parts = name.split(' ').where((p) => p.isNotEmpty).toList();
-        final initials = parts.length >= 2
-            ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
-            : (name.isNotEmpty ? name[0].toUpperCase() : 'D');
 
         if (mounted) {
           setState(() {
@@ -61,7 +58,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _userEmail = email;
             _userRole = role;
             _userDepartment = dept;
-            _userInitials = initials;
             _isHardwareAvailable = available;
             _isBiometricEnabled = enabled;
             _biometricLabel = label;
@@ -216,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      AppPageTransitions.fadeScale(const LoginScreen()),
       (_) => false,
     );
   }
@@ -272,26 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             bottom: Row(
               children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: AppTheme.softShadow,
-                  ),
-                  child: Center(
-                    child: Text(
-                      _userInitials,
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
+                AppUi.initialsAvatar(_userName, size: 64, radius: 20),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -338,17 +315,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 AppTheme.bottomNavClearance,
               ),
               children: [
-                _section('Account'),
-                _tile(Icons.badge_outlined, 'Role', _userRole),
+                AppUi.staggerIn(_section('Account'), 0),
+                AppUi.staggerIn(
+                  _tile(Icons.badge_outlined, 'Role', _userRole),
+                  1,
+                ),
                 if (_userDepartment.isNotEmpty)
-                  _tile(
-                    Icons.apartment_outlined,
-                    'Department',
-                    _userDepartment,
+                  AppUi.staggerIn(
+                    _tile(
+                      Icons.apartment_outlined,
+                      'Department',
+                      _userDepartment,
+                    ),
+                    2,
                   ),
                 const SizedBox(height: 16),
-                _section('Security'),
-                AppUi.surfaceCard(
+                AppUi.staggerIn(_section('Security'), 3),
+                AppUi.staggerIn(
+                  AppUi.surfaceCard(
                   padding: const EdgeInsets.all(16),
                   clip: true,
                   child: Column(
@@ -436,8 +420,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
+                4,
+                ),
                 const SizedBox(height: 24),
-                SizedBox(
+                AppUi.staggerIn(
+                  SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        AppPageTransitions.fadeScale(const PolicyLookupScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.auto_awesome_outlined, size: 20),
+                    label: Text('Policy Lookup (Nexus AI)', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: BorderSide(color: AppTheme.primary.withValues(alpha: 0.35)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                  ),
+                  5,
+                ),
+                const SizedBox(height: 12),
+                AppUi.staggerIn(
+                  SizedBox(
                   height: 50,
                   child: OutlinedButton.icon(
                     onPressed: _logout,
@@ -463,14 +473,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
+                5,
+                ),
                 const SizedBox(height: 20),
-                Text(
+                AppUi.staggerIn(
+                  Text(
                   '${AppTheme.appName} v${AppTheme.appVersion} · I-LINK Dean Portal',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textHint,
                   ),
+                ),
+                6,
                 ),
               ],
             ),

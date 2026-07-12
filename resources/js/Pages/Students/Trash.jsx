@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
-import { Archive, Trash2, RotateCcw, Clock, Wind, ChevronRight } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { Head, router } from '@inertiajs/react';
+import { Archive, Trash2, RotateCcw, Clock, Wind } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 import TrashTabs from '@/Components/TrashTabs';
 import Pagination from '@/Components/Pagination';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import EmptyState from '@/Components/EmptyState';
 
 function getInitials(fullName) {
     if (!fullName) return '??';
@@ -30,56 +33,41 @@ function formatDeletedAt(dateStr) {
     });
 }
 
-const swalClass = {
-    popup: 'rounded-2xl border border-slate-100 shadow-xl',
-    confirmButton: 'px-5 py-2.5 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150',
-    cancelButton: 'px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-xl font-bold text-sm shadow-sm transition-all duration-150 ml-3',
-};
 
 export default function Trash({ auth, students }) {
+    const [confirmAction, setConfirmAction] = useState(null);
+
     const handleRestore = (id) => {
-        Swal.fire({
-            title: 'Restore Student?',
-            text: 'This will bring the student and all their violation records back to the active list.',
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Restore Student',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#10b981',
-            cancelButtonColor: '#64748b',
-            customClass: {
-                ...swalClass,
-                confirmButton: swalClass.confirmButton + ' bg-emerald-500 hover:bg-emerald-600',
-            },
-            buttonsStyling: false,
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('students.restore', id));
-            }
-        });
+        setConfirmAction({ type: 'restore', id });
     };
 
     const handleForceDelete = (id) => {
-        Swal.fire({
-            title: 'Permanently Delete Student?',
-            text: 'This cannot be undone. The student and all records will be erased forever.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Delete Permanently',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#e11d48',
-            cancelButtonColor: '#64748b',
-            customClass: {
-                ...swalClass,
-                confirmButton: swalClass.confirmButton + ' bg-rose-600 hover:bg-rose-700',
-            },
-            buttonsStyling: false,
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('students.force-delete', id));
-            }
-        });
+        setConfirmAction({ type: 'delete', id });
     };
+
+    const handleConfirm = () => {
+        if (!confirmAction) return;
+        if (confirmAction.type === 'restore') {
+            router.post(route('students.restore', confirmAction.id));
+        } else {
+            router.delete(route('students.force-delete', confirmAction.id));
+        }
+        setConfirmAction(null);
+    };
+
+    const dialogProps = confirmAction?.type === 'restore'
+        ? {
+            title: 'Restore Student?',
+            description: 'This will bring the student and all their violation records back to the active list.',
+            confirmLabel: 'Yes, Restore Student',
+            destructive: false,
+        }
+        : {
+            title: 'Permanently Delete Student?',
+            description: 'This cannot be undone. The student and all records will be erased forever.',
+            confirmLabel: 'Yes, Delete Permanently',
+            destructive: true,
+        };
 
     return (
         <AuthenticatedLayout
@@ -88,20 +76,23 @@ export default function Trash({ auth, students }) {
         >
             <Head title="Trash Bin - Students" />
 
-            <div className="container mx-auto px-4 py-6 max-w-7xl">
-                <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
-                    <Link href={route('dashboard')} className="hover:text-indigo-600 font-medium transition-colors">
-                        Dashboard
-                    </Link>
-                    <ChevronRight className="w-4 h-4 text-slate-300" />
-                    <Link href={route('students.index')} className="hover:text-indigo-600 font-medium transition-colors">
-                        Students
-                    </Link>
-                    <ChevronRight className="w-4 h-4 text-slate-300" />
-                    <span className="text-slate-800 font-bold">Trash Bin</span>
-                </div>
+            <ConfirmDialog
+                open={!!confirmAction}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={handleConfirm}
+                {...dialogProps}
+            />
 
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-900 to-red-950 px-6 py-5 shadow-xl shadow-red-900/10 mb-6 border border-red-900/20">
+            <PageMotion className="container mx-auto px-4 py-6 max-w-7xl">
+                <MotionItem className="mb-6">
+                    <Breadcrumbs items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Students', href: route('students.index') },
+                        { label: 'Trash Bin' },
+                    ]} />
+                </MotionItem>
+
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-900 to-red-950 px-6 py-5 shadow-xl shadow-red-900/10 mb-6 border border-red-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(244,63,94,0.15),_transparent_50%)]" />
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Trash2 className="w-20 h-20 text-white" />
@@ -116,43 +107,43 @@ export default function Trash({ auth, students }) {
                             Recover deleted students or permanently remove them from the system.
                         </p>
                     </div>
-                </div>
+                </MotionItem>
 
                 <TrashTabs active="students" />
 
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <MotionItem className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800/80 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-50/50 border-b border-slate-100">
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student Details</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Department</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Deleted At</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student Details</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Department</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Deleted At</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {students.data?.length > 0 ? (
                                     students.data.map((student) => (
-                                        <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
+                                        <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center text-sm font-bold shadow-sm">
+                                                    <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20 flex items-center justify-center text-sm font-bold shadow-sm">
                                                         {getInitials(student.full_name)}
                                                     </div>
                                                     <div>
-                                                        <div className="text-sm font-bold text-slate-800">{student.full_name}</div>
-                                                        <div className="text-xs font-medium text-slate-500 mt-0.5">{student.email}</div>
+                                                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100">{student.full_name}</div>
+                                                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">{student.email}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="inline-flex items-center px-3 py-1 rounded-lg bg-slate-50 border border-slate-200/60 text-xs font-semibold text-slate-600">
+                                                <div className="inline-flex items-center px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
                                                     {(student.department || '').trim()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                                                <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
                                                     <Clock className="w-4 h-4 text-slate-400" />
                                                     {formatDeletedAt(student.deleted_at)}
                                                 </div>
@@ -181,16 +172,12 @@ export default function Trash({ auth, students }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-24 text-center">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
-                                                    <Wind className="w-12 h-12 text-slate-300" />
-                                                </div>
-                                                <h3 className="text-xl font-bold text-slate-800 mb-2">Trash is empty</h3>
-                                                <p className="text-sm font-medium text-slate-500 max-w-sm mx-auto">
-                                                    No deleted students found. Students you delete will appear here for recovery.
-                                                </p>
-                                            </div>
+                                        <td colSpan={4}>
+                                            <EmptyState
+                                                icon={Wind}
+                                                title="Trash is empty"
+                                                message="No deleted students found. Students you delete will appear here for recovery."
+                                            />
                                         </td>
                                     </tr>
                                 )}
@@ -199,12 +186,12 @@ export default function Trash({ auth, students }) {
                     </div>
 
                     {students.links && students.links.length > 3 && (
-                        <div className="bg-slate-50/50 border-t border-slate-100 px-6 py-4">
+                        <div className="bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 px-6 py-4">
                             <Pagination links={students.links} />
                         </div>
                     )}
-                </div>
-            </div>
+                </MotionItem>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

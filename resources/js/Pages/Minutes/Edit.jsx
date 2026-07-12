@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Edit2, Bookmark, Type, MapPin, Calendar, Save } from 'lucide-react';
 import InputError from '@/Components/InputError';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 
 export default function Edit({ auth, meetingMinute }) {
     // Format meeting_date to YYYY-MM-DDTHH:mm if it isn't already
@@ -30,6 +31,12 @@ export default function Edit({ auth, meetingMinute }) {
             <Head title="Edit Minutes" />
 
             <div className="max-w-3xl mx-auto space-y-8 py-8 px-4 sm:px-6 lg:px-8">
+                <Breadcrumbs items={[
+                    { label: 'Dashboard', href: route('dashboard') },
+                    { label: 'Minutes & Documents', href: route('meeting-minutes.index') },
+                    { label: meetingMinute.title, href: route('meeting-minutes.show', meetingMinute.id) },
+                    { label: 'Edit' },
+                ]} />
                 {/* Modern Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>

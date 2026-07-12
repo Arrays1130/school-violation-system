@@ -5,6 +5,7 @@ import {
     UserSearch, AlertCircle, FileWarning, ArrowRight, ArrowLeft, 
     CheckCircle2, FilePlus, ShieldAlert, UploadCloud, X
 } from 'lucide-react';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 
 export default function Create({ auth, student, violations, students }) {
     const [step, setStep] = useState(student ? 2 : 1);
@@ -83,9 +84,15 @@ export default function Create({ auth, student, violations, students }) {
         e.preventDefault();
         post(route('cases.store'), {
             forceFormData: true,
-            onSuccess: () => {
-                // Flash message will be handled by the backend redirect
-            }
+            onError: () => {
+                // Bring the first validation error into view so the user knows what to fix
+                requestAnimationFrame(() => {
+                    const firstError = document.querySelector('[data-error="true"], .form-error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            },
         });
     };
 
@@ -121,6 +128,11 @@ export default function Create({ auth, student, violations, students }) {
 
             <div className="py-8">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                    <Breadcrumbs className="mb-6" items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Violation Cases', href: route('cases.index') },
+                        { label: 'Record Violation' },
+                    ]} />
                     
                     {/* Header Banner */}
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 p-8 mb-8 shadow-2xl border border-white/5">
@@ -161,14 +173,15 @@ export default function Create({ auth, student, violations, students }) {
                                         <UserSearch className="w-5 h-5 text-slate-400 absolute left-3 top-3.5" />
                                     </div>
                                     
-                                    {errors.student_id && <p className="text-sm text-red-600 font-medium">{errors.student_id}</p>}
+                                    {errors.student_id && <p data-error="true" className="text-sm text-red-600 font-medium">{errors.student_id}</p>}
 
                                     <div className="max-h-80 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                         {filteredStudents.map(s => (
-                                            <div 
-                                                key={s.id} 
+                                            <button
+                                                type="button"
+                                                key={s.id}
                                                 onClick={() => setData('student_id', s.id)}
-                                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${data.student_id == s.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800'}`}
+                                                className={`w-full text-left p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${data.student_id == s.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                             >
                                                 <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
                                                     {s.avatar ? (
@@ -184,7 +197,7 @@ export default function Create({ auth, student, violations, students }) {
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">{s.student_number} • {s.department}</p>
                                                 </div>
                                                 {data.student_id == s.id && <CheckCircle2 className="w-6 h-6 text-rose-500" />}
-                                            </div>
+                                            </button>
                                         ))}
                                         {filteredStudents.length === 0 && (
                                             <div className="p-8 text-center text-slate-500 dark:text-slate-400">No students found.</div>
@@ -211,14 +224,15 @@ export default function Create({ auth, student, violations, students }) {
                                         <AlertCircle className="w-5 h-5 text-slate-400 absolute left-3 top-3.5" />
                                     </div>
 
-                                    {errors.violation_id && <p className="text-sm text-red-600 font-medium">{errors.violation_id}</p>}
+                                    {errors.violation_id && <p data-error="true" className="text-sm text-red-600 font-medium">{errors.violation_id}</p>}
 
                                     <div className="max-h-80 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                         {filteredViolations.map(v => (
-                                            <div 
-                                                key={v.id} 
+                                            <button
+                                                type="button"
+                                                key={v.id}
                                                 onClick={() => setData('violation_id', v.id)}
-                                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${data.violation_id == v.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800'}`}
+                                                className={`w-full text-left p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${data.violation_id == v.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                             >
                                                 <div className={`mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                                                     v.severity === 'Minor' ? 'bg-amber-400' :
@@ -230,7 +244,7 @@ export default function Create({ auth, student, violations, students }) {
                                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{v.severity}</span>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -277,7 +291,7 @@ export default function Create({ auth, student, violations, students }) {
                                                 value={data.occurred_at}
                                                 onChange={e => setData('occurred_at', e.target.value)}
                                             />
-                                            {errors.occurred_at && <p className="text-xs text-red-600 mt-1">{errors.occurred_at}</p>}
+                                            {errors.occurred_at && <p data-error="true" className="text-xs text-red-600 mt-1">{errors.occurred_at}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Witness (Optional)</label>
@@ -301,7 +315,7 @@ export default function Create({ auth, student, violations, students }) {
                                             value={data.description}
                                             onChange={e => setData('description', e.target.value)}
                                         ></textarea>
-                                        {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description}</p>}
+                                        {errors.description && <p data-error="true" className="text-xs text-red-600 mt-1">{errors.description}</p>}
                                     </div>
 
 

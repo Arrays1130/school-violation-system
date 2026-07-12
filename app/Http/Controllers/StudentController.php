@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Imports\StudentsImport;
+use App\Mail\CustomMessage;
+use App\Services\StudentImporter;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Support\YearLevel;
+use App\Support\SchoolSettings;
 
 class StudentController extends Controller
 {
@@ -38,9 +44,12 @@ class StudentController extends Controller
             $query->whereRaw('TRIM(department) = ?', [trim($request->department)]);
         }
 
-        // Year Level filter
+        // Year Level filter (accepts canonical labels and legacy numeric values)
         if ($request->has('yearLevel') && !empty($request->yearLevel)) {
-            $query->where('year_level', $request->yearLevel);
+            $aliases = YearLevel::aliasesFor($request->yearLevel);
+            if ($aliases !== []) {
+                $query->whereIn('year_level', $aliases);
+            }
         }
 
         // Academic Year filter
@@ -66,17 +75,19 @@ class StudentController extends Controller
             ->orderBy('full_name', 'asc')
             ->paginate(15)
             ->appends($request->all());
-        
-        // Get departments - trimmed and sorted
-        $departments = \App\Models\Student::selectRaw('TRIM(department) as department')
+
+        $scopedBase = \App\Models\Student::query()->forUser($request->user());
+
+        $departments = (clone $scopedBase)
+            ->selectRaw('TRIM(department) as department')
             ->distinct()
             ->orderBy('department')
             ->pluck('department')
             ->filter()
             ->values();
-        // Summary stat cards
-        $totalStudents = \App\Models\Student::count();
-        $withCases = \App\Models\Student::has('cases')->count();
+
+        $totalStudents = (clone $scopedBase)->count();
+        $withCases = (clone $scopedBase)->has('cases')->count();
 
         $summary = [
             'total'       => $totalStudents,
@@ -85,8 +96,8 @@ class StudentController extends Controller
             'clean'       => $totalStudents - $withCases,
         ];
 
-        // Get academic years for filtering
-        $filterAcademicYears = \App\Models\Student::select('academic_year')
+        $filterAcademicYears = (clone $scopedBase)
+            ->select('academic_year')
             ->distinct()
             ->orderBy('academic_year', 'desc')
             ->pluck('academic_year')
@@ -166,7 +177,7 @@ class StudentController extends Controller
     {
         abort_if(auth()->user()->isDean(), 403);
 
-        $students = \App\Models\Student::whereIn('year_level', ['1st Year', '2nd Year', '3rd Year'])->get();
+        $students = \App\Models\Student::whereIn('year_level', YearLevel::promotableAliases())->get();
         $count = $students->count();
 
         if ($count === 0) {
@@ -174,12 +185,9 @@ class StudentController extends Controller
         }
 
         foreach ($students as $student) {
-            if ($student->year_level === '3rd Year') {
-                $student->update(['year_level' => '4th Year']);
-            } elseif ($student->year_level === '2nd Year') {
-                $student->update(['year_level' => '3rd Year']);
-            } elseif ($student->year_level === '1st Year') {
-                $student->update(['year_level' => '2nd Year']);
+            $nextLevel = YearLevel::next($student->year_level);
+            if ($nextLevel) {
+                $student->update(['year_level' => $nextLevel]);
             }
         }
 
@@ -198,7 +206,8 @@ class StudentController extends Controller
             'academic_year' => 'required|string|max:255'
         ]);
 
-        $students = \App\Models\Student::where('year_level', '4th Year')->get();
+        $fourthYearAliases = YearLevel::fourthYearAliases();
+        $students = \App\Models\Student::whereIn('year_level', $fourthYearAliases)->get();
         $count = $students->count();
 
         if ($count === 0) {
@@ -208,10 +217,10 @@ class StudentController extends Controller
         $academicYear = $request->input('academic_year');
 
         // Bulk update the academic_year_graduated directly (doesn't trigger model events individually)
-        \App\Models\Student::where('year_level', '4th Year')->update(['academic_year_graduated' => $academicYear]);
+        \App\Models\Student::whereIn('year_level', $fourthYearAliases)->update(['academic_year_graduated' => $academicYear]);
         
         // Bulk delete (soft delete)
-        \App\Models\Student::where('year_level', '4th Year')->delete();
+        \App\Models\Student::whereIn('year_level', $fourthYearAliases)->delete();
 
         // Clear dashboard cache and dispatch event once after bulk operation
         \App\Models\StudentCase::clearDashboardCache();
@@ -312,6 +321,8 @@ class StudentController extends Controller
      */
     public function printReport(\App\Models\Student $student)
     {
+        $this->authorize('view', $student);
+
         $student->load(['cases.violation', 'cases.hearing', 'cases.actions']);
         
         return view('students.pdf', compact('student'));
@@ -329,132 +340,100 @@ class StudentController extends Controller
         $this->authorize('import', \App\Models\Student::class);
 
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv,txt',
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
         ]);
 
         $file = $request->file('file');
-        $extension = $file->getClientOriginalExtension();
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        set_time_limit(300);
 
         try {
             \Illuminate\Support\Facades\Log::info('Starting import process...');
 
-            if (strtolower($extension) === 'csv' || strtolower($extension) === 'txt') {
-                $this->importCsvManually($file->getRealPath());
-            } else {
-                Excel::import(new StudentsImport, $file);
+            $importer = new StudentImporter(
+                (string) SchoolSettings::get('current_academic_year', 'SY 2024-2025')
+            );
+            $dispatcher = \App\Models\Student::getEventDispatcher();
+            \App\Models\Student::unsetEventDispatcher();
+
+            try {
+                if ($extension === 'csv' || $extension === 'txt') {
+                    $this->importCsvManually($file->getRealPath(), $importer);
+                } else {
+                    Excel::import(new StudentsImport($importer), $file);
+                }
+            } finally {
+                if ($dispatcher) {
+                    \App\Models\Student::setEventDispatcher($dispatcher);
+                }
             }
 
-            return redirect()->route('students.index')->with('success', 'Students imported successfully.');
+            $imported = $importer->finish();
+
+            if ($imported === 0) {
+                return back()->with('error', 'No students were imported. Check that your file has a header row with Email Address and Department columns, then try again.');
+            }
+
+            $skipped = $importer->skippedCount();
+            $message = "Successfully imported {$imported} student".($imported === 1 ? '' : 's').'.';
+            if ($skipped > 0) {
+                $message .= " {$skipped} row".($skipped === 1 ? '' : 's').' skipped (missing email).';
+            }
+
+            return redirect()->route('students.index')->with('success', $message);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Student Import Failure', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
             return back()->with('error', 'Unable to import students. Please verify the file format and try again.');
         }
     }
 
-    private function importCsvManually($path)
+    private function importCsvManually(string $path, StudentImporter $importer): void
     {
         $handle = fopen($path, 'r');
         if ($handle === false) {
             throw new \Exception('Cannot open CSV file.');
         }
 
-        // Disable model events to prevent slow broadcast events/timeouts per row insertion
-        $dispatcher = \App\Models\Student::getEventDispatcher();
-        \App\Models\Student::unsetEventDispatcher();
-
-        $defaultPassword = config('school.student_default_password') ?: 'password123';
-        $hashedPassword = \Illuminate\Support\Facades\Hash::make($defaultPassword);
-
-        // Read BOM if present
         $bom = fread($handle, 3);
         if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle); // not BOM, rewind
+            rewind($handle);
         }
 
         $headers = fgetcsv($handle);
         if ($headers === false) {
             fclose($handle);
+
             return;
         }
 
-        // Clean headers to match Laravel Excel's behavior
         $headerMap = [];
         foreach ($headers as $index => $header) {
-            // Remove special characters except alphanumeric, convert to lowercase, spaces to underscore
-            $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', str_replace(' ', '_', trim($header))));
-            $headerMap[$cleanHeader] = $index;
+            $cleanHeader = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', str_replace(' ', '_', trim((string) $header))));
+            if ($cleanHeader !== '') {
+                $headerMap[$cleanHeader] = $index;
+            }
         }
-
-        $studentsToInsert = [];
 
         try {
             while (($rowArr = fgetcsv($handle)) !== false) {
-                // Skip empty rows
-                if (empty(array_filter($rowArr))) continue;
+                if (empty(array_filter($rowArr))) {
+                    continue;
+                }
 
-                // Helper to get value
-                $getVal = function($keys) use ($rowArr, $headerMap) {
-                    if (!is_array($keys)) $keys = [$keys];
-                    foreach ($keys as $key) {
-                        if (isset($headerMap[$key]) && isset($rowArr[$headerMap[$key]])) {
-                            return trim($rowArr[$headerMap[$key]]);
-                        }
+                $rowData = [];
+                foreach ($headerMap as $key => $index) {
+                    if (isset($rowArr[$index])) {
+                        $rowData[$key] = trim((string) $rowArr[$index]);
                     }
-                    return null;
-                };
-
-                $firstName = $getVal(['firstnamerequired', 'firstname']);
-                $lastName = $getVal(['lastnamerequired', 'lastname']);
-                $fullName = trim($firstName . ' ' . $lastName);
-
-                if (empty($fullName)) {
-                    $fullName = $getVal(['fullname', 'name']);
                 }
 
-                $email = $getVal(['emailaddressrequired', 'emailaddress', 'email']);
-                $department = $getVal(['department']);
-                
-                if ($department) {
-                    $department = \App\Support\DepartmentResolver::shortcutToLong($department) ?? $department;
-                }
-
-                $yearLevel = $getVal(['yearlevel', 'year']);
-                $section = $getVal(['section']);
-
-                if (empty($fullName) || empty($email)) continue;
-
-                $studentsToInsert[] = [
-                    'full_name'     => $fullName,
-                    'section'       => $section,
-                    'year_level'    => $yearLevel,
-                    'department'    => $department,
-                    'email'         => $email,
-                    'guardian_name' => $getVal(['guardianname']),
-                    'guardian_email'=> $getVal(['guardianemail']),
-                    'guardian_phone'=> $getVal(['guardianphone']),
-                    'password'      => $hashedPassword,
-                    'password_changed_at' => null,
-                    'created_at'    => now(),
-                    'updated_at'    => now(),
-                ];
-
-                if (count($studentsToInsert) >= 500) {
-                    \App\Models\Student::upsert($studentsToInsert, ['email'], ['full_name', 'department', 'year_level', 'section', 'updated_at']);
-                    $studentsToInsert = [];
-                }
-            }
-
-            if (count($studentsToInsert) > 0) {
-                \App\Models\Student::upsert($studentsToInsert, ['email'], ['full_name', 'department', 'year_level', 'section', 'updated_at']);
+                $importer->addRow($rowData);
             }
         } finally {
             fclose($handle);
-            if ($dispatcher) {
-                \App\Models\Student::setEventDispatcher($dispatcher);
-            }
         }
-
-        \App\Models\StudentCase::clearDashboardCache();
     }
 
     /**
@@ -462,6 +441,8 @@ class StudentController extends Controller
      */
     public function sendCustomMessage(Request $request, \App\Models\Student $student)
     {
+        $this->authorize('view', $student);
+
         $request->validate([
             'message' => 'required|string|max:1000',
             'delivery_method' => 'required|array',
@@ -511,36 +492,30 @@ class StudentController extends Controller
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('SMS Sending Failed: ' . $e->getMessage());
-                    $errorMessages[] = 'Failed to send SMS (Gateway unreachable/Error). Please check if your SMS Gateway app is running and the IP address is correct.';
+                    $errorMessages[] = 'The SMS could not be sent right now. Please try again in a few minutes, or contact your system administrator if the problem continues.';
                 }
             } else {
-                $errorMessages[] = 'No valid guardian phone number found for SMS.';
+                $errorMessages[] = "The SMS was not sent because this student has no guardian phone number on file. You can add one by editing the student's profile.";
             }
         }
 
-        // 2. Send Email
+        // 2. Send Email (via Laravel SMTP / configured mailer)
         if (in_array('email', $methods)) {
             if ($student->guardian_email) {
                 try {
-                    $subject = 'SVS Notification: Message from School';
-                    $body = (new \App\Mail\CustomMessage($subject, $request->message))->render();
-
-                    $response = \Illuminate\Support\Facades\Http::timeout(10)->post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
-                        'to' => $student->guardian_email,
-                        'subject' => $subject,
-                        'body' => $body
-                    ]);
-
-                    if ($response->successful() && $response->json('status') === 'success') {
-                        $successMessages[] = 'Email sent successfully.';
-                    } else {
-                        $errorMessages[] = 'Failed to send Email via Script. Response: ' . $response->body();
+                    if (config('mail.default') === 'log') {
+                        throw new \Exception('Mail is set to "log" mode. Configure SMTP in your .env file.');
                     }
+
+                    $subject = 'SVS Notification: Message from School';
+                    Mail::to($student->guardian_email)->send(new CustomMessage($subject, $request->message));
+                    $successMessages[] = 'Email sent successfully.';
                 } catch (\Exception $e) {
-                    $errorMessages[] = 'Failed to send Email. Check Script URL.';
+                    Log::error('Email Sending Failed: ' . $e->getMessage());
+                    $errorMessages[] = 'The email could not be sent right now. Please try again in a few minutes, or contact your system administrator if the problem continues.';
                 }
             } else {
-                $errorMessages[] = 'No guardian email found.';
+                $errorMessages[] = "The email was not sent because this student has no guardian email on file. You can add one by editing the student's profile.";
             }
         }
 

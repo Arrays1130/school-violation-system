@@ -2,7 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AiEmbeddingService;
+use App\Support\AiAssistantContext;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -36,8 +39,9 @@ class HandleInertiaRequests extends Middleware
                 'unreadNotifications' => $request->user() ? $request->user()->unreadNotifications()->latest()->take(10)->get() : [],
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+                'warning' => $request->session()->get('warning'),
             ],
             'openCasesCount' => fn () => $request->user()
                 ? \App\Models\StudentCase::query()
@@ -45,6 +49,22 @@ class HandleInertiaRequests extends Middleware
                     ->whereNotIn('status', ['Closed', 'Dismissed'])
                     ->count()
                 : 0,
+            'aiAssistant' => fn () => $request->user() && Gate::allows('use-ai-assistant', $request->user())
+                ? [
+                    'canUse' => true,
+                    'name' => 'Nexus AI',
+                    'url' => route('ai-assistant.index'),
+                    'provider' => config('ai.api_key') ? 'Gemini AI' : 'Handbook Search',
+                    'vectorReady' => app(AiEmbeddingService::class)->isAvailable(),
+                ]
+                : [
+                    'canUse' => false,
+                    'name' => 'Nexus AI',
+                    'url' => null,
+                    'provider' => null,
+                    'vectorReady' => false,
+                ],
+            'pageAiContext' => fn () => AiAssistantContext::fromRequest($request),
         ];
     }
 }

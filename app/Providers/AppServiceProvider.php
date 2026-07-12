@@ -37,9 +37,28 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::policy(\App\Models\Hearing::class, \App\Policies\HearingPolicy::class);
         \Illuminate\Support\Facades\Gate::policy(\App\Models\Handbook::class, \App\Policies\HandbookPolicy::class);
         \Illuminate\Support\Facades\Gate::policy(\App\Models\EmailLog::class, \App\Policies\EmailLogPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\MessageTemplate::class, \App\Policies\MessageTemplatePolicy::class);
 
         \Illuminate\Support\Facades\Gate::define('use-ai-assistant', function (\App\Models\User $user) {
             return $user->isSuperAdmin() || $user->isAdmin() || $user->isDean();
         });
+
+        if (config('ai.api_key')) {
+            \App\Models\Handbook::saved(function (\App\Models\Handbook $handbook) {
+                try {
+                    app(\App\Services\AiEmbeddingService::class)->indexHandbook($handbook);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+
+            \App\Models\Violation::saved(function (\App\Models\Violation $violation) {
+                try {
+                    app(\App\Services\AiEmbeddingService::class)->indexViolation($violation);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+        }
     }
 }

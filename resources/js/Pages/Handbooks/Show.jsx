@@ -2,7 +2,6 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ShieldCheck, Clock, Edit2, Printer, FileCheck2, FileText, ExternalLink } from 'lucide-react';
-
 export default function Show({ auth, handbook }) {
     const updatedDate = new Date(handbook.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 

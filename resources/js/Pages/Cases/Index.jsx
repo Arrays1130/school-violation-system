@@ -6,18 +6,37 @@ import {
     FolderOpen, Search, Filter, X, 
     Eye, Edit, Trash2, AlertCircle, Clock, CheckCircle, Plus
 } from 'lucide-react';
+import EmptyState from '@/Components/EmptyState';
 import Pagination from '@/Components/Pagination';
+import StatusBadge from '@/Components/StatusBadge';
+import FilterBar from '@/Components/FilterBar';
+import useInertiaLoading from '@/hooks/useInertiaLoading';
+import { ListPageSkeleton } from '@/Components/ui/Skeleton';
 
-export default function Index({ auth, cases, summary, filters }) {
+export default function Index({ auth, cases, summary, departments = [], academicYears = [], filters }) {
+    const isLoading = useInertiaLoading();
     const [search, setSearch] = useState(filters?.search || '');
     const [status, setStatus] = useState(filters?.status || '');
     const [severity, setSeverity] = useState(filters?.severity || '');
+    const [department, setDepartment] = useState(filters?.department || '');
+    const [academicYear, setAcademicYear] = useState(filters?.academic_year || '');
+    const [dateFrom, setDateFrom] = useState(filters?.date_from || '');
+    const [dateTo, setDateTo] = useState(filters?.date_to || '');
 
-    // Debounced search
+    const filterParams = { search, status, severity, department, academic_year: academicYear, date_from: dateFrom, date_to: dateTo };
+
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (search !== filters?.search || status !== filters?.status || severity !== filters?.severity) {
-                router.get(route('cases.index'), { search, status, severity }, {
+            if (
+                search !== (filters?.search || '') ||
+                status !== (filters?.status || '') ||
+                severity !== (filters?.severity || '') ||
+                department !== (filters?.department || '') ||
+                academicYear !== (filters?.academic_year || '') ||
+                dateFrom !== (filters?.date_from || '') ||
+                dateTo !== (filters?.date_to || '')
+            ) {
+                router.get(route('cases.index'), filterParams, {
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
@@ -25,33 +44,17 @@ export default function Index({ auth, cases, summary, filters }) {
             }
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, status, severity]);
+    }, [search, status, severity, department, academicYear, dateFrom, dateTo]);
 
     const handleClear = () => {
         setSearch('');
         setStatus('');
         setSeverity('');
+        setDepartment('');
+        setAcademicYear('');
+        setDateFrom('');
+        setDateTo('');
         router.get(route('cases.index'));
-    };
-
-    const getStatusBadge = (item) => {
-        const status = item?.endorsed_at ? 'Endorsed to Grievance' : item?.status;
-        switch (status) {
-            case 'Pending':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200"><Clock className="w-3 h-3"/> Pending</span>;
-            case 'Hearing Scheduled':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200"><AlertCircle className="w-3 h-3"/> Hearing Scheduled</span>;
-            case 'Hearing':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200"><AlertCircle className="w-3 h-3"/> Hearing</span>;
-            case 'Endorsed to Grievance':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-200"><AlertCircle className="w-3 h-3"/> Endorsed</span>;
-            case 'Dismissed':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"><CheckCircle className="w-3 h-3"/> Dismissed</span>;
-            case 'Closed':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200"><CheckCircle className="w-3 h-3"/> Closed</span>;
-            default:
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">{status}</span>;
-        }
     };
 
     const getSeverityBadge = (severity) => {
@@ -84,6 +87,11 @@ export default function Index({ auth, cases, summary, filters }) {
         >
             <Head title="Violation Cases" />
 
+            {isLoading ? (
+                <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <ListPageSkeleton />
+                </div>
+            ) : (
             <motion.div 
                 className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
                 variants={containerVariants}
@@ -119,84 +127,67 @@ export default function Index({ auth, cases, summary, filters }) {
                 {/* Summary Cards */}
                 <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                        { label: 'Total Cases', value: summary.total, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
-                        { label: 'Pending', value: summary.pending, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                        { label: 'Hearing Scheduled', value: summary.hearing, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Closed Cases', value: summary.closed, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                        { label: 'Total Cases', value: summary.total, color: 'text-indigo-600 dark:text-indigo-400' },
+                        { label: 'Pending', value: summary.pending, color: 'text-amber-600 dark:text-amber-400' },
+                        { label: 'Hearing Scheduled', value: summary.hearing, color: 'text-blue-600 dark:text-blue-400' },
+                        { label: 'Closed Cases', value: summary.closed, color: 'text-emerald-600 dark:text-emerald-400' },
                     ].map((stat, i) => (
-                        <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
-                                <span className="text-xl font-black">{stat.value}</span>
-                            </div>
-                            <div>
-                                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                            </div>
+                        <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+                            <p className={`text-3xl font-black tabular-nums ${stat.color}`}>{stat.value}</p>
+                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">{stat.label}</p>
                         </div>
                     ))}
                 </motion.div>
 
                 {/* Search & Filters */}
-                <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                        <div className="md:col-span-2">
-                            <label htmlFor="case-search" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Records</label>
-                            <div className="relative">
-                                <input 
-                                    id="case-search"
-                                    name="search"
-                                    type="search"
-                                    autoComplete="off"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search by student name or violation..." 
-                                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
-                                />
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                    <Search className="w-4 h-4" />
-                                </div>
+                <motion.div variants={itemVariants}>
+                    <FilterBar
+                        search={search}
+                        onSearchChange={setSearch}
+                        onClear={handleClear}
+                        placeholder="Search by student name or violation..."
+                    >
+                            <div className="min-w-0">
+                                <label htmlFor="case-status" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                                <select id="case-status" value={status} onChange={(e) => setStatus(e.target.value)} className="w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+                                    <option value="">All Statuses</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="endorsed">Endorsed</option>
+                                    <option value="Hearing Scheduled">Hearing Scheduled</option>
+                                    <option value="Closed">Closed</option>
+                                </select>
                             </div>
-                        </div>
-                        
-                        <div>
-                            <label htmlFor="case-status" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Status</label>
-                            <select 
-                                id="case-status"
-                                name="status"
-                                value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
-                                <option value="">All Statuses</option>
-                                <option value="Pending">Pending</option>
-                                <option value="endorsed">Endorsed</option>
-                                <option value="Hearing Scheduled">Hearing Scheduled</option>
-                                <option value="Closed">Closed</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label htmlFor="case-severity" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Severity</label>
-                            <select 
-                                id="case-severity"
-                                name="severity"
-                                value={severity}
-                                onChange={(e) => setSeverity(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
-                                <option value="">All Severities</option>
-                                <option value="Minor">Minor</option>
-                                <option value="Major">Major</option>
-                            </select>
-                        </div>
-
-                        <button 
-                            onClick={handleClear}
-                            className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-xl text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <X className="w-4 h-4" />
-                            Clear
-                        </button>
-                    </div>
+                            <div className="min-w-0">
+                                <label htmlFor="case-severity" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Severity</label>
+                                <select id="case-severity" value={severity} onChange={(e) => setSeverity(e.target.value)} className="w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+                                    <option value="">All Severities</option>
+                                    <option value="Minor">Minor</option>
+                                    <option value="Major">Major</option>
+                                </select>
+                            </div>
+                            <div className="min-w-0">
+                                <label htmlFor="case-department" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Department</label>
+                                <select id="case-department" value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+                                    <option value="">All Departments</option>
+                                    {departments.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                                </select>
+                            </div>
+                            <div className="min-w-0">
+                                <label htmlFor="case-academic-year" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Academic Year</label>
+                                <select id="case-academic-year" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
+                                    <option value="">All Years</option>
+                                    {academicYears.map((year) => <option key={year} value={year}>{year}</option>)}
+                                </select>
+                            </div>
+                            <div className="min-w-0">
+                                <label htmlFor="case-date-from" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">From</label>
+                                <input id="case-date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm" />
+                            </div>
+                            <div className="min-w-0">
+                                <label htmlFor="case-date-to" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">To</label>
+                                <input id="case-date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm" />
+                            </div>
+                    </FilterBar>
                 </motion.div>
 
                 {/* Records List */}
@@ -218,7 +209,7 @@ export default function Index({ auth, cases, summary, filters }) {
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
                                                 <div className="flex flex-col gap-1.5">
                                                     <span className="text-sm font-bold text-slate-900 dark:text-white">{new Date(item.occurred_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                                    <div>{getStatusBadge(item)}</div>
+                                                    <div><StatusBadge item={item} variant="compact" /></div>
                                                 </div>
                                             </td>
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
@@ -241,6 +232,7 @@ export default function Index({ auth, cases, summary, filters }) {
                                                         href={route('cases.show', item.id)} 
                                                         className="p-2 text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 rounded-xl transition-all duration-150" 
                                                         title="View Case Details"
+                                                        aria-label={`View case for ${item.student?.full_name ?? 'student'}`}
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </Link>
@@ -249,6 +241,7 @@ export default function Index({ auth, cases, summary, filters }) {
                                                             href={route('cases.edit', item.id)} 
                                                             className="p-2 text-slate-400 hover:text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-900/20 rounded-xl transition-all duration-150" 
                                                             title="Edit Case"
+                                                            aria-label={`Edit case for ${item.student?.full_name ?? 'student'}`}
                                                         >
                                                             <Edit className="w-4 h-4" />
                                                         </a>
@@ -259,12 +252,12 @@ export default function Index({ auth, cases, summary, filters }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <FolderOpen className="w-12 h-12 text-slate-300 mb-3" />
-                                                <p className="text-sm font-medium">No violation cases found.</p>
-                                                <p className="text-xs mt-1">Try adjusting your filters or search query.</p>
-                                            </div>
+                                        <td colSpan="4">
+                                            <EmptyState
+                                                icon={FolderOpen}
+                                                title="No violation cases found."
+                                                message="Try adjusting your filters or search query."
+                                            />
                                         </td>
                                     </tr>
                                 )}
@@ -279,7 +272,8 @@ export default function Index({ auth, cases, summary, filters }) {
                         </div>
                     )}
                 </motion.div>
-            </motion.div>
+                </motion.div>
+            )}
         </AuthenticatedLayout>
     );
 }

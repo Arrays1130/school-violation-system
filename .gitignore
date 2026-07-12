@@ -50,6 +50,18 @@ Thumbs.db
 /*.html
 /revert_plan.json
 
+# Local artifacts and debug tooling
+/check.php
+/check2.php
+*.apk
+/scripts/capture-*.mjs
+/scripts/debug-*.mjs
+/scripts/fix-*.mjs
+/scripts/recapture-*.mjs
+/scripts/verify-*.mjs
+/docs/capstone-screenshots/
+/docs/capstone-screenshots.zip
+
 # Keep these JSON files
 !/package.json
 !/package-lock.json

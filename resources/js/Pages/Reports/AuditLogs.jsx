@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import Pagination from '@/Components/Pagination';
+import FilterBar, { filterFieldClass, filterLabelClass } from '@/Components/FilterBar';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import EmptyState from '@/Components/EmptyState';
 import {
-    ArrowLeft, ShieldCheck, Download, Search, Filter, X, Eye,
+    ArrowLeft, ShieldCheck, Download, Eye, X,
     ClipboardList, PlusCircle, Pencil, Trash2, Activity
 } from 'lucide-react';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 const eventIcons = {
     'plus-circle': PlusCircle,
@@ -16,16 +20,42 @@ const eventIcons = {
 
 export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filters }) {
     const [detail, setDetail] = useState(null);
+    const [search, setSearch] = useState(filters?.search || '');
+    const [event, setEvent] = useState(filters?.event || '');
+    const [subjectType, setSubjectType] = useState(filters?.subject_type || '');
+    const [causerId, setCauserId] = useState(filters?.causer_id || '');
+    const [dateFrom, setDateFrom] = useState(filters?.date_from || '');
+    const [dateTo, setDateTo] = useState(filters?.date_to || '');
 
-    const applyFilters = (e) => {
-        e.preventDefault();
-        const form = new FormData(e.target);
-        router.get(route('reports.audit-logs'), Object.fromEntries(form), { preserveState: true, preserveScroll: true });
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const next = { search, event, subject_type: subjectType, causer_id: causerId, date_from: dateFrom, date_to: dateTo };
+            const current = {
+                search: filters?.search || '',
+                event: filters?.event || '',
+                subject_type: filters?.subject_type || '',
+                causer_id: filters?.causer_id || '',
+                date_from: filters?.date_from || '',
+                date_to: filters?.date_to || '',
+            };
+            if (JSON.stringify(next) !== JSON.stringify(current)) {
+                router.get(route('reports.audit-logs'), next, { preserveState: true, preserveScroll: true, replace: true });
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search, event, subjectType, causerId, dateFrom, dateTo]);
+
+    const clearFilters = () => {
+        setSearch('');
+        setEvent('');
+        setSubjectType('');
+        setCauserId('');
+        setDateFrom('');
+        setDateTo('');
+        router.get(route('reports.audit-logs'));
     };
 
-    const clearFilters = () => router.get(route('reports.audit-logs'));
-
-    const hasFilters = Object.values(filters || {}).some((v) => v);
+    const hasFilters = search || event || subjectType || causerId || dateFrom || dateTo;
 
     const EventIcon = ({ name }) => {
         const Icon = eventIcons[name] || Activity;
@@ -35,12 +65,20 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-slate-800 leading-tight">Audit Logs</h2>}
+            header={<h2 className="font-semibold text-xl text-slate-800 dark:text-slate-200 leading-tight">Audit Logs</h2>}
         >
             <Head title="System Audit Logs" />
 
-            <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-                <div className="vt-page-hero">
+            <PageMotion>
+                <MotionItem>
+                    <Breadcrumbs items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Reports', href: route('reports.index') },
+                        { label: 'Audit Logs' },
+                    ]} />
+                </MotionItem>
+
+                <MotionItem className="vt-page-hero">
                     <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="flex items-start gap-4">
                             <Link href={route('reports.index')} className="mt-1 w-10 h-10 rounded-xl bg-slate-900/10 border border-slate-600/80 flex items-center justify-center text-white/80 hover:text-white hover:bg-slate-700/80 transition-all">
@@ -63,104 +101,91 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
                             Export CSV
                         </a>
                     </div>
-                </div>
+                </MotionItem>
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <MotionItem className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {[
-                        { label: 'Total (filtered)', value: stats.total, color: 'text-slate-800' },
-                        { label: 'Today', value: stats.today, color: 'text-indigo-600' },
-                        { label: 'Created', value: stats.created, color: 'text-emerald-700' },
-                        { label: 'Updated', value: stats.updated, color: 'text-blue-700' },
-                        { label: 'Deleted', value: stats.deleted, color: 'text-red-700' },
+                        { label: 'Total (filtered)', value: stats.total, color: 'text-slate-800 dark:text-slate-100' },
+                        { label: 'Today', value: stats.today, color: 'text-indigo-600 dark:text-indigo-400' },
+                        { label: 'Created', value: stats.created, color: 'text-emerald-700 dark:text-emerald-400' },
+                        { label: 'Updated', value: stats.updated, color: 'text-blue-700 dark:text-blue-400' },
+                        { label: 'Deleted', value: stats.deleted, color: 'text-red-700 dark:text-red-400' },
                     ].map((s) => (
-                        <div key={s.label} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
-                            <p className={`text-2xl font-extrabold mt-1 ${s.color}`}>{Number(s.value).toLocaleString()}</p>
+                        <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.4)] px-4 py-3">
+                            <p className={`text-2xl font-black tabular-nums leading-none ${s.color}`}>{Number(s.value).toLocaleString()}</p>
+                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1.5">{s.label}</p>
                         </div>
                     ))}
-                </div>
+                </MotionItem>
 
-                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                    <form onSubmit={applyFilters} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                        <div className="lg:col-span-3">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase mb-2">Search</label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input type="text" name="search" defaultValue={filters?.search || ''} placeholder="User, email, record ID..." className="w-full pl-9 rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-sm" />
-                            </div>
-                        </div>
-                        <div className="lg:col-span-2">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase mb-2">Action</label>
-                            <select name="event" defaultValue={filters?.event || ''} className="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-sm">
+                <MotionItem>
+                    <FilterBar
+                        search={search}
+                        onSearchChange={setSearch}
+                        onClear={hasFilters ? clearFilters : undefined}
+                        placeholder="User, email, record ID..."
+                    >
+                        <div>
+                            <label htmlFor="audit-event" className={filterLabelClass}>Action</label>
+                            <select id="audit-event" value={event} onChange={(e) => setEvent(e.target.value)} className={filterFieldClass}>
                                 <option value="">All Actions</option>
                                 <option value="created">Created</option>
                                 <option value="updated">Updated</option>
                                 <option value="deleted">Deleted</option>
                             </select>
                         </div>
-                        <div className="lg:col-span-2">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase mb-2">Module</label>
-                            <select name="subject_type" defaultValue={filters?.subject_type || ''} className="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-sm">
+                        <div>
+                            <label htmlFor="audit-module" className={filterLabelClass}>Module</label>
+                            <select id="audit-module" value={subjectType} onChange={(e) => setSubjectType(e.target.value)} className={filterFieldClass}>
                                 <option value="">All Modules</option>
                                 {Object.entries(subjectTypes).map(([type, label]) => (
                                     <option key={type} value={type}>{label}</option>
                                 ))}
                             </select>
                         </div>
-                        <div className="lg:col-span-2">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase mb-2">User</label>
-                            <select name="causer_id" defaultValue={filters?.causer_id || ''} className="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-sm">
+                        <div>
+                            <label htmlFor="audit-user" className={filterLabelClass}>User</label>
+                            <select id="audit-user" value={causerId} onChange={(e) => setCauserId(e.target.value)} className={filterFieldClass}>
                                 <option value="">All Users</option>
                                 {users.map((user) => (
                                     <option key={user.id} value={user.id}>{user.name} ({user.role?.replace('_', ' ')})</option>
                                 ))}
                             </select>
                         </div>
-                        <div className="lg:col-span-1">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase mb-2">From</label>
-                            <input type="date" name="date_from" defaultValue={filters?.date_from || ''} className="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-sm" />
+                        <div>
+                            <label htmlFor="audit-date-from" className={filterLabelClass}>From</label>
+                            <input id="audit-date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={filterFieldClass} />
                         </div>
-                        <div className="lg:col-span-1">
-                            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase mb-2">To</label>
-                            <input type="date" name="date_to" defaultValue={filters?.date_to || ''} className="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-800 text-sm" />
+                        <div>
+                            <label htmlFor="audit-date-to" className={filterLabelClass}>To</label>
+                            <input id="audit-date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={filterFieldClass} />
                         </div>
-                        <div className="lg:col-span-1 flex gap-2">
-                            <button type="submit" className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg">
-                                <Filter className="w-4 h-4" />
-                                Filter
-                            </button>
-                            {hasFilters && (
-                                <button type="button" onClick={clearFilters} className="inline-flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg border border-gray-300">
-                                    <X className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                </div>
+                    </FilterBar>
+                </MotionItem>
 
-                <div className="bg-white rounded-2xl ring-1 ring-slate-100 shadow-sm overflow-hidden">
+                <MotionItem className="bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.4)] overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-150 text-left">
+                        <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left">
                             <thead>
                                 <tr className="bg-gray-50/60 dark:bg-slate-800/60">
                                     {['Timestamp', 'User', 'Action', 'Module', 'Summary', 'Details'].map((h) => (
-                                        <th key={h} className={`px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${h === 'Details' ? 'text-right' : ''}`}>{h}</th>
+                                        <th key={h} className={`px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ${h === 'Details' ? 'text-right' : ''}`}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white text-sm">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 text-sm">
                                 {logs.data.length > 0 ? logs.data.map((log) => (
                                     <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-semibold text-slate-800">{log.created_at_date}</div>
-                                            <div className="text-[11px] text-slate-500">{log.created_at_time}</div>
+                                            <div className="font-semibold text-slate-800 dark:text-slate-100">{log.created_at_date}</div>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400">{log.created_at_time}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-100">{log.causer_initial}</div>
+                                                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold border border-indigo-100 dark:border-indigo-500/20">{log.causer_initial}</div>
                                                 <div>
-                                                    <div className="font-medium text-slate-800">{log.causer_name}</div>
-                                                    <div className="text-xs text-slate-400">{log.causer_email}</div>
+                                                    <div className="font-medium text-slate-800 dark:text-slate-100">{log.causer_name}</div>
+                                                    <div className="text-xs text-slate-400 dark:text-slate-500">{log.causer_email}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -171,25 +196,25 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-medium text-slate-800">{log.subject_label}</div>
+                                            <div className="font-medium text-slate-800 dark:text-slate-100">{log.subject_label}</div>
                                             {log.subject_id && (
                                                 log.subject_url ? (
-                                                    <Link href={log.subject_url} className="text-xs text-indigo-600 hover:text-indigo-900 font-medium">#{log.subject_id} →</Link>
+                                                    <Link href={log.subject_url} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium">#{log.subject_id} →</Link>
                                                 ) : (
-                                                    <span className="text-xs text-slate-400">#{log.subject_id}</span>
+                                                    <span className="text-xs text-slate-400 dark:text-slate-500">#{log.subject_id}</span>
                                                 )
                                             )}
                                         </td>
                                         <td className="px-6 py-4 max-w-xs">
                                             {log.has_changes ? (
-                                                <p className="text-slate-400 text-xs leading-relaxed">{log.change_summary}</p>
+                                                <p className="text-slate-400 dark:text-slate-500 text-xs leading-relaxed">{log.change_summary}</p>
                                             ) : (
-                                                <span className="text-slate-400 italic text-xs">{log.description || 'No field changes'}</span>
+                                                <span className="text-slate-400 dark:text-slate-500 italic text-xs">{log.description || 'No field changes'}</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-right whitespace-nowrap">
                                             {log.detail ? (
-                                                <button type="button" onClick={() => setDetail(log.detail)} className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-900 font-medium text-xs">
+                                                <button type="button" onClick={() => setDetail(log.detail)} className="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium text-xs">
                                                     <Eye className="w-3.5 h-3.5" />
                                                     View
                                                 </button>
@@ -200,9 +225,12 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-16 text-center text-slate-500">
-                                            <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                            <p className="font-medium">No audit logs found</p>
+                                        <td colSpan={6}>
+                                            <EmptyState
+                                                icon={ClipboardList}
+                                                title="No audit logs found"
+                                                message="Try adjusting your filters or check back after system activity."
+                                            />
                                         </td>
                                     </tr>
                                 )}
@@ -210,39 +238,39 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
                         </table>
                     </div>
                     {logs.links?.length > 3 && (
-                        <div className="px-6 py-4 border-t border-gray-150 bg-gray-50/50 dark:bg-slate-800/50">
+                        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
                             <Pagination links={logs.links} />
                         </div>
                     )}
-                </div>
-            </div>
+                </MotionItem>
+            </PageMotion>
 
             {detail && (
                 <div className="fixed inset-0 z-50 overflow-y-auto px-4 py-6" onKeyDown={(e) => e.key === 'Escape' && setDetail(null)}>
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setDetail(null)} />
-                    <div className="relative max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl ring-1 ring-slate-200 overflow-hidden mt-8">
-                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-slate-800 dark:to-slate-800">
+                    <div className="relative max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700 overflow-hidden mt-8">
+                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-slate-800 dark:to-slate-800">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Audit Entry</p>
-                                    <h3 className="text-lg font-bold text-slate-100">#{detail.id}</h3>
-                                    <p className="text-xs text-slate-500 mt-1">{detail.timestamp}</p>
+                                    <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1">Audit Entry</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">#{detail.id}</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{detail.timestamp}</p>
                                 </div>
-                                <button type="button" onClick={() => setDetail(null)} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                                <button type="button" onClick={() => setDetail(null)} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
-                        <div className="px-6 py-4 grid grid-cols-2 gap-4 border-b border-slate-100 dark:border-slate-700 text-sm">
+                        <div className="px-6 py-4 grid grid-cols-2 gap-4 border-b border-slate-100 dark:border-slate-800 text-sm">
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase">User</p>
-                                <p className="font-semibold text-slate-800 mt-0.5">{detail.user}</p>
-                                <p className="text-xs text-slate-400">{detail.email}</p>
+                                <p className="font-semibold text-slate-800 dark:text-slate-100 mt-0.5">{detail.user}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500">{detail.email}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase">Action / Module</p>
-                                <p className="font-semibold text-slate-800 mt-0.5 capitalize">{detail.event}</p>
-                                <p className="text-xs text-slate-500">{detail.module}{detail.recordId ? ` #${detail.recordId}` : ''}</p>
+                                <p className="font-semibold text-slate-800 dark:text-slate-100 mt-0.5 capitalize">{detail.event}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{detail.module}{detail.recordId ? ` #${detail.recordId}` : ''}</p>
                             </div>
                         </div>
                         <div className="px-6 py-5 max-h-[50vh] overflow-y-auto">
@@ -250,25 +278,25 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
                             <div className="space-y-3">
                                 {detail.fields?.map((field) => (
                                     <div key={field.field} className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
-                                        <div className="px-3 py-2 bg-slate-800 border-b border-slate-100 dark:border-slate-700">
-                                            <span className="text-xs font-bold text-slate-300">{field.label}</span>
+                                        <div className="px-3 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{field.label}</span>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-700">
                                             <div className="px-3 py-2.5">
                                                 <p className="text-[10px] font-bold text-red-500 uppercase mb-1">Before</p>
-                                                <p className="text-xs text-slate-300 break-words">{field.old ?? '—'}</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-300 break-words">{field.old ?? '—'}</p>
                                             </div>
                                             <div className="px-3 py-2.5 bg-emerald-50/30 dark:bg-emerald-900/10">
-                                                <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">After</p>
-                                                <p className="text-xs text-slate-300 break-words">{field.new ?? '—'}</p>
+                                                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase mb-1">After</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-300 break-words">{field.new ?? '—'}</p>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="px-6 py-4 bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-end">
-                            <button type="button" onClick={() => setDetail(null)} className="px-4 py-2 bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-50">
+                        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                            <button type="button" onClick={() => setDetail(null)} className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
                                 Close
                             </button>
                         </div>

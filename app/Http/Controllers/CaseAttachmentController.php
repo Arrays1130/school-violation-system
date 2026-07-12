@@ -177,6 +177,7 @@ class CaseAttachmentController extends Controller
             'pdfFiles' => $pdfFiles,
             'totalSizeMB' => $totalSizeMB,
             'cases' => $casesQuery->get(),
+            'filters' => $request->only('search'),
         ]);
     }
 

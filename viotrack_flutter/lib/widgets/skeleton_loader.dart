@@ -68,6 +68,14 @@ class ShimmerLoader extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.8)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [

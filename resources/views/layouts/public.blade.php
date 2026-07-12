@@ -65,5 +65,7 @@
             // Initialize Lucide icons
             lucide.createIcons();
         </script>
+
+        <x-swal-flash />
     </body>
 </html>

@@ -2,6 +2,7 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { BookOpen, ArrowLeft, Bookmark, Type, Link as LinkIcon, Save } from 'lucide-react';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 
 export default function Create({ auth }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -23,6 +24,11 @@ export default function Create({ auth }) {
             <Head title="Add Handbook Entry" />
 
             <div className="max-w-3xl mx-auto space-y-8 py-8 px-4 sm:px-6 lg:px-8">
+                <Breadcrumbs items={[
+                    { label: 'Dashboard', href: route('dashboard') },
+                    { label: 'Handbook', href: route('handbooks.index') },
+                    { label: 'Add Entry' },
+                ]} />
                 {/* Modern Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>

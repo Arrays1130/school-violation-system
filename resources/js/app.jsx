@@ -7,11 +7,15 @@ import { route } from 'ziggy-js';
 window.route = route;
 
 import { createRoot } from 'react-dom/client';
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { handleFlashMessages } from '@/lib/sweetAlert';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+router.on('success', (event) => {
+    handleFlashMessages(event.detail.page.props.flash);
+});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -21,6 +25,8 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
+        handleFlashMessages(props.initialPage?.props?.flash);
+
         try {
             root.render(<App {...props} />);
         } catch (error) {
@@ -29,7 +35,10 @@ createInertiaApp({
         }
     },
     progress: {
-        color: '#4B5563',
+        color: '#6366f1',
+        includeCSS: true,
+        showSpinner: true,
+        delay: 150,
     },
 });
 

@@ -2,7 +2,6 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ShieldCheck, Edit3, Hash, Layers, AlertTriangle, Info } from 'lucide-react';
-
 export default function Show({ auth, violation }) {
     return (
         <AuthenticatedLayout
@@ -26,10 +25,12 @@ export default function Show({ auth, violation }) {
                                 <h1 className="text-2xl font-extrabold text-white tracking-tight">{violation.title}</h1>
                             </div>
                         </div>
-                        <Link href={route('violations.edit', violation.id)} className="vt-hero-btn">
-                            <Edit3 className="w-4 h-4" />
-                            Edit Rule
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Link href={route('violations.edit', violation.id)} className="vt-hero-btn">
+                                <Edit3 className="w-4 h-4" />
+                                Edit Rule
+                            </Link>
+                        </div>
                     </div>
                 </div>
 

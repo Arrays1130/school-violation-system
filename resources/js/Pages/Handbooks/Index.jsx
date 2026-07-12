@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import { BookOpen, Plus, Search, FileText, Clock, Calendar, Eye, Edit3, Trash2 } from 'lucide-react';
 import Pagination from '@/Components/Pagination';
+import FilterBar from '@/Components/FilterBar';
+import EmptyState from '@/Components/EmptyState';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
-export default function Index({ auth, handbooks, filters, flash }) {
+export default function Index({ auth, handbooks, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    const [deleteHandbookId, setDeleteHandbookId] = useState(null);
     const isFirstRender = React.useRef(true);
 
     React.useEffect(() => {
@@ -26,19 +30,14 @@ export default function Index({ auth, handbooks, filters, flash }) {
     };
 
     const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Delete Document?',
-            text: "Are you sure you want to delete this handbook document? This action cannot be undone.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, delete it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('handbooks.destroy', id));
-            }
-        });
+        setDeleteHandbookId(id);
+    };
+
+    const confirmDelete = () => {
+        if (deleteHandbookId) {
+            router.delete(route('handbooks.destroy', deleteHandbookId));
+            setDeleteHandbookId(null);
+        }
     };
 
     return (
@@ -48,19 +47,20 @@ export default function Index({ auth, handbooks, filters, flash }) {
         >
             <Head title="Handbooks" />
 
-            <div className="space-y-8 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                
-                {flash?.success && (
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 p-4 rounded-xl flex items-center gap-3 shadow-sm shadow-emerald-500/5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <BookOpen className="w-5 h-5" />
-                        </div>
-                        <p className="text-sm font-semibold text-emerald-800">{flash.success}</p>
-                    </div>
-                )}
+            <ConfirmDialog
+                open={!!deleteHandbookId}
+                onClose={() => setDeleteHandbookId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Document?"
+                description="Are you sure you want to delete this handbook document? This action cannot be undone."
+                confirmLabel="Yes, delete it"
+                destructive
+            />
 
+            <PageMotion className="space-y-8 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                
                 {/* Modern Header */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
                     
@@ -78,29 +78,20 @@ export default function Index({ auth, handbooks, filters, flash }) {
                             <span>Add Document</span>
                         </Link>
                     </div>
-                </div>
+                </MotionItem>
 
-                {/* Upgraded Search Bar */}
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-gray-200/80 dark:border-slate-700/80">
-                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 items-center">
-                        <div className="flex-1 relative w-full">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                placeholder="Search regulation titles, codes or contents..."
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400"
-                            />
-                        </div>
-                        <button type="submit" className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all duration-200 w-full md:w-auto shrink-0">
-                            Search Policies
-                        </button>
-                    </form>
-                </div>
+                {/* Search */}
+                <MotionItem>
+                    <FilterBar
+                        search={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        onClear={() => setSearchQuery('')}
+                        placeholder="Search regulation titles or contents..."
+                    />
+                </MotionItem>
 
                 {/* Premium Card Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <MotionItem className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {handbooks.data.length > 0 ? (
                         handbooks.data.map(handbook => {
                             const updatedDate = new Date(handbook.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -146,10 +137,10 @@ export default function Index({ auth, handbooks, filters, flash }) {
                                         </div>
 
                                         <div className="flex items-center gap-1.5">
-                                            <Link href={route('handbooks.show', handbook.id)} className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 border border-transparent hover:border-indigo-100 flex items-center justify-center transition-all" title="View">
+                                            <Link href={route('handbooks.show', handbook.id)} className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 border border-transparent hover:border-indigo-100 flex items-center justify-center transition-all" title="View" aria-label={`View ${handbook.title}`}>
                                                 <Eye className="w-4 h-4" />
                                             </Link>
-                                            <Link href={route('handbooks.edit', handbook.id)} className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 border border-transparent hover:border-indigo-100 flex items-center justify-center transition-all" title="Edit">
+                                            <Link href={route('handbooks.edit', handbook.id)} className="w-8 h-8 rounded-lg text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 border border-transparent hover:border-indigo-100 flex items-center justify-center transition-all" title="Edit" aria-label={`Edit ${handbook.title}`}>
                                                 <Edit3 className="w-4 h-4" />
                                             </Link>
                                             <button 
@@ -176,7 +167,7 @@ export default function Index({ auth, handbooks, filters, flash }) {
                             </Link>
                         </div>
                     )}
-                </div>
+                </MotionItem>
 
                 {/* Pagination */}
                 {handbooks.links && handbooks.links.length > 3 && (
@@ -184,7 +175,7 @@ export default function Index({ auth, handbooks, filters, flash }) {
                         <Pagination links={handbooks.links} />
                     </div>
                 )}
-            </div>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

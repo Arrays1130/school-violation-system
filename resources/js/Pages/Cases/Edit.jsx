@@ -1,8 +1,10 @@
-import React from 'react';
-import Swal from 'sweetalert2';
+import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, Link, router } from '@inertiajs/react';
 import { FilePlus, ArrowLeft, CheckCircle2, ShieldAlert, Trash2 } from 'lucide-react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import showUndoToast from '@/lib/undoToast';
 
 export default function Edit({ auth, caseRecord }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -10,6 +12,7 @@ export default function Edit({ auth, caseRecord }) {
         witness: caseRecord.witness || '',
         occurred_at: caseRecord.occurred_at ? new Date(caseRecord.occurred_at).toISOString().slice(0, 16) : '',
     });
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const submit = (e) => {
         e.preventDefault();
@@ -18,18 +21,18 @@ export default function Edit({ auth, caseRecord }) {
 
     const handleDelete = (e) => {
         e.preventDefault();
-        Swal.fire({
-            title: 'Move to Trash Bin?',
-            text: "Are you sure you want to move this violation record to the trash?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, move to trash'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('cases.destroy', caseRecord.id));
-            }
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = () => {
+        const id = caseRecord.id;
+        setShowDeleteConfirm(false);
+        router.delete(route('cases.destroy', id), {
+            onSuccess: () => {
+                showUndoToast('Case moved to trash', () => {
+                    router.post(route('cases.restore', id));
+                });
+            },
         });
     };
 
@@ -37,8 +40,24 @@ export default function Edit({ auth, caseRecord }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Edit Violation Case" />
 
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDelete}
+                title="Move to Trash Bin?"
+                description="This violation record will be moved to the trash. You can restore it later from the Trash Bin."
+                confirmLabel="Yes, move to trash"
+                destructive
+            />
+
             <div className="py-8">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                    <Breadcrumbs className="mb-6" items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Violation Cases', href: route('cases.index') },
+                        { label: `Case #${caseRecord.id}`, href: route('cases.show', caseRecord.id) },
+                        { label: 'Edit' },
+                    ]} />
                     
                     {/* Header Banner */}
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 p-8 mb-8 shadow-2xl border border-white/5">

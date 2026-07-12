@@ -176,6 +176,14 @@ class ApiService {
     );
   }
 
+  Future<dynamic> getUpcomingHearings({bool forcedRefresh = false}) async {
+    return _getWithCache(
+      cacheKey: 'upcoming_hearings',
+      uri: Uri.parse('$baseUrl/mobile/hearings/upcoming'),
+      forcedRefresh: forcedRefresh,
+    );
+  }
+
   Future<dynamic> getNotifications({bool forcedRefresh = false, int page = 1}) async {
     return _getWithCache(
       cacheKey: page == 1 ? 'notifications' : 'notifications_page_$page',
@@ -307,5 +315,33 @@ class ApiService {
     }
     _cache.removeWhere((key, _) => key.startsWith('notifications'));
     _cacheExpiry.removeWhere((key, _) => key.startsWith('notifications'));
+  }
+
+  Future<Map<String, dynamic>> policyLookup(String message) async {
+    final headers = await _authHeaders();
+    headers['Content-Type'] = 'application/json';
+    final response = await http.post(
+      Uri.parse('$baseUrl/mobile/policy-lookup'),
+      headers: headers,
+      body: jsonEncode({'message': message}),
+    ).timeout(const Duration(seconds: 90));
+    _handleUnauthorized(response);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Policy lookup failed (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> fetchHearingsCalendar({String? month}) async {
+    final headers = await _authHeaders();
+    final uri = Uri.parse('$baseUrl/mobile/hearings/calendar').replace(
+      queryParameters: month != null ? {'month': month} : null,
+    );
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    _handleUnauthorized(response);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to load hearings calendar');
   }
 }

@@ -5,9 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\SystemSetting;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use App\Support\GoogleAppsScriptMailer;
+use App\Support\StudentPassword;
 use App\Mail\StudentRegistrationOtpMail;
 use Illuminate\Support\Facades\Cache;
 
@@ -52,12 +51,11 @@ class PublicStudentRegistrationController extends Controller
         ], now()->addMinutes(10));
 
         try {
-            $body = (new StudentRegistrationOtpMail($otp))->render();
-            \Illuminate\Support\Facades\Http::timeout(10)->post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
-                'to' => $validated['email'],
-                'subject' => 'Your SVS Registration OTP',
-                'body' => $body
-            ]);
+            GoogleAppsScriptMailer::send(
+                $validated['email'],
+                'Your SVS Registration OTP',
+                (new StudentRegistrationOtpMail($otp))->render()
+            );
         } catch (\Exception $e) {
             \Log::error('Failed to send OTP email: ' . $e->getMessage());
             // If email fails, we still want to redirect but show an error. 
@@ -105,8 +103,7 @@ class PublicStudentRegistrationController extends Controller
         // OTP is correct, create the student
         $studentData = $cachedData['data'];
         
-        $tempPassword = config('school.student_default_password') ?: Str::random(24);
-        $studentData['password'] = Hash::make($tempPassword);
+        $studentData['password'] = StudentPassword::hash();
         $studentData['password_changed_at'] = null;
 
         Student::create($studentData);
@@ -140,12 +137,11 @@ class PublicStudentRegistrationController extends Controller
         ], now()->addMinutes(10));
 
         try {
-            $body = (new StudentRegistrationOtpMail($otp))->render();
-            \Illuminate\Support\Facades\Http::timeout(10)->post('https://script.google.com/macros/s/AKfycbxR2juxtlLKbi-Fesnu1WHH_BmOKVJxMnwntkD3Le_GBdHZQX2lrKJRuFmbaNQx3Qjx/exec', [
-                'to' => $email,
-                'subject' => 'Your SVS Registration OTP',
-                'body' => $body
-            ]);
+            GoogleAppsScriptMailer::send(
+                $email,
+                'Your SVS Registration OTP',
+                (new StudentRegistrationOtpMail($otp))->render()
+            );
         } catch (\Exception $e) {
             \Log::error('Failed to resend OTP email: ' . $e->getMessage());
         }

@@ -5,17 +5,18 @@ import {
     ArrowLeft, UserPlus, User, Type, GraduationCap, Users, Calendar,
     ChevronDown, Building2, Mail, AtSign, Phone, ShieldAlert, UserCheck, Save,
 } from 'lucide-react';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 import { YEAR_LEVELS, SECTIONS, DEPARTMENTS, buildAcademicYears } from '@/constants/studentForm';
 
 const academicYears = buildAcademicYears();
 
 const inputClass =
-    'w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-slate-400';
+    'w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-slate-400 dark:placeholder-slate-500';
 
 const selectClass =
-    'w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer';
+    'w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer';
 
-const labelClass = 'block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2';
+const labelClass = 'block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2';
 
 export default function Create({ auth, currentAcademicYear }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -44,6 +45,11 @@ export default function Create({ auth, currentAcademicYear }) {
             <Head title="Student Registration" />
 
             <div className="max-w-4xl mx-auto space-y-8 py-8 px-4 sm:px-6 lg:px-8">
+                <Breadcrumbs items={[
+                    { label: 'Dashboard', href: route('dashboard') },
+                    { label: 'Students', href: route('students.index') },
+                    { label: 'Add Student' },
+                ]} />
                 <div className="vt-page-hero">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]" />
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\ScopedForUser;
 use App\Support\DepartmentResolver;
 use App\Support\DashboardCache;
+use App\Support\YearLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -71,6 +72,13 @@ class Student extends Authenticatable
             ->logFillable()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    public function setYearLevelAttribute(?string $value): void
+    {
+        $this->attributes['year_level'] = $value === null || trim($value) === ''
+            ? $value
+            : (YearLevel::canonical($value) ?? $value);
     }
 
     public function cases()

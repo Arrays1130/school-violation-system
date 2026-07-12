@@ -26,6 +26,10 @@ Route::prefix('mobile')->group(function () {
         Route::get('/attachments/{attachment}/download', [\App\Http\Controllers\Api\MobileCaseController::class, 'downloadAttachment']);
         Route::get('/stats', [\App\Http\Controllers\Api\ViolationController::class, 'stats']);
         Route::get('/analytics', [\App\Http\Controllers\Api\ViolationController::class, 'analytics']);
+        Route::get('/hearings/upcoming', [\App\Http\Controllers\Api\HearingController::class, 'upcoming']);
+        Route::get('/hearings/calendar', [\App\Http\Controllers\Api\HearingController::class, 'calendar']);
+        Route::post('/policy-lookup', [\App\Http\Controllers\Api\MobilePolicyController::class, 'lookup'])
+            ->middleware('throttle:20,1');
         
         Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);

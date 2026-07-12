@@ -44,6 +44,8 @@ ChartJS.register(
     Filler
 );
 
+import StatusBadge from '@/Components/StatusBadge';
+
 export default function DeanDashboard({
     auth,
     department,
@@ -59,14 +61,26 @@ export default function DeanDashboard({
     const [selectedCase, setSelectedCase] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isDark, setIsDark] = useState(() =>
+        typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+    );
 
-    const chartBaseOptions = {
+    useEffect(() => {
+        const el = document.documentElement;
+        const observer = new MutationObserver(() => {
+            setIsDark(el.classList.contains('dark'));
+        });
+        observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
+    const chartBaseOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                backgroundColor: isDark ? 'rgba(15, 23, 42, 0.98)' : 'rgba(15, 23, 42, 0.95)',
                 titleColor: '#f8fafc',
                 bodyColor: '#cbd5e1',
                 titleFont: { size: 13, weight: '700', family: "'Inter', sans-serif" },
@@ -99,13 +113,13 @@ export default function DeanDashboard({
                 border: { display: false }
             },
             y: { 
-                grid: { color: 'rgba(241, 245, 249, 0.5)', drawBorder: false, borderDash: [5, 5] }, 
+                grid: { color: isDark ? 'rgba(51, 65, 85, 0.55)' : 'rgba(241, 245, 249, 0.5)', drawBorder: false, borderDash: [5, 5] }, 
                 ticks: { stepSize: 1, font: { size: 11, weight: '600', family: "'Inter', sans-serif" }, color: '#94a3b8' },
                 beginAtZero: true,
                 border: { display: false }
             },
         },
-    };
+    }), [isDark]);
 
     const trendChartData = {
         labels: Object.keys(chartData.monthlyTrend || {}).map(m => {
@@ -118,7 +132,7 @@ export default function DeanDashboard({
             data: Object.values(chartData.monthlyTrend),
             borderColor: '#6366f1',
             borderWidth: 3,
-            pointBackgroundColor: '#ffffff',
+            pointBackgroundColor: isDark ? '#0f172a' : '#ffffff',
             pointBorderColor: '#6366f1',
             pointBorderWidth: 3,
             pointRadius: 4,
@@ -179,7 +193,7 @@ export default function DeanDashboard({
         datasets: [{
             data: Object.values(chartData.severityBreakdown),
             backgroundColor: Object.keys(chartData.severityBreakdown).map(key => severityColors[key] || '#94a3b8'),
-            borderColor: '#ffffff',
+            borderColor: isDark ? '#0f172a' : '#ffffff',
             borderWidth: 6,
             borderRadius: 8,
             hoverOffset: 8,
@@ -198,7 +212,7 @@ export default function DeanDashboard({
                 {/* ── HEADER SECTION ── */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-widest mb-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-2">
                             <Activity className="w-3.5 h-3.5" />
                             {department} Analytics
                         </div>
@@ -210,10 +224,10 @@ export default function DeanDashboard({
                 {/* ── STATS ROW (Glass Cards) ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {/* Total Cases */}
-                    <div className="group relative bg-white dark:bg-slate-900 rounded-3xl p-6 ring-1 ring-slate-200/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
+                    <div className="group relative bg-white dark:bg-slate-900 rounded-3xl p-6 ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
                         <div className="absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 opacity-[0.08] group-hover:opacity-[0.15] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150"></div>
                         <div className="flex items-start justify-between relative z-10 mb-4">
-                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-100 text-blue-500 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-100 dark:ring-slate-700 text-blue-500 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                                 <Activity className="w-5 h-5 stroke-[2.5]" />
                             </div>
                             {trends.total && (
@@ -234,10 +248,10 @@ export default function DeanDashboard({
                     </div>
 
                     {/* Pending Review */}
-                    <div className="group relative bg-white dark:bg-slate-900 rounded-3xl p-6 ring-1 ring-slate-200/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
+                    <div className="group relative bg-white dark:bg-slate-900 rounded-3xl p-6 ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
                         <div className="absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br from-amber-500 to-orange-600 opacity-[0.08] group-hover:opacity-[0.15] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150"></div>
                         <div className="flex items-start justify-between relative z-10 mb-4">
-                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-100 text-amber-500 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-100 dark:ring-slate-700 text-amber-500 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                                 <Clock className="w-5 h-5 stroke-[2.5]" />
                             </div>
                             <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
@@ -251,10 +265,10 @@ export default function DeanDashboard({
                     </div>
 
                     {/* Resolution Rate */}
-                    <div className="group relative bg-white dark:bg-slate-900 rounded-3xl p-6 ring-1 ring-slate-200/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
+                    <div className="group relative bg-white dark:bg-slate-900 rounded-3xl p-6 ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
                         <div className="absolute -right-10 -top-10 w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 opacity-[0.08] group-hover:opacity-[0.15] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150"></div>
                         <div className="flex items-start justify-between relative z-10 mb-4">
-                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-100 text-emerald-500 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-100 dark:ring-slate-700 text-emerald-500 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                                 <CheckCircle className="w-5 h-5 stroke-[2.5]" />
                             </div>
                             <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
@@ -274,7 +288,7 @@ export default function DeanDashboard({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
                     
                     {/* BENTO ITEM 1: Line Chart (Spans 2 Cols) */}
-                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
                         <div className="flex items-center justify-between mb-8">
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Violation Trends</h3>
@@ -291,7 +305,7 @@ export default function DeanDashboard({
                     </div>
 
                     {/* BENTO ITEM 2: Severity Doughnut (Spans 1 Col) */}
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
                         <div className="flex items-center justify-between mb-2">
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Severity Split</h3>
@@ -317,8 +331,8 @@ export default function DeanDashboard({
                     </div>
 
                     {/* BENTO ITEM 3: Recent Activity (Spans 2 Cols) */}
-                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
-                        <div className="p-8 pb-4 flex items-center justify-between bg-white dark:bg-slate-900 z-10 border-b border-slate-50 flex-none">
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px] overflow-hidden">
+                        <div className="p-8 pb-4 flex items-center justify-between bg-white dark:bg-slate-900 z-10 border-b border-slate-50 dark:border-slate-800 flex-none">
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Recent Violations</h3>
                                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Latest recorded incidents</p>
@@ -328,7 +342,7 @@ export default function DeanDashboard({
                                 <input 
                                     type="text" 
                                     placeholder="Search..." 
-                                    className="pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-48 transition-all"
+                                    className="pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-48 transition-all"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -336,24 +350,27 @@ export default function DeanDashboard({
                         </div>
                         <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-2 space-y-4">
                             {recentCases.map((item) => (
-                                <div key={item.id} onClick={() => { setSelectedCase(item); setIsModalOpen(true); }} className="group relative flex items-start gap-4 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 rounded-2xl transition-all cursor-pointer">
+                                <button
+                                    type="button"
+                                    key={item.id}
+                                    onClick={() => { setSelectedCase(item); setIsModalOpen(true); }}
+                                    className="group relative flex items-start gap-4 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all cursor-pointer w-full text-left"
+                                >
                                     <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
                                         {(item.student?.full_name || 'U').substring(0, 1)}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:text-indigo-400 transition-colors">{item.student?.full_name || 'Anonymous'}</p>
+                                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{item.student?.full_name || 'Anonymous'}</p>
                                         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">{item.violation?.title}</p>
                                         <div className="flex items-center gap-2 mt-2">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${item.status === 'Closed' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 text-emerald-700' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 text-amber-700'}`}>
-                                                {item.status}
-                                            </span>
+                                            <StatusBadge item={item} variant="compact" />
                                             <span className="text-[10px] font-semibold text-slate-400">{new Date(item.created_at).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                     <div className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Eye className="w-5 h-5" />
                                     </div>
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </div>
@@ -361,22 +378,27 @@ export default function DeanDashboard({
                     {/* BENTO ITEM 4: Sidebar: Hearings & Repeaters (Spans 1 Col) */}
                     <div className="flex flex-col h-[400px] gap-6">
                         {/* Upcoming Hearings */}
-                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 overflow-hidden flex flex-col flex-1 min-h-0">
-                            <div className="px-6 py-4 border-b border-slate-50 bg-white dark:bg-slate-900 flex-none">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 overflow-hidden flex flex-col flex-1 min-h-0">
+                            <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 flex-none">
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Upcoming Hearings</h3>
                             </div>
                             <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2">
                                 {upcomingHearings.length > 0 ? upcomingHearings.map(h => (
-                                    <div key={h.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 transition-colors group/hearing">
+                                    <Link
+                                        key={h.id}
+                                        href={route('hearings.show', h.id)}
+                                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 transition-colors group/hearing"
+                                    >
                                         <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400 group-hover/hearing:scale-110 transition-transform">
                                             <Calendar className="w-4 h-4" />
                                         </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/hearing:text-indigo-600 dark:text-indigo-400 transition-colors">{h.case.student.full_name}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/hearing:text-indigo-600 dark:group-hover/hearing:text-indigo-400 transition-colors truncate">{h.case.student.full_name}</p>
                                             <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{new Date(h.scheduled_at).toLocaleDateString()}</p>
-                                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-0.5 font-bold uppercase tracking-wider">{h.venue}</p>
+                                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-0.5 font-bold uppercase tracking-wider truncate">{h.venue}</p>
                                         </div>
-                                    </div>
+                                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover/hearing:text-indigo-500 shrink-0 mt-1" aria-hidden="true" />
+                                    </Link>
                                 )) : (
                                     <div className="text-center py-6 h-full flex flex-col items-center justify-center">
                                         <Calendar className="w-6 h-6 text-slate-200 mx-auto mb-2" />
@@ -387,8 +409,8 @@ export default function DeanDashboard({
                         </div>
 
                         {/* Frequent Offenders */}
-                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 overflow-hidden flex flex-col flex-1 min-h-0">
-                            <div className="px-6 py-4 border-b border-slate-50 bg-white dark:bg-slate-900 flex-none">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 overflow-hidden flex flex-col flex-1 min-h-0">
+                            <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 flex-none">
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Frequent Offenders</h3>
                             </div>
                             <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2">
@@ -415,7 +437,7 @@ export default function DeanDashboard({
             {/* Simple Case Modal */}
             {isModalOpen && selectedCase && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-slate-200/50">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-slate-200/50 dark:ring-slate-700/50">
                         <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
                             <h3 className="text-lg font-black text-slate-900 dark:text-white">Case Details</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 p-2 rounded-full transition-colors">
@@ -431,7 +453,7 @@ export default function DeanDashboard({
                                     <h4 className="text-xl font-black text-slate-900 dark:text-white">{selectedCase.student?.full_name}</h4>
                                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{selectedCase.student?.id_number} • {selectedCase.student?.department}</p>
                                     <div className="mt-2">
-                                        <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">{selectedCase.student?.year_level}</span>
+                                        <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">{selectedCase.student?.year_level}</span>
                                     </div>
                                 </div>
                             </div>
@@ -452,7 +474,7 @@ export default function DeanDashboard({
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8 text-center">Case Progress</p>
                                         <div className="relative max-w-md mx-auto">
                                             {/* Background Line */}
-                                            <div className="absolute top-5 left-[12%] right-[12%] h-1 bg-slate-100 rounded-full z-0"></div>
+                                            <div className="absolute top-5 left-[12%] right-[12%] h-1 bg-slate-100 dark:bg-slate-800 rounded-full z-0"></div>
                                             {/* Active Line Fill */}
                                             <div className="absolute top-5 left-[12%] h-1 bg-indigo-500 rounded-full z-0 transition-all duration-1000"
                                                  style={{ width: `${((currentStep - 1) / 3) * 76}%` }}></div>
@@ -500,9 +522,9 @@ export default function DeanDashboard({
                         </div>
                         <div className="px-8 py-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 mt-auto">
                             <button onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 rounded-xl transition-colors">Close</button>
-                            <a href={`/cases/${selectedCase.id}`} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 transition-all">
+                            <Link href={route('cases.show', selectedCase.id)} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md hover:shadow-lg hover:shadow-indigo-500/20 transition-all">
                                 Full Details
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </div>

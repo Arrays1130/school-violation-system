@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import FilterBar from '@/Components/FilterBar';
 import { 
-    ShieldCheck, Plus, Search, Layers, ChevronDown, 
-    SlidersHorizontal, Edit3, Trash2, ShieldQuestion 
+    ShieldCheck, Plus, 
+    Edit3, Trash2, ShieldQuestion 
 } from 'lucide-react';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function Index({ auth, violations, categories, filters }) {
     const [search, setSearch] = useState(filters?.search || '');
@@ -31,20 +33,17 @@ export default function Index({ auth, violations, categories, filters }) {
         router.get(route('violations.index'));
     };
 
+    const [deleteRuleId, setDeleteRuleId] = useState(null);
+
     const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Delete Rule?',
-            text: "Are you sure you want to delete this rule? This cannot be undone.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, delete it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('violations.destroy', id));
-            }
-        });
+        setDeleteRuleId(id);
+    };
+
+    const confirmDelete = () => {
+        if (deleteRuleId) {
+            router.delete(route('violations.destroy', deleteRuleId));
+            setDeleteRuleId(null);
+        }
     };
 
     return (
@@ -54,10 +53,20 @@ export default function Index({ auth, violations, categories, filters }) {
         >
             <Head title="Rules & Regulations" />
 
-            <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <ConfirmDialog
+                open={!!deleteRuleId}
+                onClose={() => setDeleteRuleId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Rule?"
+                description="Are you sure you want to delete this rule? This cannot be undone."
+                confirmLabel="Yes, delete it"
+                destructive
+            />
+
+            <PageMotion>
                 
                 {/* MODERN PRISM HEADER */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
                     
@@ -78,55 +87,28 @@ export default function Index({ auth, violations, categories, filters }) {
                             </a>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
                 {/* Search & Filters */}
-                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 shadow-sm mb-6">
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1 relative">
-                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                <Search className="w-4.5 h-4.5" />
-                            </div>
-                            <input 
-                                type="text" 
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search rules, keywords, or codes..." 
-                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-sm focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-slate-400"
-                            />
-                        </div>
-                        
-                        <div className="sm:w-56 relative">
-                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                <Layers className="w-4.5 h-4.5" />
-                            </div>
-                            <select 
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="w-full pl-10 pr-10 py-2.5 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-sm focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
+                <MotionItem>
+                    <FilterBar
+                        search={search}
+                        onSearchChange={setSearch}
+                        onClear={handleClear}
+                        placeholder="Search rules, keywords, or codes..."
+                    >
+                        <div className="sm:max-w-xs">
+                            <label htmlFor="violation-category" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Category</label>
+                            <select id="violation-category" value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
                                 <option value="">All Categories</option>
-                                {categories.map((cat, index) => (
-                                    <option key={index} value={cat}>{cat}</option>
-                                ))}
+                                {categories.map((cat, index) => <option key={index} value={cat}>{cat}</option>)}
                             </select>
-                            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
-                                <ChevronDown className="w-4 h-4" />
-                            </div>
                         </div>
-
-                        <button 
-                            onClick={handleClear}
-                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm shadow-indigo-600/20 hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
-                        >
-                            <SlidersHorizontal className="w-4 h-4" />
-                            <span>Clear Filters</span>
-                        </button>
-                    </div>
-                </div>
+                    </FilterBar>
+                </MotionItem>
 
                 {/* Categories List */}
-                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden relative">
+                <MotionItem className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden relative">
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-left border-collapse">
                             <thead>
@@ -181,15 +163,17 @@ export default function Index({ auth, violations, categories, filters }) {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <a 
                                                         href={route('violations.edit', violation.id)} 
-                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:border-indigo-300 hover:bg-indigo-50 dark:bg-indigo-900/20 hover:shadow-sm transition-all duration-200" 
+                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:border-indigo-300 hover:bg-indigo-50 dark:bg-indigo-900/20 hover:shadow-sm transition-all duration-200"
                                                         title="Edit Rule"
+                                                        aria-label={`Edit rule: ${violation.title}`}
                                                     >
                                                         <Edit3 className="w-4 h-4" />
                                                     </a>
                                                     <button 
                                                         onClick={() => handleDelete(violation.id)} 
-                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-300 hover:bg-rose-50 dark:bg-rose-900/20 hover:shadow-sm transition-all duration-200" 
+                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-300 hover:bg-rose-50 dark:bg-rose-900/20 hover:shadow-sm transition-all duration-200"
                                                         title="Delete Rule"
+                                                        aria-label={`Delete rule: ${violation.title}`}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -238,8 +222,8 @@ export default function Index({ auth, violations, categories, filters }) {
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
+                </MotionItem>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

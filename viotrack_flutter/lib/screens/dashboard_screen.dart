@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
+import '../utils/page_transitions.dart';
 import 'case_details_screen.dart';
+import 'hearings_calendar_screen.dart';
 import 'main_layout.dart';
 import '../providers/api_service_provider.dart';
 import '../widgets/skeleton_loader.dart';
@@ -160,7 +162,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(child: _buildHeader()),
+              SliverToBoxAdapter(child: AppUi.staggerIn(_buildHeader(), 0)),
               if (_refreshFailed)
                 SliverToBoxAdapter(
                   child: AppUi.dataBanner(
@@ -180,31 +182,56 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
               SliverToBoxAdapter(
-                child: AppUi.searchBar(
-                  hint: 'Find a student or case',
-                  actionLabel: 'Search all violation records',
-                  onTap: () {
+                child: AppUi.staggerIn(
+                  AppUi.searchBar(
+                    hint: 'Find a student or case',
+                    actionLabel: 'Search all violation records',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      MainLayout.of(context)?.navigateToTab(1);
+                    },
+                  ),
+                  1,
+                ),
+              ),
+              SliverToBoxAdapter(child: AppUi.staggerIn(_buildHeroCard(), 2)),
+              SliverToBoxAdapter(child: AppUi.staggerIn(_buildQuickActions(), 3)),
+              SliverToBoxAdapter(
+                child: AppUi.sectionHeader(
+                  'Upcoming hearings',
+                  action: 'View calendar',
+                  onAction: () {
                     HapticFeedback.lightImpact();
-                    MainLayout.of(context)?.navigateToTab(1);
+                    Navigator.push(
+                      context,
+                      AppPageTransitions.fadeSlide(const HearingsCalendarScreen()),
+                    );
                   },
                 ),
               ),
-              SliverToBoxAdapter(child: _buildHeroCard()),
-              SliverToBoxAdapter(child: _buildQuickActions()),
-              if (_alerts.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: AppUi.sectionHeader('Upcoming hearings'),
+              if (_alerts.isNotEmpty)
+                SliverToBoxAdapter(child: _buildHearingsRow())
+              else
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: EmptyStateWidget(
+                      icon: Icons.event_available_rounded,
+                      title: 'No hearings scheduled',
+                      message: 'Open the calendar to check upcoming dates.',
+                    ),
+                  ),
                 ),
-                SliverToBoxAdapter(child: _buildHearingsRow()),
-              ],
               if (_topOffenses.isNotEmpty) ...[
                 SliverToBoxAdapter(child: AppUi.sectionHeader('Top offenses')),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildOffenseItem(_topOffenses[index], index),
+                      (context, index) => AppUi.staggerIn(
+                        _buildOffenseItem(_topOffenses[index], index),
+                        index,
+                      ),
                       childCount: _topOffenses.length > 3
                           ? 3
                           : _topOffenses.length,
@@ -244,7 +271,10 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => RepaintBoundary(
-                        child: _buildCaseCard(_recentViolations[index]),
+                        child: AppUi.staggerIn(
+                          _buildCaseCard(_recentViolations[index]),
+                          index,
+                        ),
                       ),
                       childCount: _recentViolations.length,
                     ),
@@ -257,9 +287,16 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  String get _timeGreeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   Widget _buildHeader() {
     return AppUi.pageHeader(
-      greeting: 'Good day, $_userName',
+      greeting: '$_timeGreeting, $_userName',
       title: 'Home',
       compact: true,
       trailing: IconButton(
@@ -316,6 +353,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
       eyebrow: 'Overview',
       label: 'Total cases',
       value: total,
+      animatedValue: _isLoading ? null : (_stats['total'] as num? ?? 0).toInt(),
       subtitle: _isLoading ? 'Loading…' : 'Tap to open the full cases list',
       badge: AppUi.iconCircle(
         icon: Icons.arrow_outward_rounded,
@@ -347,6 +385,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
           AppUi.statChip(
             label: 'All cases',
             value: '${_stats['total'] ?? 0}',
+            animatedValue: (_stats['total'] as num? ?? 0).toInt(),
             icon: Icons.folder_open_rounded,
             color: AppTheme.primary,
             onTap: () {
@@ -358,6 +397,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
           AppUi.statChip(
             label: 'Pending',
             value: '${_stats['pending'] ?? 0}',
+            animatedValue: (_stats['pending'] as num? ?? 0).toInt(),
             icon: Icons.schedule_rounded,
             color: AppTheme.accentAmber,
             onTap: () {
@@ -369,6 +409,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
           AppUi.statChip(
             label: 'Closed',
             value: '${_stats['resolved'] ?? 0}',
+            animatedValue: (_stats['resolved'] as num? ?? 0).toInt(),
             icon: Icons.check_circle_outline_rounded,
             color: AppTheme.accentEmerald,
             onTap: () {
@@ -412,9 +453,8 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             if (caseId == null) return;
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    CaseDetailsScreen(caseId: int.parse(caseId.toString())),
+              AppPageTransitions.fadeScale(
+                CaseDetailsScreen(caseId: int.parse(caseId.toString())),
               ),
             );
           },
@@ -606,43 +646,66 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildCaseCard(dynamic violation) {
-    final status = violation['status']?.toString() ?? 'Pending';
-    final severity = violation['violation']?['severity']?.toString() ?? 'Minor';
+    final caseMap = Map<String, dynamic>.from(violation as Map);
+    final severity = caseMap['violation']?['severity']?.toString() ?? 'Minor';
     final studentName =
-        violation['student']?['full_name']?.toString() ?? 'Unknown';
+        caseMap['student']?['full_name']?.toString() ?? 'Unknown';
     final violationTitle =
-        violation['violation']?['title']?.toString() ?? 'N/A';
+        caseMap['violation']?['title']?.toString() ?? 'N/A';
 
     return AppUi.listRow(
       title: studentName,
       subtitle: violationTitle,
-      icon: severity == 'Major'
-          ? Icons.warning_amber_rounded
-          : Icons.gavel_outlined,
-      iconColor: _severityColor(severity),
-      trailing: AppUi.statusBadge(status),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Hero(
+            tag: 'case_${caseMap['id']}_avatar',
+            child: Material(
+              color: Colors.transparent,
+              child: AppUi.initialsAvatar(studentName, size: 44, radius: 12),
+            ),
+          ),
+          if (severity == 'Major')
+            Positioned(
+              bottom: -3,
+              right: -3,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentAmber,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: const Icon(
+                  Icons.priority_high_rounded,
+                  size: 9,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+        ],
+      ),
+      trailing: AppUi.statusBadgeForCase(caseMap),
       onTap: () {
         HapticFeedback.lightImpact();
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => CaseDetailsScreen(
-              caseId: violation['id'],
+          AppPageTransitions.fadeScale(
+            CaseDetailsScreen(
+              caseId: caseMap['id'],
               initialData: {
-                'id': violation['id'],
-                'student': violation['student'],
-                'violation': violation['violation'],
-                'status': violation['status'],
+                'id': caseMap['id'],
+                'student': caseMap['student'],
+                'violation': caseMap['violation'],
+                'status': caseMap['status'],
+                'endorsed_at': caseMap['endorsed_at'],
               },
             ),
           ),
         );
       },
     );
-  }
-
-  Color _severityColor(String severity) {
-    return severity == 'Major' ? AppTheme.accentAmber : AppTheme.primary;
   }
 
   String _formatDateTime(String dateTimeStr) {

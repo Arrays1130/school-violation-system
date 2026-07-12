@@ -7,6 +7,11 @@ use Illuminate\Http\Request;
 
 class MessageTemplateController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(MessageTemplate::class, 'message_template');
+    }
+
     public function index()
     {
         $templates = MessageTemplate::latest()->paginate(10);

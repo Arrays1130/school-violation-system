@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/page_transitions.dart';
+import '../widgets/cases_fetch_error_state.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
 import 'case_details_screen.dart';
@@ -24,6 +26,7 @@ class NotificationScreenState extends State<NotificationScreen> {
   List<dynamic> _notifications = [];
   bool _isLoading = true;
   bool _isLoadingMore = false;
+  bool _fetchError = false;
   int _currentPage = 1;
   int _lastPage = 1;
 
@@ -100,10 +103,16 @@ class NotificationScreenState extends State<NotificationScreen> {
         setState(() {
           _applyPageResult(result, reset: reset);
           _isLoading = false;
+          _fetchError = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _fetchError = _notifications.isEmpty;
+        });
+      }
     }
   }
 
@@ -191,23 +200,8 @@ class NotificationScreenState extends State<NotificationScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 500),
-          reverseTransitionDuration: const Duration(milliseconds: 400),
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              CaseDetailsScreen(caseId: int.parse(data['case_id'].toString())),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-            final scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-            return FadeTransition(
-              opacity: fadeAnimation,
-              child: ScaleTransition(scale: scaleAnimation, child: child),
-            );
-          },
+        AppPageTransitions.fadeScale(
+          CaseDetailsScreen(caseId: int.parse(data['case_id'].toString())),
         ),
       ).then((_) => _fetchNotifications(showLoading: false));
     } else {
@@ -309,6 +303,13 @@ class NotificationScreenState extends State<NotificationScreen> {
                   child: ShimmerLoader.buildListSkeleton(),
                 ),
               )
+            else if (_fetchError && _notifications.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: CasesFetchErrorState(
+                  onRetry: () => _fetchNotifications(forcedRefresh: true),
+                ),
+              )
             else if (_notifications.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -332,8 +333,11 @@ class NotificationScreenState extends State<NotificationScreen> {
                         );
                       }
                       return RepaintBoundary(
-                        child: _buildNotificationItem(
-                          _notifications[index],
+                        child: AppUi.staggerIn(
+                          _buildNotificationItem(
+                            _notifications[index],
+                            index,
+                          ),
                           index,
                         ),
                       );
@@ -428,121 +432,145 @@ class NotificationScreenState extends State<NotificationScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: AppUi.surfaceCard(
-      padding: EdgeInsets.zero,
-      clip: true,
-      borderColor: isUnread
-          ? AppTheme.accentCyan.withValues(alpha: 0.22)
-          : AppTheme.inputBorder.withValues(alpha: 0.5),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            _handleNotificationTap(notif);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    gradient: isUnread
-                        ? AppTheme.accentGradient
-                        : const LinearGradient(
-                            colors: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
-                          ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.gavel_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notif['title'] ??
-                                  data['title'] ??
-                                  'Record Update',
-                              style: GoogleFonts.inter(
-                                fontWeight: isUnread
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
-                                fontSize: 14,
-                                color: isUnread
-                                    ? AppTheme.textMain
-                                    : AppTheme.textMuted,
-                              ),
-                            ),
-                          ),
-                          if (isUnread)
-                            AppUi.brandPill(
-                              label: 'NEW',
-                              textColor: AppTheme.accentCyan,
-                              backgroundColor: AppTheme.accentCyan.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderColor: AppTheme.accentCyan.withValues(
-                                alpha: 0.16,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 4,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        data['message'] ?? 'Action required on case record.',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: isUnread
-                              ? AppTheme.textSub
-                              : AppTheme.textMuted,
-                          height: 1.4,
+        padding: EdgeInsets.zero,
+        clip: true,
+        borderColor: isUnread
+            ? AppTheme.accentCyan.withValues(alpha: 0.22)
+            : AppTheme.inputBorder.withValues(alpha: 0.5),
+        color: isUnread
+            ? AppTheme.accentCyan.withValues(alpha: 0.03)
+            : AppTheme.bgCard,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              _handleNotificationTap(notif);
+            },
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (isUnread)
+                    Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.accentGradient,
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(20),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 10),
-                      Row(
+                    ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.access_time_rounded,
-                            size: 10,
-                            color: AppTheme.textHint,
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              gradient: isUnread
+                                  ? AppTheme.accentGradient
+                                  : const LinearGradient(
+                                      colors: [
+                                        Color(0xFFCBD5E1),
+                                        Color(0xFF94A3B8),
+                                      ],
+                                    ),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.gavel_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatDate(notif['created_at']),
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textHint,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        notif['title'] ??
+                                            data['title'] ??
+                                            'Record Update',
+                                        style: GoogleFonts.inter(
+                                          fontWeight: isUnread
+                                              ? FontWeight.w800
+                                              : FontWeight.w600,
+                                          fontSize: 14,
+                                          color: isUnread
+                                              ? AppTheme.textMain
+                                              : AppTheme.textMuted,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isUnread)
+                                      AppUi.brandPill(
+                                        label: 'NEW',
+                                        textColor: AppTheme.accentCyan,
+                                        backgroundColor: AppTheme.accentCyan
+                                            .withValues(alpha: 0.1),
+                                        borderColor: AppTheme.accentCyan
+                                            .withValues(alpha: 0.16),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 4,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  data['message'] ??
+                                      'Action required on case record.',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: isUnread
+                                        ? AppTheme.textSub
+                                        : AppTheme.textMuted,
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.access_time_rounded,
+                                      size: 10,
+                                      color: AppTheme.textHint,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _formatDate(notif['created_at']),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textHint,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 

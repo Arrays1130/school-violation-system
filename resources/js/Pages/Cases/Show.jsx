@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
     ArrowLeft, FolderOpen, Edit3, Printer, ArrowUpRight, 
@@ -8,7 +10,6 @@ import {
     ChevronRight, CalendarX, CalendarPlus, CheckCircle2, 
     ExternalLink, Trash2, ClipboardList, Plus, Scale
 } from 'lucide-react';
-
 const OSA_LABELS = {
     letter_sent: 'Letter Sent',
     counseling: 'Counseling',
@@ -19,6 +20,11 @@ const OSA_LABELS = {
 };
 
 export default function Show({ auth, caseRecord, offenseHistory, offenseSummary, workflow = {} }) {
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [hearingSanction, setHearingSanction] = useState('');
+    const [osaType, setOsaType] = useState('letter_sent');
+    const [osaDescription, setOsaDescription] = useState('');
+    const [osaError, setOsaError] = useState('');
     const stages = ['Pending', 'Hearing Scheduled', 'Hearing', 'Closed'];
     let currentIndex = stages.indexOf(caseRecord.status);
     if (currentIndex === -1) currentIndex = 0;
@@ -27,72 +33,21 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
     const osaActions = (caseRecord.actions || []).filter((a) => !a.endorsed_to_grievance);
 
     const handleRecordOsa = () => {
-        Swal.fire({
-            title: 'Record OSA Intervention',
-            html: `
-                <select id="osa-type" class="swal2-select w-full rounded-lg border border-slate-200 p-2 mb-3 text-sm">
-                    <option value="letter_sent">Letter Sent</option>
-                    <option value="counseling">Counseling</option>
-                    <option value="parent_conference">Parent Conference</option>
-                    <option value="verbal_warning">Verbal Warning</option>
-                    <option value="written_warning">Written Warning</option>
-                    <option value="other">Other</option>
-                </select>
-                <textarea id="osa-desc" class="swal2-textarea w-full rounded-lg border border-slate-200 p-2 text-sm" placeholder="Describe the intervention..." rows="4"></textarea>
-            `,
-            showCancelButton: true,
-            confirmButtonColor: '#4f46e5',
-            confirmButtonText: 'Save Action',
-            preConfirm: () => {
-                const description = document.getElementById('osa-desc')?.value?.trim();
-                const action_type = document.getElementById('osa-type')?.value;
-                if (!description) {
-                    Swal.showValidationMessage('Description is required.');
-                    return false;
-                }
-                return { action_type, description };
-            },
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('cases.actions.store', caseRecord.id), result.value);
-            }
-        });
+        setOsaType('letter_sent');
+        setOsaDescription('');
+        setOsaError('');
+        setConfirmAction('osa');
     };
 
     const handleStartHearing = () => {
         if (!latestHearing) return;
-        Swal.fire({
-            title: 'Start Hearing?',
-            text: 'This will mark the case as currently in hearing.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#4f46e5',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Start Hearing',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('hearings.start', latestHearing.id));
-            }
-        });
+        setConfirmAction('start');
     };
 
     const handleCompleteHearing = () => {
         if (!latestHearing) return;
-        Swal.fire({
-            title: 'Complete Hearing',
-            input: 'text',
-            inputLabel: 'Sanction / Resolution',
-            inputPlaceholder: 'Enter the sanction or resolution...',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Close Case',
-            inputValidator: (value) => (!value ? 'Sanction is required.' : undefined),
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('hearings.complete', latestHearing.id), { sanction: result.value });
-            }
-        });
+        setHearingSanction('');
+        setConfirmAction('complete');
     };
 
     const handleEndorse = (e) => {
@@ -101,19 +56,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
             Swal.fire({ icon: 'warning', title: 'Cannot Endorse', text: workflow.endorse_block_reason });
             return;
         }
-        Swal.fire({
-            title: 'Endorse to Grievance?',
-            text: "Are you sure you want to endorse this case?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#f59e0b',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, endorse it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('cases.endorse', caseRecord.id));
-            }
-        });
+        setConfirmAction('endorse');
     };
 
     const handleClose = (e) => {
@@ -122,36 +65,45 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
             Swal.fire({ icon: 'warning', title: 'Cannot Close Case', text: workflow.close_block_reason });
             return;
         }
-        Swal.fire({
-            title: 'Close this case?',
-            text: "This action marks the case as resolved.",
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, close case'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.post(route('cases.close', caseRecord.id));
-            }
-        });
+        setConfirmAction('close');
     };
 
     const handleDelete = (e) => {
         e.preventDefault();
-        Swal.fire({
-            title: 'Move to Trash Bin?',
-            text: "Are you sure you want to move this violation record to the trash?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, move to trash'
-        }).then((result) => {
-            if (result.isConfirmed) {
+        setConfirmAction('trash');
+    };
+
+    const runConfirmAction = () => {
+        switch (confirmAction) {
+            case 'start':
+                router.post(route('hearings.start', latestHearing.id));
+                break;
+            case 'complete':
+                router.post(route('hearings.complete', latestHearing.id), { sanction: hearingSanction });
+                break;
+            case 'endorse':
+                router.post(route('cases.endorse', caseRecord.id));
+                break;
+            case 'close':
+                router.post(route('cases.close', caseRecord.id));
+                break;
+            case 'trash':
                 router.delete(route('cases.destroy', caseRecord.id));
-            }
-        });
+                break;
+            case 'osa':
+                if (!osaDescription.trim()) {
+                    setOsaError('Description is required.');
+                    return;
+                }
+                router.post(route('cases.actions.store', caseRecord.id), {
+                    action_type: osaType,
+                    description: osaDescription,
+                });
+                break;
+            default:
+                break;
+        }
+        setConfirmAction(null);
     };
 
     const getStatusStyle = (status) => {
@@ -179,7 +131,15 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
             <Head title={`Case #${String(caseRecord.id).padStart(4, '0')} - Details`} />
 
             <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-                
+
+                <Breadcrumbs
+                    items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'All Cases', href: route('cases.index') },
+                        { label: `Case #${String(caseRecord.id).padStart(4, '0')}` },
+                    ]}
+                />
+
                 {/* Modern Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
@@ -365,7 +325,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                                 <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 shadow-sm">
                                                     {hearing.venue || "Dean's Office"}
                                                 </span>
-                                                <a href={route('hearings.show', hearing.id)} className="p-2 text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 rounded-lg transition-all" title="View Hearing">
+                                                <a href={route('hearings.show', hearing.id)} className="p-2 text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/20 rounded-lg transition-all" title="View Hearing" aria-label="View hearing details">
                                                     <ChevronRight className="w-5 h-5" />
                                                 </a>
                                             </div>
@@ -536,6 +496,101 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={confirmAction === 'start'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Start Hearing?"
+                description="This will mark the case as currently in hearing."
+                confirmLabel="Start Hearing"
+            />
+            <ConfirmDialog
+                open={confirmAction === 'complete'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Complete Hearing"
+                description="Enter the sanction or resolution for this hearing."
+                confirmLabel="Close Case"
+                destructive={false}
+            >
+                <label htmlFor="hearing-sanction" className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                    Sanction / Resolution
+                </label>
+                <input
+                    id="hearing-sanction"
+                    type="text"
+                    value={hearingSanction}
+                    onChange={(e) => setHearingSanction(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                    placeholder="Enter the sanction or resolution..."
+                />
+            </ConfirmDialog>
+            <ConfirmDialog
+                open={confirmAction === 'endorse'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Endorse to Grievance?"
+                description="Are you sure you want to endorse this case?"
+                confirmLabel="Yes, endorse it"
+            />
+            <ConfirmDialog
+                open={confirmAction === 'close'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Close this case?"
+                description="This action marks the case as resolved."
+                confirmLabel="Yes, close case"
+            />
+            <ConfirmDialog
+                open={confirmAction === 'trash'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Move to Trash Bin?"
+                description="Are you sure you want to move this violation record to the trash?"
+                confirmLabel="Yes, move to trash"
+                destructive
+            />
+            <ConfirmDialog
+                open={confirmAction === 'osa'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Record OSA Intervention"
+                description="Log an action taken by the Office of Student Affairs for this case."
+                confirmLabel="Save Action"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="osa-type" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                            Intervention Type
+                        </label>
+                        <select
+                            id="osa-type"
+                            value={osaType}
+                            onChange={(e) => setOsaType(e.target.value)}
+                            className="form-input"
+                        >
+                            {Object.entries(OSA_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="osa-desc" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                            Description <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                            id="osa-desc"
+                            value={osaDescription}
+                            onChange={(e) => { setOsaDescription(e.target.value); setOsaError(''); }}
+                            rows={4}
+                            placeholder="Describe the intervention..."
+                            className="form-input"
+                        />
+                        {osaError && <p className="text-rose-500 text-xs mt-1.5 font-semibold">{osaError}</p>}
+                    </div>
+                </div>
+            </ConfirmDialog>
         </AuthenticatedLayout>
     );
 }

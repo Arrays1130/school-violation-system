@@ -2,6 +2,8 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Edit3, Hash, Layers, Type, Save, Info, AlertTriangle, ChevronDown } from 'lucide-react';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 const CATEGORIES = ['Appearance', 'Attendance', 'Conduct', 'Academic', 'Other'];
 
@@ -27,7 +29,16 @@ export default function Edit({ auth, violation }) {
             <Head title={`Edit ${violation.code}`} />
 
             <div className="max-w-3xl mx-auto space-y-6 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="vt-page-hero">
+                <PageMotion>
+                <MotionItem>
+                <Breadcrumbs items={[
+                    { label: 'Dashboard', href: route('dashboard') },
+                    { label: 'Violations', href: route('violations.index') },
+                    { label: violation.code, href: route('violations.show', violation.id) },
+                    { label: 'Edit' },
+                ]} />
+                </MotionItem>
+                <MotionItem className="vt-page-hero">
                     <div className="relative flex items-center gap-5">
                         <Link href={route('violations.index')} className="w-12 h-12 rounded-xl bg-slate-900/5 hover:bg-slate-700/80 border border-slate-600/80 flex items-center justify-center text-white/70 hover:text-white transition-all backdrop-blur-md">
                             <ArrowLeft className="w-5 h-5" />
@@ -43,25 +54,26 @@ export default function Edit({ auth, violation }) {
                             </p>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
-                <div className="bg-white rounded-2xl ring-1 ring-slate-100 shadow-sm overflow-hidden">
+                <MotionItem>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.4)] overflow-hidden">
                     <form onSubmit={submit}>
                         <div className="p-8 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Violation Code</label>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Violation Code</label>
                                     <div className="relative">
                                         <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        <input type="text" value={data.code} onChange={(e) => setData('code', e.target.value)} required className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm" />
+                                        <input type="text" value={data.code} onChange={(e) => setData('code', e.target.value)} required className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100" />
                                     </div>
                                     {errors.code && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.code}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Category</label>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Category</label>
                                     <div className="relative">
                                         <Layers className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        <select value={data.category} onChange={(e) => setData('category', e.target.value)} required className="w-full pl-10 pr-10 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm appearance-none">
+                                        <select value={data.category} onChange={(e) => setData('category', e.target.value)} required className="w-full pl-10 pr-10 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 appearance-none">
                                             <option value="">Select Category...</option>
                                             {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                                         </select>
@@ -72,19 +84,19 @@ export default function Edit({ auth, violation }) {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Violation Title</label>
-                                <input type="text" value={data.title} onChange={(e) => setData('title', e.target.value)} required className="w-full px-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm" />
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Violation Title</label>
+                                <input type="text" value={data.title} onChange={(e) => setData('title', e.target.value)} required className="w-full px-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100" />
                                 {errors.title && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.title}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Standard Sanction / Description</label>
-                                <textarea value={data.default_description} onChange={(e) => setData('default_description', e.target.value)} rows={4} className="w-full px-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm resize-none" />
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Standard Sanction / Description</label>
+                                <textarea value={data.default_description} onChange={(e) => setData('default_description', e.target.value)} rows={4} className="w-full px-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 resize-none" />
                                 {errors.default_description && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.default_description}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Severity Level</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Severity Level</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     {['Minor', 'Major'].map((level) => (
                                         <label key={level} className="cursor-pointer">
@@ -102,7 +114,7 @@ export default function Edit({ auth, violation }) {
                         </div>
 
                         <div className="px-8 py-5 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                            <Link href={route('violations.index')} className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancel</Link>
+                            <Link href={route('violations.index')} className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">Cancel</Link>
                             <button type="submit" disabled={processing} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center gap-2 disabled:opacity-50">
                                 <Save className="w-4 h-4" />
                                 Save Changes
@@ -110,6 +122,8 @@ export default function Edit({ auth, violation }) {
                         </div>
                     </form>
                 </div>
+                </MotionItem>
+                </PageMotion>
             </div>
         </AuthenticatedLayout>
     );

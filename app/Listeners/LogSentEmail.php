@@ -21,18 +21,22 @@ class LogSentEmail
      */
     public function handle(MessageSent $event): void
     {
-        $message = $event->message;
-        
-        $recipients = [];
-        foreach ($message->getTo() as $address) {
-            $recipients[] = $address->getAddress();
-        }
+        try {
+            $message = $event->message;
 
-        \App\Models\EmailLog::create([
-            'recipient' => implode(', ', $recipients),
-            'subject' => $message->getSubject(),
-            'content' => $message->getHtmlBody() ?: $message->getTextBody(),
-            'status' => 'sent',
-        ]);
+            $recipients = [];
+            foreach ($message->getTo() as $address) {
+                $recipients[] = $address->getAddress();
+            }
+
+            \App\Models\EmailLog::create([
+                'recipient' => implode(', ', $recipients),
+                'subject' => $message->getSubject() ?? '(no subject)',
+                'content' => $message->getHtmlBody() ?: $message->getTextBody(),
+                'status' => 'sent',
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

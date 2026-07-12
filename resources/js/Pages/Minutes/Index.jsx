@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import FilterBar from '@/Components/FilterBar';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, useForm, router } from '@inertiajs/react';
-import { FolderGit, UploadCloud, Plus, Files, FileText, Database, X, Tag, ChevronDown, Search, SlidersHorizontal, Trash2, Eye, UserSearch, CheckCircle2 } from 'lucide-react';
+import { FolderGit, UploadCloud, Plus, Files, FileText, Database, X, Tag, ChevronDown, Search, Trash2, Eye, UserSearch, CheckCircle2 } from 'lucide-react';
 import Pagination from '@/Components/Pagination';
 
-export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB, cases, flash }) {
+export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB, cases, filters }) {
     const [uploadModal, setUploadModal] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(new URLSearchParams(window.location.search).get('search') || '');
+    const [searchQuery, setSearchQuery] = useState(filters?.search || new URLSearchParams(window.location.search).get('search') || '');
     const [caseSearch, setCaseSearch] = useState('');
     const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
     const caseDropdownRef = useRef(null);
@@ -37,7 +41,9 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
             return;
         }
         const timeout = setTimeout(() => {
-            router.get(route('meeting-minutes.index'), { search: searchQuery }, { preserveState: true, preserveScroll: true, replace: true });
+            if (searchQuery !== (filters?.search || '')) {
+                router.get(route('meeting-minutes.index'), { search: searchQuery }, { preserveState: true, preserveScroll: true, replace: true });
+            }
         }, 300);
         return () => clearTimeout(timeout);
     }, [searchQuery]);
@@ -52,25 +58,22 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
         });
     };
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('meeting-minutes.index'), { search: searchQuery }, { preserveState: true, preserveScroll: true });
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        router.get(route('meeting-minutes.index'));
     };
 
+    const [deleteUrl, setDeleteUrl] = useState(null);
+
     const deleteRecord = (url) => {
-        Swal.fire({
-            title: 'Delete Record?',
-            text: "Are you sure you want to delete this record?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, delete it'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(url);
-            }
-        });
+        setDeleteUrl(url);
+    };
+
+    const confirmDelete = () => {
+        if (deleteUrl) {
+            router.delete(deleteUrl);
+            setDeleteUrl(null);
+        }
     };
 
     return (
@@ -80,19 +83,27 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
         >
             <Head title="Minutes & Documents" />
 
-            <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-                
-                {flash?.success && (
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 p-4 rounded-xl flex items-center gap-3 shadow-sm shadow-emerald-500/5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <Files className="w-5 h-5" />
-                        </div>
-                        <p className="text-sm font-semibold text-emerald-800">{flash.success}</p>
-                    </div>
-                )}
+            <ConfirmDialog
+                open={!!deleteUrl}
+                onClose={() => setDeleteUrl(null)}
+                onConfirm={confirmDelete}
+                title="Delete Record?"
+                description="Are you sure you want to delete this record? This cannot be undone."
+                confirmLabel="Yes, delete it"
+                destructive
+            />
 
+            <PageMotion className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+                <MotionItem>
+                    <Breadcrumbs items={[
+                        { label: 'Dashboard', href: route('dashboard') },
+                        { label: 'Minutes & Documents' },
+                    ]} />
+                </MotionItem>
+                
                 {/* Modern Header */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                     
                     <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -148,31 +159,16 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                             </div>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
                 {/* Repository Container */}
-                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden p-8 space-y-6">
-                    {/* Search & Filter */}
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <form onSubmit={handleSearch} className="w-full flex flex-col sm:flex-row gap-3">
-                            <div className="relative flex-1">
-                                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <Search className="w-4.5 h-4.5" />
-                                </div>
-                                <input 
-                                    type="text" 
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Search documents or student names..." 
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-200 focus:bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400"
-                                />
-                            </div>
-                            <button type="submit" className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 shrink-0">
-                                <SlidersHorizontal className="w-4 h-4" />
-                                Search Records
-                            </button>
-                        </form>
-                    </div>
+                <MotionItem className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden p-8 space-y-6">
+                    <FilterBar
+                        search={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        onClear={searchQuery ? handleClearSearch : undefined}
+                        placeholder="Search documents or student names..."
+                    />
 
                     {/* Files Table */}
                     <div className="overflow-hidden border border-gray-150 rounded-2xl">
@@ -237,12 +233,22 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-12 text-center">
-                                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-50 dark:bg-slate-800 mb-3 border border-gray-100 dark:border-slate-800">
-                                                    <Files className="w-6 h-6 text-slate-300" />
-                                                </div>
-                                                <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No records found</p>
-                                                <p className="text-xs font-medium text-slate-400 mt-1">Try adjusting your search criteria or upload a new document.</p>
+                                            <td colSpan="5">
+                                                <EmptyState
+                                                    icon={Files}
+                                                    title="No records found"
+                                                    message="Try adjusting your search criteria or upload a new document."
+                                                    action={
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setUploadModal(true)}
+                                                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors"
+                                                        >
+                                                            <UploadCloud className="w-4 h-4" />
+                                                            Upload Document
+                                                        </button>
+                                                    }
+                                                />
                                             </td>
                                         </tr>
                                     )}
@@ -255,8 +261,8 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                             </div>
                         )}
                     </div>
-                </div>
-            </div>
+                </MotionItem>
+            </PageMotion>
 
             {/* Upload Modal */}
             {uploadModal && (

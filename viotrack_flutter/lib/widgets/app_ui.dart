@@ -130,8 +130,11 @@ class AppUi {
     Widget child,
     int index, {
     int baseDelayMs = 45,
+    int maxStaggerSteps = 8,
   }) {
-    final delay = (index * baseDelayMs).ms;
+    // Cap the delay so lazily-built items deep in a list don't wait seconds.
+    final step = index < maxStaggerSteps ? index : maxStaggerSteps;
+    final delay = (step * baseDelayMs).ms;
     return child
         .animate()
         .fadeIn(duration: 320.ms, delay: delay)
@@ -142,6 +145,81 @@ class AppUi {
           delay: delay,
           curve: Curves.easeOutCubic,
         );
+  }
+
+  /// Animated number that counts up from 0 when first shown or when the
+  /// value changes. Keeps big metrics feeling alive.
+  static Widget animatedCount(
+    int value, {
+    required TextStyle style,
+    Duration duration = const Duration(milliseconds: 700),
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: value.toDouble()),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (context, animated, _) =>
+          Text('${animated.round()}', style: style),
+    );
+  }
+
+  static const List<Color> _avatarPalette = [
+    Color(0xFF2563EB),
+    Color(0xFF7C3AED),
+    Color(0xFF0891B2),
+    Color(0xFF059669),
+    Color(0xFFD97706),
+    Color(0xFFDB2777),
+    Color(0xFF4F46E5),
+    Color(0xFF0D9488),
+  ];
+
+  /// Circular avatar with the person's initials on a color derived from
+  /// their name, matching the web app's identity treatment.
+  static Widget initialsAvatar(
+    String name, {
+    double size = 46,
+    double radius = 14,
+  }) {
+    final trimmed = name.trim();
+    final parts = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final initials = parts.isEmpty
+        ? '?'
+        : parts.take(2).map((p) => p[0].toUpperCase()).join();
+    final color = trimmed.isEmpty
+        ? _avatarPalette.first
+        : _avatarPalette[trimmed.codeUnits.fold<int>(0, (a, b) => a + b) %
+              _avatarPalette.length];
+
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, Color.lerp(color, Colors.black, 0.22)!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.28),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Text(
+        initials,
+        style: GoogleFonts.inter(
+          fontSize: size * 0.34,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
   }
 
   static Widget sectionHeader(
@@ -207,7 +285,12 @@ class AppUi {
     return VtStatusChip.fromStatus(status, endorsed: endorsed);
   }
 
+  static Widget statusBadgeForCase(Map<String, dynamic> caseData) {
+    return VtStatusChip.fromCase(caseData);
+  }
+
   /// Hero metric card — one big number, clear label.
+  /// Pass [animatedValue] to count the number up instead of a static string.
   static Widget heroMetricCard({
     required String label,
     required String value,
@@ -217,6 +300,7 @@ class AppUi {
     Widget? badge,
     Widget? watermark,
     VoidCallback? onTap,
+    int? animatedValue,
   }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
@@ -313,16 +397,27 @@ class AppUi {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            value,
-                            style: GoogleFonts.inter(
-                              fontSize: valueSize,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: -1.2,
-                              height: 1.05,
-                            ),
-                          ),
+                          animatedValue != null
+                              ? animatedCount(
+                                  animatedValue,
+                                  style: GoogleFonts.inter(
+                                    fontSize: valueSize,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: -1.2,
+                                    height: 1.05,
+                                  ),
+                                )
+                              : Text(
+                                  value,
+                                  style: GoogleFonts.inter(
+                                    fontSize: valueSize,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: -1.2,
+                                    height: 1.05,
+                                  ),
+                                ),
                           const SizedBox(height: 6),
                           Text(
                             subtitle,
@@ -949,6 +1044,7 @@ class AppUi {
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
+    int? animatedValue,
   }) {
     return Container(
       width: 112,
@@ -979,16 +1075,27 @@ class AppUi {
                   child: Icon(icon, size: 15, color: color),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textMain,
-                    letterSpacing: -0.5,
-                    height: 1,
-                  ),
-                ),
+                animatedValue != null
+                    ? animatedCount(
+                        animatedValue,
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textMain,
+                          letterSpacing: -0.5,
+                          height: 1,
+                        ),
+                      )
+                    : Text(
+                        value,
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textMain,
+                          letterSpacing: -0.5,
+                          height: 1,
+                        ),
+                      ),
                 const SizedBox(height: 2),
                 Text(
                   label,
@@ -1146,6 +1253,7 @@ class AppUi {
     required Widget trailing,
     IconData? icon,
     Color? iconColor,
+    Widget? leading,
     VoidCallback? onTap,
   }) {
     return Container(
@@ -1160,7 +1268,10 @@ class AppUi {
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                if (icon != null) ...[
+                if (leading != null) ...[
+                  leading,
+                  const SizedBox(width: 12),
+                ] else if (icon != null) ...[
                   Container(
                     width: 44,
                     height: 44,

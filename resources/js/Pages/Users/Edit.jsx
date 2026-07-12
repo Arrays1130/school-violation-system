@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, User, Save, Shield, Key, Mail, Edit3 } from 'lucide-react';
 import InputError from '@/Components/InputError';
+import Breadcrumbs from '@/Components/Breadcrumbs';
 
 export default function Edit({ auth, userRecord }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -27,6 +28,12 @@ export default function Edit({ auth, userRecord }) {
             <Head title={`Edit User - ${userRecord.name}`} />
 
             <div className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <Breadcrumbs className="mb-6" items={[
+                    { label: 'Dashboard', href: route('dashboard') },
+                    { label: 'User Accounts', href: route('users.index') },
+                    { label: userRecord.name },
+                    { label: 'Edit' },
+                ]} />
                 
                 {/* Modern Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">

@@ -34,4 +34,13 @@ class SettingsArchiveTest extends TestCase
             ->post(route('settings.archive-cases'))
             ->assertForbidden();
     }
+
+    public function test_dean_cannot_archive_closed_cases(): void
+    {
+        $dean = User::factory()->dean('CCE')->create();
+
+        $this->actingAs($dean)
+            ->post(route('settings.archive-cases'))
+            ->assertForbidden();
+    }
 }

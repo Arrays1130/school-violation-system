@@ -28,3 +28,19 @@ export function BentoSkeleton() {
         </div>
     );
 }
+
+export function ListPageSkeleton() {
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+            <Skeleton className="h-36 rounded-2xl" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Skeleton className="h-24 rounded-2xl" />
+                <Skeleton className="h-24 rounded-2xl" />
+                <Skeleton className="h-24 rounded-2xl" />
+                <Skeleton className="h-24 rounded-2xl" />
+            </div>
+            <Skeleton className="h-20 rounded-2xl" />
+            <Skeleton className="h-[420px] rounded-2xl" />
+        </div>
+    );
+}

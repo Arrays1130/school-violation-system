@@ -2,6 +2,8 @@ import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, FilePlus2, Hash, Layers, Type, Save, Info, AlertTriangle, ChevronDown } from 'lucide-react';
+import Breadcrumbs from '@/Components/Breadcrumbs';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 const CATEGORIES = ['Appearance', 'Attendance', 'Conduct', 'Academic', 'Other'];
 
@@ -27,8 +29,15 @@ export default function Create({ auth }) {
             <Head title="New Violation Type" />
 
             <div className="max-w-3xl mx-auto space-y-6 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="vt-page-hero">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]" />
+                <PageMotion>
+                <MotionItem>
+                <Breadcrumbs items={[
+                    { label: 'Dashboard', href: route('dashboard') },
+                    { label: 'Violations', href: route('violations.index') },
+                    { label: 'New Violation' },
+                ]} />
+                </MotionItem>
+                <MotionItem className="vt-page-hero">
                     <div className="relative flex items-center gap-5">
                         <Link href={route('violations.index')} className="w-12 h-12 rounded-xl bg-slate-900/5 hover:bg-slate-700/80 border border-slate-600/80 flex items-center justify-center text-white/70 hover:text-white transition-all backdrop-blur-md">
                             <ArrowLeft className="w-5 h-5" />
@@ -42,9 +51,9 @@ export default function Create({ auth }) {
                             <p className="text-slate-400 text-sm mt-2">Define a new handbook rule and standard sanction.</p>
                         </div>
                     </div>
-                </div>
-
-                <div className="bg-white rounded-2xl ring-1 ring-slate-100 shadow-sm overflow-hidden">
+                </MotionItem>
+                <MotionItem>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.4)] overflow-hidden">
                     <form onSubmit={submit}>
                         <div className="p-8 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -58,7 +67,7 @@ export default function Create({ auth }) {
                                             onChange={(e) => setData('code', e.target.value)}
                                             placeholder="e.g. V-001"
                                             required
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-200 rounded-xl text-sm focus:bg-slate-900 dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                            className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                                         />
                                     </div>
                                     {errors.code && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.code}</p>}
@@ -71,7 +80,7 @@ export default function Create({ auth }) {
                                             value={data.category}
                                             onChange={(e) => setData('category', e.target.value)}
                                             required
-                                            className="w-full pl-10 pr-10 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-200 rounded-xl text-sm focus:bg-slate-900 dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none"
+                                            className="w-full pl-10 pr-10 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none"
                                         >
                                             <option value="">Select Category...</option>
                                             {CATEGORIES.map((cat) => (
@@ -94,7 +103,7 @@ export default function Create({ auth }) {
                                         onChange={(e) => setData('title', e.target.value)}
                                         placeholder="Official violation title..."
                                         required
-                                        className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-200 rounded-xl text-sm focus:bg-slate-900 dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                        className="w-full pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                                     />
                                 </div>
                                 {errors.title && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.title}</p>}
@@ -107,7 +116,7 @@ export default function Create({ auth }) {
                                     onChange={(e) => setData('default_description', e.target.value)}
                                     rows={4}
                                     placeholder="Define the standard sanction for this violation..."
-                                    className="w-full px-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-200 rounded-xl text-sm focus:bg-slate-900 dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
+                                    className="w-full px-4 py-3 bg-gray-50/50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
                                 />
                                 {errors.default_description && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.default_description}</p>}
                             </div>
@@ -147,6 +156,8 @@ export default function Create({ auth }) {
                         </div>
                     </form>
                 </div>
+                </MotionItem>
+                </PageMotion>
             </div>
         </AuthenticatedLayout>
     );

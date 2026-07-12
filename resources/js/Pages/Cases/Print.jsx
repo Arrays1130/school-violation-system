@@ -115,14 +115,14 @@ export default function Print({ auth, case: caseRecord }) {
                     <button
                         type="button"
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-black border border-black rounded font-sans text-sm hover:bg-gray-100"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white border border-slate-700 rounded-lg font-sans text-sm font-semibold hover:bg-slate-900 transition-colors"
                     >
                         <Printer className="w-4 h-4" />
                         Print Report
                     </button>
                     <Link
                         href={route('reports.index')}
-                        className="inline-block px-5 py-2.5 bg-slate-900 text-black border border-black rounded font-sans text-sm hover:bg-gray-100"
+                        className="inline-block px-5 py-2.5 bg-slate-800 text-white border border-slate-700 rounded-lg font-sans text-sm font-semibold hover:bg-slate-900 transition-colors"
                     >
                         Back to Reports
                     </Link>

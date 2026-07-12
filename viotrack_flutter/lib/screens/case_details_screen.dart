@@ -3,11 +3,16 @@ import 'student_profile_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/page_transitions.dart';
 import 'package:flutter/services.dart';
 import '../widgets/app_ui.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/case_stale_banner.dart';
+import '../widgets/case_timeline_widget.dart';
+import '../utils/case_status.dart';
 import '../widgets/vt_ui.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class CaseDetailsScreen extends StatefulWidget {
   final int caseId;
@@ -23,6 +28,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   Map<String, dynamic>? _case;
   bool _isLoading = true;
   bool _acknowledging = false;
+  bool _showingStaleData = false;
   Map<String, String>? _authHeaders;
 
   @override
@@ -51,10 +57,16 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         setState(() {
           _case = result;
           _isLoading = false;
+          _showingStaleData = false;
         });
       }
     } catch (e) {
-      if (mounted && _case == null) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _showingStaleData = _case != null;
+        });
+      }
     }
   }
 
@@ -91,10 +103,11 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final endorsed = _case?['endorsed_at'] != null;
-    final status = _case?['status']?.toString() ?? 'Pending';
-    final showAcknowledge =
-        endorsed && status != 'Closed' && status != 'Resolved';
+    final endorsed = CaseStatus.isEndorsed(
+      _case == null ? null : Map<String, dynamic>.from(_case!),
+    );
+    final status = CaseStatus.normalize(_case?['status']?.toString());
+    final showAcknowledge = endorsed && status != 'Closed';
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
@@ -139,16 +152,22 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Widget _buildMainContent() {
     final student = _case?['student'] ?? {};
+    final studentName = student['full_name']?.toString() ?? 'Student';
     final violation = _case?['violation'] ?? {};
     final severity = violation['severity']?.toString() ?? 'Minor';
-    final status = _case?['status']?.toString() ?? 'Pending';
-    final statusColor = _getStatusColor(status);
+    final status = CaseStatus.normalize(_case?['status']?.toString());
+    final endorsed = CaseStatus.isEndorsed(Map<String, dynamic>.from(_case!));
+    final statusColor = CaseStatus.colorFor(status, endorsed: endorsed);
 
     return RefreshIndicator(
       onRefresh: () => _fetchDetails(force: true),
       color: AppTheme.accentCyan,
       child: CustomScrollView(
         slivers: [
+          if (_showingStaleData)
+            SliverToBoxAdapter(
+              child: CaseStaleBanner(onRetry: () => _fetchDetails(force: true)),
+            ),
           // Sticky header with refined gradient
           SliverAppBar(
             expandedHeight: 236,
@@ -157,6 +176,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             stretch: true,
             backgroundColor: AppTheme.primaryNavy,
             leading: IconButton(
+              tooltip: 'Go back',
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -200,9 +220,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                         HapticFeedback.lightImpact();
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                StudentProfileScreen(student: student),
+                          AppPageTransitions.fadeSlide(
+                            StudentProfileScreen(student: student),
                           ),
                         );
                       },
@@ -212,36 +231,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                             tag: 'case_${widget.caseId}_avatar',
                             child: Material(
                               color: Colors.transparent,
-                              child: Container(
-                                width: 76,
-                                height: 76,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _getSeverityColor(
-                                        severity,
-                                      ).withValues(alpha: 0.5),
-                                      blurRadius: 24,
-                                      offset: const Offset(0, 12),
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    _getSeverityIcon(severity),
-                                    size: 42,
-                                    color: _getSeverityColor(severity),
-                                  ),
-                                ),
+                              child: AppUi.initialsAvatar(
+                                studentName,
+                                size: 76,
+                                radius: 22,
                               ),
                             ),
                           ),
@@ -342,46 +335,72 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildStatusCard(status, statusColor, severity),
+                      AppUi.staggerIn(
+                        _buildStatusCard(status, statusColor, severity),
+                        0,
+                      ),
                       const SizedBox(height: 24),
 
-                      AppUi.inlineSectionHeader(
-                        'Case details',
-                        icon: Icons.dashboard_rounded,
+                      AppUi.staggerIn(
+                        AppUi.inlineSectionHeader(
+                          'Case details',
+                          icon: Icons.dashboard_rounded,
+                        ),
+                        1,
                       ),
                       const SizedBox(height: 12),
-                      _buildBentoGrid(violation, severity, status),
+                      AppUi.staggerIn(
+                        _buildBentoGrid(violation, severity, status),
+                        2,
+                      ),
                       const SizedBox(height: 24),
 
-                      AppUi.inlineSectionHeader(
-                        'Process timeline',
-                        icon: Icons.timeline_rounded,
-                        subtitle: 'Track how this case moved through review.',
+                      AppUi.staggerIn(
+                        AppUi.inlineSectionHeader(
+                          'Process timeline',
+                          icon: Icons.timeline_rounded,
+                          subtitle: 'Track how this case moved through review.',
+                        ),
+                        3,
                       ),
                       const SizedBox(height: 16),
-                      _buildTimeline(status),
+                      AppUi.staggerIn(
+                        CaseTimelineWidget(currentStatus: status),
+                        4,
+                      ),
                       const SizedBox(height: 24),
 
                       if (_case!['hearings'] != null &&
                           (_case!['hearings'] as List).isNotEmpty) ...[
-                        AppUi.inlineSectionHeader(
-                          'Official hearing',
-                          icon: Icons.calendar_month_rounded,
+                        AppUi.staggerIn(
+                          AppUi.inlineSectionHeader(
+                            'Official hearing',
+                            icon: Icons.calendar_month_rounded,
+                          ),
+                          5,
                         ),
                         const SizedBox(height: 12),
-                        _buildHearingCard((_case!['hearings'] as List).first),
+                        AppUi.staggerIn(
+                          _buildHearingCard(
+                            (_case!['hearings'] as List).first,
+                          ),
+                          6,
+                        ),
                         const SizedBox(height: 24),
                       ],
 
                       if (_case!['attachments'] != null &&
                           (_case!['attachments'] as List).isNotEmpty) ...[
-                        AppUi.inlineSectionHeader(
-                          'Digital evidence',
-                          icon: Icons.collections_rounded,
-                          subtitle: 'Photos and files attached to this case.',
+                        AppUi.staggerIn(
+                          AppUi.inlineSectionHeader(
+                            'Digital evidence',
+                            icon: Icons.collections_rounded,
+                            subtitle: 'Photos and files attached to this case.',
+                          ),
+                          5,
                         ),
                         const SizedBox(height: 12),
-                        _buildEvidenceGallery(),
+                        AppUi.staggerIn(_buildEvidenceGallery(), 6),
                         const SizedBox(height: 24),
                       ],
                     ],
@@ -428,7 +447,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                VtStatusChip.fromStatus(status),
+                VtStatusChip.fromCase(Map<String, dynamic>.from(_case!)),
               ],
             ),
           ),
@@ -685,110 +704,6 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     );
   }
 
-  Widget _buildTimeline(String currentStatus) {
-    final endorsed = _case?['endorsed_at'] != null;
-    final stages = ["Pending", "Hearing", "Endorsed", "Closed"];
-    int currentIdx = 0;
-    if (currentStatus == 'Closed' || currentStatus == 'Resolved') {
-      currentIdx = 3;
-    } else if (endorsed) {
-      currentIdx = 2;
-    } else if (currentStatus == 'Hearing Scheduled') {
-      currentIdx = 1;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: AppTheme.primarySlate.withValues(alpha: 0.04),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(stages.length, (i) {
-          final isDone = i <= currentIdx;
-          final isLast = i == stages.length - 1;
-          return Expanded(
-            child: Row(
-              children: [
-                Column(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: isDone ? AppTheme.accentCyan : Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDone
-                              ? AppTheme.accentCyan
-                              : AppTheme.inputBorder,
-                          width: isDone ? 0 : 2,
-                        ),
-                        boxShadow: isDone
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.accentCyan.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Icon(
-                        isDone ? Icons.check_rounded : Icons.circle,
-                        color: isDone ? Colors.white : Colors.transparent,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      stages[i].split(" ").first,
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: isDone ? AppTheme.textMain : AppTheme.textMuted,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      height: 3,
-                      color: isDone
-                          ? AppTheme.accentCyan
-                          : AppTheme.inputBorder.withValues(alpha: 0.5),
-                      margin: const EdgeInsets.only(
-                        bottom: 26,
-                        left: 8,
-                        right: 8,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
   Widget _buildHearingCard(dynamic hearing) {
     final scheduledAt =
         hearing['scheduled_at']?.toString() ??
@@ -952,7 +867,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           ),
         ),
       ),
-    );
+    )
+        .animate()
+        .fadeIn(duration: 350.ms)
+        .slideY(begin: 0.35, end: 0, curve: Curves.easeOutCubic);
   }
 
   Widget _buildEvidenceGallery() {
@@ -1034,20 +952,6 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     } catch (e) {
       return dateTimeStr;
     }
-  }
-
-  Color _getStatusColor(String status) {
-    if (status == 'Resolved' || status == 'Closed') {
-      return AppTheme.accentEmerald;
-    }
-    if (status == 'Hearing Scheduled') return AppTheme.accentCyan;
-    return AppTheme.accentAmber;
-  }
-
-  IconData _getSeverityIcon(String severity) {
-    if (severity == 'Major') return Icons.warning_rounded;
-    if (severity == 'Moderate') return Icons.error_outline_rounded;
-    return Icons.info_outline_rounded;
   }
 
   Color _getSeverityColor(String severity) {

@@ -267,6 +267,41 @@ class ReportController extends Controller
         ]);
     }
 
+    public function systemExport(Request $request)
+    {
+        $cases = \App\Models\StudentCase::query()
+            ->forUser($request->user())
+            ->whereHas('student');
+
+        $statusCounts = (clone $cases)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('status')->pluck('total', 'status');
+
+        $byDepartment = (clone $cases)
+            ->join('students', 'cases.student_id', '=', 'students.id')
+            ->selectRaw('students.department, COUNT(*) as total')
+            ->groupBy('students.department')
+            ->orderByDesc('total')
+            ->get();
+
+        $filename = 'system_overview_'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($statusCounts, $byDepartment) {
+            $file = fopen('php://output', 'w');
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, ['Metric', 'Value']);
+            fputcsv($file, ['Total Cases', $statusCounts->sum()]);
+            foreach ($statusCounts as $status => $count) {
+                fputcsv($file, [$status, $count]);
+            }
+            fputcsv($file, []);
+            fputcsv($file, ['Department', 'Cases']);
+            foreach ($byDepartment as $row) {
+                fputcsv($file, [$row->department, $row->total]);
+            }
+            fclose($file);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     private function getFilteredCases(Request $request)
     {
         $query = \App\Models\StudentCase::query()

@@ -21,7 +21,7 @@ class StudentSeeder extends Seeder
         ];
 
         $sections = ['A', 'B', 'C', 'D'];
-        $yearLevels = ['1', '2', '3', '4'];
+        $yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 
         $filipinoFirstNames = [
             'Juan', 'Maria', 'Jose', 'Angelo', 'Jayson', 'Ramil', 'Manuel', 'Ricardo', 'Antonio', 'Crisanto',

@@ -1,52 +1,38 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import Swal from 'sweetalert2';
+import { motion } from 'framer-motion';
+import { showInfoToast } from '@/lib/sweetAlert';
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react';
 import {
     LayoutDashboard, GraduationCap, FolderOpen, ShieldAlert, BookOpen,
-    ClipboardList, BarChart3, Sparkles, Settings, LogOut, Menu, Bell, History,
+    ClipboardList, BarChart3, Settings, LogOut, Menu, Bell, History,
     UserCircle, ChevronRight, X, Shield, Database, MessageSquare, FileWarning, CheckCircle2,
-    Trash2, List, Sliders
+    Trash2, List, Sliders, Moon, Sun, Mail
 } from 'lucide-react';
+import MobileBottomNav from '@/Components/MobileBottomNav';
+import AiAssistantFab from '@/Components/AiAssistantFab';
 
 export default function Authenticated({ user, header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { openCasesCount, auth, flash } = usePage().props;
+    const [isDark, setIsDark] = useState(false);
+    const { openCasesCount, auth } = usePage().props;
+    const { url } = usePage();
 
     useEffect(() => {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const dark = saved ? saved === 'dark' : prefersDark;
+        document.documentElement.classList.toggle('dark', dark);
+        setIsDark(dark);
     }, []);
 
-    useEffect(() => {
-        if (flash?.success) {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'Success',
-                text: flash.success,
-                showConfirmButton: false,
-                timer: 4000,
-                timerProgressBar: true,
-                customClass: {
-                    popup: '!rounded-xl !shadow-xl !border !border-slate-100 dark:border-slate-800',
-                }
-            });
-        }
-        if (flash?.error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Cannot Proceed',
-                text: flash.error,
-                confirmButtonColor: '#e11d48',
-                customClass: {
-                    popup: '!rounded-xl !shadow-xl !border !border-slate-100 dark:border-slate-800',
-                }
-            });
-        }
-    }, [flash]);
-    
+    const toggleTheme = () => {
+        const next = !isDark;
+        document.documentElement.classList.toggle('dark', next);
+        localStorage.setItem('theme', next ? 'dark' : 'light');
+        setIsDark(next);
+    };
+
     // Fallback to auth.user if user is not explicitly passed as a prop
     const currentUser = user || auth?.user || {};
     const [notifications, setNotifications] = useState(auth?.unreadNotifications || []);
@@ -59,26 +45,10 @@ export default function Authenticated({ user, header, children }) {
         channel.notification((notification) => {
             setNotifications(prev => [notification, ...prev]);
 
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'info',
-                title: 'New Violation Logged',
-                text: `${notification.student_name} - ${notification.violation_title}`,
-                showConfirmButton: false,
-                timer: 5000,
-                timerProgressBar: true,
-                showCloseButton: true,
-                customClass: {
-                    popup: '!rounded-xl !shadow-xl !border !border-slate-100 dark:border-slate-800',
-                    title: '!font-bold !text-slate-800 dark:text-slate-200 !text-sm',
-                    htmlContainer: '!text-slate-500 dark:text-slate-400 !text-sm'
-                },
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-            });
+            showInfoToast(
+                `${notification.student_name} - ${notification.violation_title}`,
+                'New Violation Logged',
+            );
         });
 
         return () => {
@@ -132,6 +102,7 @@ export default function Authenticated({ user, header, children }) {
                     } : null,
                     subItems: [
                         { name: 'All Cases', href: route('cases.index'), icon: List, activeCheck: () => route().current('cases.index') || route().current('cases.show') || route().current('cases.edit') || route().current('cases.create') || route().current('cases.trash') || route().current('hearings.*') },
+                        { name: 'Hearings Calendar', href: route('hearings.calendar'), icon: ClipboardList, activeCheck: () => route().current('hearings.calendar') },
                         ...(currentUser?.role !== 'dean' ? [{ name: 'Trash Bin', href: route('cases.trash'), icon: Trash2, activeCheck: () => route().current('cases.trash') }] : []),
                     ]
                 },
@@ -161,23 +132,15 @@ export default function Authenticated({ user, header, children }) {
             label: 'System',
             items: [
                 ...(currentUser?.role === 'super_admin' ? [{ name: 'User Accounts', href: route('users.index'), icon: UserCircle, activeCheck: () => route().current('users.*') }] : []),
+                ...(currentUser?.role === 'super_admin' ? [
+                    { name: 'Email Logs', href: route('reports.email-logs'), icon: Mail, activeCheck: () => route().current('reports.email-logs') },
+                ] : []),
                 ...(currentUser?.role === 'super_admin' || currentUser?.role === 'dean' ? [
                     { name: 'Audit Logs', href: route('reports.audit-logs'), icon: Shield, activeCheck: () => route().current('reports.audit-logs') },
                     { name: 'Message Templates', href: route('message-templates.index'), icon: MessageSquare, activeCheck: () => route().current('message-templates.*') },
                     { name: 'System Settings', href: route('settings.index'), icon: Sliders, activeCheck: () => route().current('settings.*') }
                 ] : []),
-                { 
-                    name: 'AI Assistant', 
-                    href: route('ai-assistant.index'), 
-                    icon: Sparkles, 
-                    activeCheck: () => route().current('ai-assistant.*'),
-                    badge: {
-                        text: 'Beta',
-                        activeClass: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400',
-                        inactiveClass: 'bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400'
-                    }
-                },
-                { name: 'Settings', href: route('profile.edit'), icon: Settings, activeCheck: () => route().current('profile.*') },
+                { name: 'My Profile', href: route('profile.edit'), icon: Settings, activeCheck: () => route().current('profile.*') },
             ],
         },
     ];
@@ -195,15 +158,13 @@ export default function Authenticated({ user, header, children }) {
         const className = `group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200
             ${isActive
                 ? 'bg-blue-50/80 dark:bg-indigo-500/10 text-blue-700 dark:text-indigo-400 shadow-[0_2px_10px_rgb(59,130,246,0.06)] border border-blue-100/50 dark:border-indigo-500/20'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800/50 hover:text-blue-600 dark:hover:text-indigo-400'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-blue-600 dark:hover:text-indigo-400'
             }`;
 
         const iconClassName = `w-[18px] h-[18px] transition-colors
             ${isActive 
                 ? 'text-blue-600 dark:text-indigo-400' 
-                : item.name === 'AI Assistant' 
-                    ? 'text-purple-500 dark:text-purple-400 group-hover:text-purple-600 dark:group-hover:text-purple-300' 
-                    : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-indigo-400'
+                : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-indigo-400'
             }`;
 
         const badgeElement = item.badge ? (
@@ -255,7 +216,7 @@ export default function Authenticated({ user, header, children }) {
     };
 
     return (
-        <div className="h-screen w-screen overflow-hidden flex bg-slate-50/50 dark:bg-slate-800/50 dark:bg-slate-900 font-['Inter',sans-serif]">
+        <div className="h-screen w-screen overflow-hidden flex bg-slate-50/50 dark:bg-slate-950 font-['Inter',sans-serif]">
 
             {/* Mobile overlay */}
             {sidebarOpen && (
@@ -266,10 +227,10 @@ export default function Authenticated({ user, header, children }) {
             )}
 
             {/* ========== SIDEBAR ========== */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-66 bg-white/95 dark:bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-slate-100/80 dark:border-slate-800/80 dark:border-slate-800/80 flex flex-col transition-all duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-[4px_0_24px_rgb(0,0,0,0.02)] lg:shadow-none shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-66 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-slate-100/80 dark:border-slate-800/80 flex flex-col transition-all duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-[4px_0_24px_rgb(0,0,0,0.02)] dark:shadow-[4px_0_32px_rgb(0,0,0,0.35)] lg:shadow-none shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 
                 {/* Logo Header */}
-                <div className="px-6 py-6 flex-shrink-0 border-b border-slate-100/80 dark:border-slate-800/80 dark:border-slate-800/80 flex items-center justify-between">
+                <div className="px-6 py-6 flex-shrink-0 border-b border-slate-100/80 dark:border-slate-800/80 flex items-center justify-between">
                     <div className="flex items-center gap-3.5">
                         <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-white/10 shrink-0 p-1">
                             <img 
@@ -337,10 +298,10 @@ export default function Authenticated({ user, header, children }) {
             </aside>
 
             {/* ========== MAIN CONTENT ========== */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50 dark:bg-slate-800/50 dark:bg-slate-900">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50/50 dark:bg-slate-950">
 
                 {/* Top Bar */}
-                <header className="h-16 bg-white/80 dark:bg-slate-900/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-6 sm:px-8 lg:px-10 sticky top-0 z-30 shrink-0">
+                <header className="h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-6 sm:px-8 lg:px-10 sticky top-0 z-30 shrink-0">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -355,7 +316,15 @@ export default function Authenticated({ user, header, children }) {
                         )}
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <button
+                            type="button"
+                            onClick={toggleTheme}
+                            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors border border-slate-100 dark:border-slate-800"
+                            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                        >
+                            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
                         <HeadlessMenu as="div" className="relative">
                             <HeadlessMenu.Button className="p-2 text-slate-400 hover:text-slate-500 dark:text-slate-400 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800/50 rounded-xl transition-colors border border-slate-100 dark:border-slate-800 relative focus:outline-none">
                                 <Bell className="w-5 h-5" />
@@ -429,11 +398,19 @@ export default function Authenticated({ user, header, children }) {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 no-scrollbar">
-                    <div className="max-w-7xl mx-auto">
+                <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 pb-28 lg:pb-10 no-scrollbar">
+                    <motion.div
+                        key={url}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        className="max-w-7xl mx-auto"
+                    >
                         {children}
-                    </div>
+                    </motion.div>
                 </main>
+                <MobileBottomNav user={currentUser} />
+                <AiAssistantFab />
             </div>
         </div>
     );

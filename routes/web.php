@@ -119,6 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Hearings
     Route::get('/cases/{case}/hearings/create', [HearingController::class, 'create'])->name('hearings.create');
     Route::get('/hearings/{hearing}/print-mom', [HearingController::class, 'printMom'])->name('hearings.print-mom');
+    Route::get('/hearings/calendar', [HearingController::class, 'calendar'])->name('hearings.calendar');
     Route::resource('hearings', HearingController::class)->except(['create', 'index']);
     Route::post('/hearings/{hearing}/start', [HearingController::class, 'start'])->name('hearings.start');
     Route::post('/hearings/{hearing}/complete', [HearingController::class, 'markCompleted'])->name('hearings.complete');
@@ -143,13 +144,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/attachments/{attachment}', [CaseAttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::get('/ai-assistant', [App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant.index');
-    Route::post('/ai-assistant/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])->name('ai-assistant.chat');
-    Route::post('/api/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])->name('api.chat');
-    Route::post('/ai-assistant/stream', [App\Http\Controllers\AiAssistantController::class, 'stream'])->name('ai-assistant.stream');
+    Route::post('/ai-assistant/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])
+        ->middleware('throttle:30,1')
+        ->name('ai-assistant.chat');
+    Route::post('/api/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])
+        ->middleware('throttle:30,1')
+        ->name('api.chat');
+    Route::post('/ai-assistant/stream', [App\Http\Controllers\AiAssistantController::class, 'stream'])
+        ->middleware('throttle:30,1')
+        ->name('ai-assistant.stream');
+    Route::post('/ai-assistant/feedback', [App\Http\Controllers\AiAssistantController::class, 'feedback'])
+        ->middleware('throttle:60,1')
+        ->name('ai-assistant.feedback');
+    Route::post('/ai-assistant/clear', [App\Http\Controllers\AiAssistantController::class, 'clearConversation'])
+        ->name('ai-assistant.clear');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/system', [ReportController::class, 'system'])->name('reports.system');
+    Route::get('/reports/system/export', [ReportController::class, 'systemExport'])->name('reports.system.export');
     Route::get('/reports/sanctions', [ReportController::class, 'sanctions'])->name('reports.sanctions');
     Route::get('/reports/retrieval', [ReportController::class, 'retrieval'])->name('reports.retrieval');
     Route::get('/reports/email-logs', [EmailLogController::class, 'index'])->name('reports.email-logs');

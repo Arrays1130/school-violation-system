@@ -192,7 +192,14 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _selectedIndex != 0) {
+          navigateToTab(0);
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppTheme.bgLight,
       extendBody: true,
       body: Column(
@@ -258,7 +265,12 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
               index: _selectedIndex,
               children: List.generate(5, (i) {
                 if (!_loadedTabs.contains(i)) return const SizedBox.shrink();
-                return _screenFor(i);
+                return AnimatedOpacity(
+                  opacity: _selectedIndex == i ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  child: _screenFor(i),
+                );
               }),
             ),
           ),
@@ -279,119 +291,134 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
             top: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Row(
-                children: List.generate(5, (i) {
-                  final selected = _selectedIndex == i;
-                  final isAlerts = i == 3;
-                  return Expanded(
-                    child: Semantics(
-                      button: true,
-                      selected: selected,
-                      label: _semanticsLabels[i],
-                      child: Tooltip(
-                        message: _labels[i],
-                        child: GestureDetector(
-                          onTap: () => _onItemTapped(i),
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    gradient: selected
-                                        ? AppTheme.heroGradient
-                                        : null,
-                                    color: selected
-                                        ? null
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: selected
-                                        ? [
-                                            BoxShadow(
-                                              color: AppTheme.primary
-                                                  .withValues(alpha: 0.2),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(
-                                        selected ? _iconsActive[i] : _icons[i],
-                                        size: selected ? 17 : 20,
-                                        color: selected
-                                            ? Colors.white
-                                            : AppTheme.textMuted,
-                                      ),
-                                      if (isAlerts && _unreadCount > 0)
-                                        Positioned(
-                                          top: 2,
-                                          right: 2,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 5,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.accentRose,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: AppTheme.bgCard,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              _unreadCount > 99
-                                                  ? '99+'
-                                                  : '$_unreadCount',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _labels[i],
-                                  style: GoogleFonts.inter(
-                                    fontSize: 9,
-                                    height: 1.1,
-                                    fontWeight: selected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: selected
-                                        ? AppTheme.primaryNavy
-                                        : AppTheme.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final tabWidth = constraints.maxWidth / 5;
+                  return Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeOutCubic,
+                        left: _selectedIndex * tabWidth + 4,
+                        top: 4,
+                        width: tabWidth - 8,
+                        height: 52,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.heroGradient,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primary.withValues(alpha: 0.22),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ),
+                      Row(
+                        children: List.generate(5, (i) {
+                          final selected = _selectedIndex == i;
+                          final isAlerts = i == 3;
+                          return Expanded(
+                            child: Semantics(
+                              button: true,
+                              selected: selected,
+                              label: _semanticsLabels[i],
+                              child: Tooltip(
+                                message: _labels[i],
+                                child: GestureDetector(
+                                  onTap: () => _onItemTapped(i),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 2),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 32,
+                                          height: 32,
+                                          child: Stack(
+                                            clipBehavior: Clip.none,
+                                            alignment: Alignment.center,
+                                            children: [
+                                              AnimatedSwitcher(
+                                                duration: const Duration(milliseconds: 200),
+                                                child: Icon(
+                                                  selected ? _iconsActive[i] : _icons[i],
+                                                  key: ValueKey(selected),
+                                                  size: selected ? 18 : 20,
+                                                  color: selected
+                                                      ? Colors.white
+                                                      : AppTheme.textMuted,
+                                                ),
+                                              ),
+                                              if (isAlerts && _unreadCount > 0)
+                                                Positioned(
+                                                  top: 0,
+                                                  right: 0,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppTheme.accentRose,
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      border: Border.all(
+                                                        color: AppTheme.bgCard,
+                                                        width: 1.5,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      _unreadCount > 99
+                                                          ? '99+'
+                                                          : '$_unreadCount',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        AnimatedDefaultTextStyle(
+                                          duration: const Duration(milliseconds: 200),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 9,
+                                            height: 1.1,
+                                            fontWeight: selected
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: selected
+                                                ? AppTheme.primaryNavy
+                                                : AppTheme.textMuted,
+                                          ),
+                                          child: Text(_labels[i]),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   );
-                }),
+                },
               ),
             ),
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -4,10 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import '../api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/page_transitions.dart';
 import 'case_details_screen.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
+import '../widgets/cases_fetch_error_state.dart';
 import '../widgets/app_ui.dart';
+import '../utils/case_status.dart';
 import '../widgets/vt_ui.dart';
 
 class CasesScreen extends StatefulWidget {
@@ -33,6 +36,7 @@ class CasesScreenState extends State<CasesScreen> {
   bool _hasMore = true;
   bool _loadingMore = false;
   bool _showAdvancedFilters = false;
+  bool _fetchError = false;
 
   @override
   void initState() {
@@ -141,11 +145,15 @@ class CasesScreenState extends State<CasesScreen> {
           }
           _filteredViolations = _computeFilteredList();
           _isLoading = false;
+          _fetchError = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _fetchError = _allViolations.isEmpty;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -171,16 +179,15 @@ class CasesScreenState extends State<CasesScreen> {
       final violationTitle = (v['violation']?['title'] ?? '')
           .toString()
           .toLowerCase();
-      final severity = v['violation']?['severity'] ?? 'Minor';
-      final status = v['status'] ?? 'Pending';
-      final dateStr = v['created_at'] ?? '';
+      final caseMap = Map<String, dynamic>.from(v as Map);
+      final severity = caseMap['violation']?['severity'] ?? 'Minor';
+      final dateStr = caseMap['created_at'] ?? '';
 
       final matchesSearch =
           studentName.contains(query) || violationTitle.contains(query);
       final matchesSeverity =
           _selectedSeverity == 'All' || severity == _selectedSeverity;
-      final matchesStatus =
-          _selectedStatus == 'All' || status == _selectedStatus;
+      final matchesStatus = CaseStatus.matchesFilter(caseMap, _selectedStatus);
 
       var matchesDate = true;
       if (_selectedDate != 'All Time' && dateStr.isNotEmpty) {
@@ -233,9 +240,10 @@ class CasesScreenState extends State<CasesScreen> {
     if (status == null || status == 'All') {
       return _allViolations.length;
     }
-    return _allViolations
-        .where((item) => (item['status'] ?? 'Pending').toString() == status)
-        .length;
+    if (status == 'Hearings') {
+      return CaseStatus.hearingStageCount(_allViolations);
+    }
+    return CaseStatus.countForFilter(_allViolations, status);
   }
 
   void _clearAllFilters() {
@@ -274,6 +282,11 @@ class CasesScreenState extends State<CasesScreen> {
                   child: ShimmerLoader.buildListSkeleton(),
                 ),
               )
+            else if (_fetchError && _filteredViolations.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: CasesFetchErrorState(onRetry: () => _fetchData(forcedRefresh: true)),
+              )
             else if (_filteredViolations.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -292,8 +305,11 @@ class CasesScreenState extends State<CasesScreen> {
                         );
                       }
                       return RepaintBoundary(
-                        child: _buildViolationCard(
-                          _filteredViolations[index],
+                        child: AppUi.staggerIn(
+                          _buildViolationCard(
+                            _filteredViolations[index],
+                            index,
+                          ),
                           index,
                         ),
                       );
@@ -340,7 +356,9 @@ class CasesScreenState extends State<CasesScreen> {
           ),
         ],
       ),
-      bottom: Row(
+      bottom: Wrap(
+        spacing: 10,
+        runSpacing: 8,
         children: [
           AppUi.brandPill(
             label: '${_filteredViolations.length} records found',
@@ -350,8 +368,7 @@ class CasesScreenState extends State<CasesScreen> {
               color: Colors.white.withValues(alpha: 0.92),
             ),
           ),
-          if (_hasActiveFilters()) ...[
-            const SizedBox(width: 10),
+          if (_hasActiveFilters())
             AppUi.brandPill(
               label:
                   'Showing ${_filteredViolations.length} of ${_allViolations.length}',
@@ -361,7 +378,6 @@ class CasesScreenState extends State<CasesScreen> {
                 color: Colors.white.withValues(alpha: 0.92),
               ),
             ),
-          ],
         ],
       ),
     );
@@ -392,10 +408,18 @@ class CasesScreenState extends State<CasesScreen> {
             const SizedBox(width: 10),
             _buildQuickStatusCard(
               label: 'Hearings',
-              count: _statusCount('Hearing Scheduled'),
+              count: _statusCount('Hearings'),
               icon: Icons.gavel_rounded,
               status: 'Hearing Scheduled',
               color: AppTheme.accentCyan,
+            ),
+            const SizedBox(width: 10),
+            _buildQuickStatusCard(
+              label: 'Hearing',
+              count: _statusCount('Hearing'),
+              icon: Icons.balance_rounded,
+              status: 'Hearing',
+              color: AppTheme.primaryIndigo,
             ),
             const SizedBox(width: 10),
             _buildQuickStatusCard(
@@ -455,8 +479,8 @@ class CasesScreenState extends State<CasesScreen> {
                   : color.withValues(alpha: 0.12),
             ),
             const SizedBox(height: 12),
-            Text(
-              '$count',
+            AppUi.animatedCount(
+              count,
               style: GoogleFonts.inter(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -790,7 +814,7 @@ class CasesScreenState extends State<CasesScreen> {
                 const SizedBox(width: 16),
                 _buildFilterGroup(
                   'Status',
-                  ['All', 'Pending', 'Hearing Scheduled', 'Closed'],
+                  CaseStatus.filterOptions,
                   _selectedStatus,
                   (val) {
                     if (mounted) setState(() => _selectedStatus = val);
@@ -945,14 +969,15 @@ class CasesScreenState extends State<CasesScreen> {
   }
 
   Widget _buildViolationCard(dynamic violation, int index) {
-    final status = violation['status'] ?? 'Pending';
-    final severity = violation['violation']?['severity'] ?? 'Minor';
+    final caseMap = Map<String, dynamic>.from(violation as Map);
+    final severity = caseMap['violation']?['severity'] ?? 'Minor';
     final severityColor = _getSeverityColor(severity);
-    final studentName = violation['student']?['full_name'] ?? 'Unknown Student';
-    final violationTitle = violation['violation']?['title'] ?? 'N/A';
-    final caseId = "#${(violation['id'] ?? 0).toString().padLeft(4, '0')}";
+    final studentName = caseMap['student']?['full_name'] ?? 'Unknown Student';
+    final violationTitle = caseMap['violation']?['title'] ?? 'N/A';
+    final caseId = "#${(caseMap['id'] ?? 0).toString().padLeft(4, '0')}";
 
     return RepaintBoundary(
+      child: VtPressable(
       child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -969,8 +994,8 @@ class CasesScreenState extends State<CasesScreen> {
           HapticFeedback.mediumImpact();
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => CaseDetailsScreen(caseId: violation['id']),
+            AppPageTransitions.fadeScale(
+              CaseDetailsScreen(caseId: violation['id']),
             ),
           );
         },
@@ -978,20 +1003,39 @@ class CasesScreenState extends State<CasesScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient: severity == 'Major'
-                      ? AppTheme.warmGradient
-                      : AppTheme.accentGradient,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  _getSeverityIcon(severity),
-                  color: Colors.white,
-                  size: 20,
-                ),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Hero(
+                    tag: 'case_${violation['id']}_avatar',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: AppUi.initialsAvatar(
+                        studentName,
+                        size: 46,
+                        radius: 14,
+                      ),
+                    ),
+                  ),
+                  if (severity == 'Major')
+                    Positioned(
+                      bottom: -3,
+                      right: -3,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentAmber,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: const Icon(
+                          Icons.priority_high_rounded,
+                          size: 9,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1062,7 +1106,7 @@ class CasesScreenState extends State<CasesScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  VtStatusChip.fromStatus(status),
+                  VtStatusChip.fromCase(caseMap),
                   const SizedBox(height: 10),
                   Icon(
                     Icons.chevron_right_rounded,
@@ -1076,6 +1120,7 @@ class CasesScreenState extends State<CasesScreen> {
         ),
         ),
       ),
+    ),
     ),
     );
   }
@@ -1109,8 +1154,4 @@ class CasesScreenState extends State<CasesScreen> {
     return AppTheme.primaryNavy;
   }
 
-  IconData _getSeverityIcon(String severity) {
-    if (severity == 'Major') return Icons.warning_amber_rounded;
-    return Icons.info_outline_rounded;
-  }
 }

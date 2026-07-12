@@ -1,6 +1,7 @@
 <?php
 return [
     'model'           => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    'embedding_model' => env('GEMINI_EMBEDDING_MODEL', 'text-embedding-004'),
     'api_key'         => env('GEMINI_API_KEY', ''),
     'temperature'     => (float) env('AI_TEMPERATURE', 0.6),
     'max_tokens'      => (int)   env('AI_MAX_TOKENS', 2048),

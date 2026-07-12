@@ -199,4 +199,38 @@ class HearingController extends Controller
 
         return view('hearings.print_mom', compact('hearing'));
     }
+
+    public function calendar(Request $request)
+    {
+        $this->authorize('viewAny', Hearing::class);
+
+        $month = $request->string('month')->toString() ?: now()->format('Y-m');
+        $start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
+        $end = (clone $start)->endOfMonth();
+
+        $query = Hearing::query()
+            ->with(['case.student', 'case.violation'])
+            ->whereBetween('scheduled_at', [$start, $end])
+            ->orderBy('scheduled_at');
+
+        if ($request->user()->isDean() && ! $request->user()->isSuperAdmin()) {
+            $longName = \App\Support\DepartmentResolver::shortcutToLong($request->user()->department);
+            $query->whereHas('case.student', fn ($q) => $q->whereRaw('TRIM(department) = ?', [trim((string) $longName)]));
+        }
+
+        $events = $query->get()->map(fn (Hearing $hearing) => [
+            'id' => $hearing->id,
+            'case_id' => $hearing->case_id,
+            'scheduled_at' => $hearing->scheduled_at?->toIso8601String(),
+            'venue' => $hearing->venue,
+            'student_name' => $hearing->case?->student?->full_name,
+            'violation_title' => $hearing->case?->violation?->title,
+            'status' => $hearing->case?->status,
+        ]);
+
+        return inertia('Hearings/Calendar', [
+            'month' => $month,
+            'events' => $events,
+        ]);
+    }
 }

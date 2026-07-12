@@ -12,8 +12,12 @@ import {
     MessageSquare, Plus, Edit2, Trash2, MessageSquareDashed,
     PlusCircle, AlertTriangle
 } from 'lucide-react';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
+import FilterBar from '@/Components/FilterBar';
+import EmptyState from '@/Components/EmptyState';
 
 export default function Index({ templates }) {
+    const [search, setSearch] = useState('');
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -84,17 +88,18 @@ export default function Index({ templates }) {
         });
     };
 
+    const filteredTemplates = (templates.data || templates).filter((template) =>
+        !search || template.title.toLowerCase().includes(search.toLowerCase()) || template.content.toLowerCase().includes(search.toLowerCase())
+    );
+
     return (
         <AuthenticatedLayout
             header={<h2 className="font-semibold text-xl text-slate-800 dark:text-slate-200 leading-tight">Message Templates</h2>}
         >
             <Head title="Message Templates" />
 
-            <div className="py-8">
-                <div className="space-y-6 max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    
-                    {/* Modern Header */}
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-2xl shadow-indigo-900/20 border border-indigo-900/50">
+            <PageMotion className="py-8 max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                    <MotionItem className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-2xl shadow-indigo-900/20 border border-indigo-900/50">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
                         
@@ -115,10 +120,19 @@ export default function Index({ templates }) {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </MotionItem>
 
-                    {/* Table */}
-                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 overflow-hidden">
+                    <MotionItem>
+                        <FilterBar
+                            search={search}
+                            onSearchChange={setSearch}
+                            onClear={() => setSearch('')}
+                            placeholder="Search templates..."
+                        />
+                        <p className="text-xs text-slate-500 mt-2">Variables: {'{student_name}'}, {'{violation_code}'}, {'{department}'}</p>
+                    </MotionItem>
+
+                    <MotionItem className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left whitespace-nowrap">
                                 <thead className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-black tracking-widest uppercase text-[10px]">
@@ -129,7 +143,17 @@ export default function Index({ templates }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 bg-white/50 dark:bg-slate-900/50">
-                                    {templates.data.map((template) => (
+                                    {filteredTemplates.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={3}>
+                                                <EmptyState
+                                                    icon={MessageSquareDashed}
+                                                    title="No templates found"
+                                                    message="Create a template for quick parent or student notifications."
+                                                />
+                                            </td>
+                                        </tr>
+                                    ) : filteredTemplates.map((template) => (
                                         <tr key={template.id} className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors group">
                                             <td className="px-8 py-5">
                                                 <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{template.title}</span>
@@ -141,10 +165,10 @@ export default function Index({ templates }) {
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <button onClick={() => openEditModal(template)} className="text-slate-400 hover:text-indigo-600 dark:text-indigo-400 transition-colors p-2.5 bg-white dark:bg-slate-900 border border-transparent hover:border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-900/20 rounded-xl shadow-sm active:scale-95" title="Edit">
+                                                    <button onClick={() => openEditModal(template)} className="text-slate-400 hover:text-indigo-600 dark:text-indigo-400 transition-colors p-2.5 bg-white dark:bg-slate-900 border border-transparent hover:border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-900/20 rounded-xl shadow-sm active:scale-95" title="Edit" aria-label={`Edit template ${template.title}`}>
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => openDeleteModal(template)} className="text-slate-400 hover:text-rose-600 dark:text-rose-400 transition-colors p-2.5 bg-white dark:bg-slate-900 border border-transparent hover:border-rose-200 hover:bg-rose-50 dark:bg-rose-900/20 rounded-xl shadow-sm active:scale-95" title="Delete">
+                                                    <button onClick={() => openDeleteModal(template)} className="text-slate-400 hover:text-rose-600 dark:text-rose-400 transition-colors p-2.5 bg-white dark:bg-slate-900 border border-transparent hover:border-rose-200 hover:bg-rose-50 dark:bg-rose-900/20 rounded-xl shadow-sm active:scale-95" title="Delete" aria-label={`Delete template ${template.title}`}>
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -152,19 +176,6 @@ export default function Index({ templates }) {
                                         </tr>
                                     ))}
 
-                                    {templates.data.length === 0 && (
-                                        <tr>
-                                            <td colSpan="3" className="px-8 py-24 text-center">
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-inner">
-                                                        <MessageSquareDashed className="w-8 h-8 text-slate-300" />
-                                                    </div>
-                                                    <p className="text-slate-900 dark:text-white font-black text-base mb-1">No templates found.</p>
-                                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Click 'New Template' to create one.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -189,8 +200,8 @@ export default function Index({ templates }) {
                                 </div>
                             </div>
                         )}
-                    </div>
-                </div>
+                    </MotionItem>
+            </PageMotion>
 
                 {/* Create Modal */}
                 <Modal show={createModalOpen} onClose={closeCreateModal} maxWidth="lg">
@@ -224,7 +235,7 @@ export default function Index({ templates }) {
                                     id="content" 
                                     name="content" 
                                     rows="5" 
-                                    className="mt-2 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm text-sm" 
+                                    className="mt-2 block w-full form-input resize-none" 
                                     value={data.content}
                                     onChange={e => setData('content', e.target.value)}
                                     required 
@@ -275,7 +286,7 @@ export default function Index({ templates }) {
                                     id="edit_content" 
                                     name="content" 
                                     rows="5" 
-                                    className="mt-2 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm text-sm" 
+                                    className="mt-2 block w-full form-input resize-none" 
                                     value={data.content}
                                     onChange={e => setData('content', e.target.value)}
                                     required
@@ -310,7 +321,6 @@ export default function Index({ templates }) {
                     </form>
                 </Modal>
 
-            </div>
         </AuthenticatedLayout>
     );
 }

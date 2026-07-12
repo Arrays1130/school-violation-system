@@ -109,13 +109,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     }
   }
 
-  String _initials(String name) {
-    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts.last[0]}'.toUpperCase();
-  }
-
   @override
   Widget build(BuildContext context) {
     final fullName =
@@ -195,20 +188,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                               width: 72,
                               height: 72,
                               decoration: BoxDecoration(
-                                color: Colors.white,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 3),
                                 boxShadow: AppTheme.softShadow,
                               ),
-                              child: Center(
-                                child: Text(
-                                  _initials(fullName),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.primary,
-                                  ),
-                                ),
+                              child: AppUi.initialsAvatar(
+                                fullName,
+                                size: 72,
+                                radius: 36,
                               ),
                             ),
                             const SizedBox(width: 14),

@@ -43,9 +43,31 @@ class CaseController extends Controller
 
         if ($request->filled('severity')) {
             $severity = $request->severity;
-            $query->whereHas('violation', function ($vq) use ($severity) {
-                $vq->where('severity', $severity);
+            if (in_array($severity, ['Minor', 'Major'], true)) {
+                $query->whereHas('violation', function ($vq) use ($severity) {
+                    $vq->where('severity', $severity);
+                });
+            }
+        }
+
+        if ($request->filled('department')) {
+            $query->whereHas('student', function ($sq) use ($request) {
+                $sq->where('department', $request->department);
             });
+        }
+
+        if ($request->filled('academic_year') && $request->academic_year !== 'All') {
+            $query->whereHas('student', function ($sq) use ($request) {
+                $sq->where('academic_year', $request->academic_year);
+            });
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('occurred_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('occurred_at', '<=', $request->date_to);
         }
 
         $cases = $query->paginate(15)->appends($request->all());
@@ -67,7 +89,16 @@ class CaseController extends Controller
         return inertia('Cases/Index', [
             'cases' => $cases,
             'summary' => $summary,
-            'filters' => request()->only(['search', 'status', 'severity'])
+            'departments' => \App\Models\Student::selectRaw('TRIM(department) as department')
+                ->whereNotNull('department')
+                ->distinct()
+                ->orderBy('department')
+                ->pluck('department'),
+            'academicYears' => \App\Models\Student::whereNotNull('academic_year')
+                ->distinct()
+                ->orderByDesc('academic_year')
+                ->pluck('academic_year'),
+            'filters' => request()->only(['search', 'status', 'severity', 'department', 'academic_year', 'date_from', 'date_to']),
         ]);
     }
 
@@ -442,6 +473,8 @@ class CaseController extends Controller
      */
     public function print(\App\Models\StudentCase $case)
     {
+        $this->authorize('view', $case);
+
         $case->load(['student', 'violation', 'hearings', 'actions.user']);
 
         return inertia('Cases/Print', [

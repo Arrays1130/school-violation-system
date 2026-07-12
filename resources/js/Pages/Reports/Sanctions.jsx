@@ -6,6 +6,8 @@ import {
     Filter, RotateCcw, List, Eye, Printer, Database
 } from 'lucide-react';
 import dayjs from 'dayjs';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
+import EmptyState from '@/Components/EmptyState';
 
 export default function Sanctions({ 
     cases, departments, totalSanctions, sanctionsServed, sanctionsPending, complianceRate, filters 
@@ -68,11 +70,11 @@ export default function Sanctions({
         >
             <Head title="Sanctions Report" />
 
-            <div className="py-8">
+            <PageMotion className="py-8">
                 <div className="space-y-6 max-w-7xl mx-auto sm:px-6 lg:px-8">
                     
                     {/* Header */}
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-emerald-950 p-8 shadow-2xl shadow-emerald-900/20 border border-emerald-900/50">
+                    <MotionItem className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-emerald-950 p-8 shadow-2xl shadow-emerald-900/20 border border-emerald-900/50">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_55%)]"></div>
                         <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl"></div>
 
@@ -95,10 +97,10 @@ export default function Sanctions({
                                 As of {dayjs().format('MMMM DD, YYYY')}
                             </div>
                         </div>
-                    </div>
+                    </MotionItem>
 
                     {/* ─── Stat Cards ─── */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <MotionItem className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         {statCards.map((card, idx) => {
                             const p = pal[card.color];
                             const Icon = card.icon;
@@ -115,10 +117,10 @@ export default function Sanctions({
                                 </div>
                             );
                         })}
-                    </div>
+                    </MotionItem>
 
                     {/* Compliance Bar */}
-                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-3xl p-8 shadow-sm">
+                    <MotionItem className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-3xl p-8 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Overall Sanction Compliance</span>
                             <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{complianceRate}%</span>
@@ -131,10 +133,10 @@ export default function Sanctions({
                             <span>{sanctionsServed} served</span>
                             <span>{sanctionsPending} pending</span>
                         </div>
-                    </div>
+                    </MotionItem>
 
                     {/* ─── Filters ─── */}
-                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 shadow-sm">
+                    <MotionItem className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 shadow-sm">
                         <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-end">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Department</label>
@@ -209,10 +211,10 @@ export default function Sanctions({
                                 )}
                             </div>
                         </form>
-                    </div>
+                    </MotionItem>
 
                     {/* ─── Table ─── */}
-                    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-3xl shadow-sm overflow-hidden">
+                    <MotionItem className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-3xl shadow-sm overflow-hidden">
                         <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100">
@@ -224,11 +226,11 @@ export default function Sanctions({
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                        <div className="overflow-x-auto -mx-4 sm:mx-0">
+                            <table className="min-w-[720px] w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
-                                        <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
+                                        <th className="px-4 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
                                         <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Violation</th>
                                         <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Offense</th>
                                         <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Sanction Imposed</th>
@@ -263,7 +265,9 @@ export default function Sanctions({
                                                             {item.student?.initials || '??'}
                                                         </div>
                                                         <div>
-                                                            <div className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:text-emerald-400 transition-colors">{item.student?.full_name || 'Unknown'}</div>
+                                                            <Link href={route('students.show', item.student?.id)} className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                                                {item.student?.full_name || 'Unknown'}
+                                                            </Link>
                                                             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.student?.student_id || '—'}</div>
                                                         </div>
                                                     </div>
@@ -321,10 +325,10 @@ export default function Sanctions({
                                                 {/* Action */}
                                                 <td className="px-8 py-5 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <Link href={route('cases.show', item.id)} className="p-2.5 text-slate-400 hover:text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-900/20 rounded-xl transition-all shadow-sm bg-white dark:bg-slate-900 border border-transparent hover:border-emerald-200" title="View Case">
+                                                        <Link href={route('cases.show', item.id)} className="p-2.5 text-slate-400 hover:text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-900/20 rounded-xl transition-all shadow-sm bg-white dark:bg-slate-900 border border-transparent hover:border-emerald-200" title="View Case" aria-label={`View case #${item.id}`}>
                                                             <Eye className="w-4 h-4" />
                                                         </Link>
-                                                        <a href={route('cases.print', item.id)} target="_blank" className="p-2.5 text-slate-400 hover:text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-900/20 rounded-xl transition-all shadow-sm bg-white dark:bg-slate-900 border border-transparent hover:border-emerald-200" title="Print Document">
+                                                        <a href={route('cases.print', item.id)} target="_blank" className="p-2.5 text-slate-400 hover:text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:bg-emerald-900/20 rounded-xl transition-all shadow-sm bg-white dark:bg-slate-900 border border-transparent hover:border-emerald-200" title="Print Document" aria-label={`Print case #${item.id}`}>
                                                             <Printer className="w-4 h-4" />
                                                         </a>
                                                     </div>
@@ -335,14 +339,12 @@ export default function Sanctions({
                                     
                                     {cases.data.length === 0 && (
                                         <tr>
-                                            <td colSpan="7" className="px-8 py-24 text-center">
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <div className="w-16 h-16 mb-5 rounded-3xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center border border-slate-100 dark:border-slate-800 shadow-inner">
-                                                        <Database className="w-8 h-8 text-slate-300" />
-                                                    </div>
-                                                    <p className="text-slate-900 dark:text-white font-black text-base mb-1">No Sanction Records</p>
-                                                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Adjust your filters to see more results.</p>
-                                                </div>
+                                            <td colSpan="7">
+                                                <EmptyState
+                                                    icon={Database}
+                                                    title="No Sanction Records"
+                                                    message="Adjust your filters to see more results."
+                                                />
                                             </td>
                                         </tr>
                                     )}
@@ -370,9 +372,9 @@ export default function Sanctions({
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </MotionItem>
                 </div>
-            </div>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import { 
     Users, Search, Filter, X, 
     Edit, Trash2, Shield, UserPlus, 
     ShieldCheck, Building
 } from 'lucide-react';
 import Pagination from '@/Components/Pagination';
+import FilterBar from '@/Components/FilterBar';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function Index({ auth, users, filters }) {
     const [search, setSearch] = useState(filters?.search || '');
     const [role, setRole] = useState(filters?.role || '');
+    const [deleteUserId, setDeleteUserId] = useState(null);
 
     // Debounced search
     useEffect(() => {
@@ -34,19 +37,14 @@ export default function Index({ auth, users, filters }) {
     };
 
     const handleDelete = (id) => {
-        Swal.fire({
-            title: 'Delete User?',
-            text: "Are you sure you want to delete this user account? This cannot be undone.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Yes, delete user'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('users.destroy', id));
-            }
-        });
+        setDeleteUserId(id);
+    };
+
+    const confirmDelete = () => {
+        if (deleteUserId) {
+            router.delete(route('users.destroy', deleteUserId));
+            setDeleteUserId(null);
+        }
     };
 
     const getRoleBadge = (role) => {
@@ -69,10 +67,20 @@ export default function Index({ auth, users, filters }) {
         >
             <Head title="User Management" />
 
-            <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <ConfirmDialog
+                open={!!deleteUserId}
+                onClose={() => setDeleteUserId(null)}
+                onConfirm={confirmDelete}
+                title="Delete User?"
+                description="Are you sure you want to delete this user account? This cannot be undone."
+                confirmLabel="Yes, delete user"
+                destructive
+            />
+
+            <PageMotion>
                 
                 {/* Modern Header */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
+                <MotionItem className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]"></div>
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
                     
@@ -93,53 +101,30 @@ export default function Index({ auth, users, filters }) {
                             </Link>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
                 {/* Search & Filters */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div className="md:col-span-2">
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Search Users</label>
-                            <div className="relative">
-                                <input 
-                                    type="text" 
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search by name or email..." 
-                                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
-                                />
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                    <Search className="w-4 h-4" />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Role</label>
-                            <select 
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
-                            >
+                <MotionItem>
+                    <FilterBar
+                        search={search}
+                        onSearchChange={setSearch}
+                        onClear={handleClear}
+                        placeholder="Search by name or email..."
+                    >
+                        <div className="sm:max-w-xs">
+                            <label htmlFor="user-role" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Role</label>
+                            <select id="user-role" value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm">
                                 <option value="">All Roles</option>
                                 <option value="super_admin">Super Admin</option>
                                 <option value="admin">Admin</option>
                                 <option value="dean">Dean</option>
                             </select>
                         </div>
-
-                        <button 
-                            onClick={handleClear}
-                            className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-xl text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <X className="w-4 h-4" />
-                            Clear
-                        </button>
-                    </div>
-                </div>
+                    </FilterBar>
+                </MotionItem>
 
                 {/* Records List */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
+                <MotionItem className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left">
                             <thead className="bg-slate-50/80 dark:bg-slate-800/80">
@@ -178,6 +163,7 @@ export default function Index({ auth, users, filters }) {
                                                         href={route('users.edit', user.id)} 
                                                         className="p-2 text-slate-400 hover:text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:bg-amber-900/20 rounded-xl transition-all duration-150" 
                                                         title="Edit User"
+                                                        aria-label={`Edit user ${user.name}`}
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </Link>
@@ -186,6 +172,7 @@ export default function Index({ auth, users, filters }) {
                                                             onClick={() => handleDelete(user.id)} 
                                                             className="p-2 text-slate-400 hover:text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:bg-rose-900/20 rounded-xl transition-all duration-150" 
                                                             title="Delete User"
+                                                            aria-label={`Delete user ${user.name}`}
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
@@ -215,8 +202,8 @@ export default function Index({ auth, users, filters }) {
                             <Pagination links={users.links} />
                         </div>
                     )}
-                </div>
-            </div>
+                </MotionItem>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }
