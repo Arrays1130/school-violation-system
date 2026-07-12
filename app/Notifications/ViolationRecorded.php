@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Queue\SerializesModels;
 
 use App\Models\StudentCase;
+use App\Support\NotificationChannels;
 
 class ViolationRecorded extends Notification implements ShouldQueue
 {
@@ -23,11 +24,9 @@ class ViolationRecorded extends Notification implements ShouldQueue
      */
     public function via($notifiable)
     {
-        $channels = ['database'];
-        if (env('ENABLE_EMAILS', false)) {
-            $channels[] = 'mail';
-        }
+        $channels = NotificationChannels::withEmail(['database']);
         $channels[] = \App\Channels\SmsChannel::class;
+
         return $channels;
     }
 

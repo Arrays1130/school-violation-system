@@ -8,6 +8,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Queue\SerializesModels;
 use App\Models\StudentCase;
+use App\Support\NotificationChannels;
 
 class DeanViolationNotification extends Notification implements ShouldQueue
 {
@@ -20,13 +21,11 @@ class DeanViolationNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        $channels = ['database'];
-        if (env('ENABLE_EMAILS', false)) {
-            $channels[] = 'mail';
-        }
+        $channels = NotificationChannels::withEmail(['database']);
         if (config('services.fcm.server_key')) {
             $channels[] = 'fcm';
         }
+
         return $channels;
     }
 

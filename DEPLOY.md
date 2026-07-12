@@ -54,6 +54,9 @@ MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=
 MAIL_FROM_NAME="${APP_NAME}"
 
+# Email relay fallback when SMTP is not configured (guardian messages, OTP, reports)
+GOOGLE_APPS_SCRIPT_URL=
+
 # FCM push (dean mobile app)
 FCM_SERVER_KEY=
 # Flutter: copy viotrack_flutter/android/app/google-services.json.example → google-services.json

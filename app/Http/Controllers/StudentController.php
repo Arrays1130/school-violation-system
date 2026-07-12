@@ -9,7 +9,6 @@ use App\Services\StudentImporter;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Support\YearLevel;
 use App\Support\SchoolSettings;
@@ -499,19 +498,18 @@ class StudentController extends Controller
             }
         }
 
-        // 2. Send Email (via Laravel SMTP / configured mailer)
+        // 2. Send Email (SMTP when configured, otherwise Google Apps Script relay)
         if (in_array('email', $methods)) {
             if ($student->guardian_email) {
                 try {
-                    if (config('mail.default') === 'log') {
-                        throw new \Exception('Mail is set to "log" mode. Configure SMTP in your .env file.');
-                    }
-
                     $subject = 'SVS Notification: Message from School';
-                    Mail::to($student->guardian_email)->send(new CustomMessage($subject, $request->message));
+                    \App\Support\SchoolMailer::sendMailable(
+                        $student->guardian_email,
+                        new CustomMessage($subject, $request->message),
+                    );
                     $successMessages[] = 'Email sent successfully.';
                 } catch (\Exception $e) {
-                    Log::error('Email Sending Failed: ' . $e->getMessage());
+                    Log::error('Email Sending Failed: '.$e->getMessage());
                     $errorMessages[] = 'The email could not be sent right now. Please try again in a few minutes, or contact your system administrator if the problem continues.';
                 }
             } else {

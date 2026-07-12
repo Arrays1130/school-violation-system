@@ -27,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
             return $app->make(\App\Notifications\Channels\FcmChannel::class);
         });
 
+        Notification::extend('school_mail', function () {
+            return new \App\Channels\SchoolMailChannel;
+        });
+
         Paginator::defaultView('pagination::tailwind');
         Paginator::defaultSimpleView('pagination::simple-tailwind');
 

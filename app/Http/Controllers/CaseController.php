@@ -167,11 +167,12 @@ class CaseController extends Controller
         event(new \App\Events\ViolationRecorded($case));
 
         // Dispatch Reverb & Database Notifications (Queued)
+        $deptShortcut = $case->student->department_shortcut;
         $notifiableUsers = \App\Models\User::where('role', 'super_admin')
-            ->orWhere(function($query) use ($case) {
-                if ($case->student->department) {
+            ->orWhere(function ($query) use ($deptShortcut) {
+                if ($deptShortcut) {
                     $query->where('role', 'dean')
-                          ->where('department', $case->student->department);
+                        ->where('department', $deptShortcut);
                 }
             })->get();
         \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($case));
@@ -299,7 +300,7 @@ class CaseController extends Controller
         // Also send to guardian email if available
         if ($case->student->guardian_email) {
             try {
-                \Illuminate\Support\Facades\Notification::route('mail', $case->student->guardian_email)
+                \Illuminate\Support\Facades\Notification::route('school_mail', $case->student->guardian_email)
                     ->notify(new \App\Notifications\ViolationRecorded($case));
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to send guardian notification: " . $e->getMessage());

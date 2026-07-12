@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Hearing;
+use App\Support\NotificationChannels;
 
 class DeanHearingNotification extends Notification implements ShouldQueue
 {
@@ -19,10 +20,11 @@ class DeanHearingNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        $channels = ['database', 'mail'];
+        $channels = NotificationChannels::withEmail(['database']);
         if (config('services.fcm.server_key')) {
             $channels[] = 'fcm';
         }
+
         return $channels;
     }
 

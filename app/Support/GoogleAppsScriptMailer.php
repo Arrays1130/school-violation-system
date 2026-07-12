@@ -18,13 +18,22 @@ class GoogleAppsScriptMailer
         }
 
         try {
-            $response = Http::timeout(10)->post($url, [
+            $response = Http::timeout(15)->post($url, [
                 'to' => $to,
                 'subject' => $subject,
                 'body' => $body,
             ]);
 
-            return $response->successful();
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::error('Google Apps Script mail failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
         } catch (\Throwable $e) {
             Log::error('Google Apps Script mail failed: '.$e->getMessage());
 

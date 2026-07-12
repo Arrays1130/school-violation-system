@@ -8,6 +8,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 use App\Models\Hearing;
+use App\Support\NotificationChannels;
 
 class HearingScheduled extends Notification implements ShouldQueue
 {
@@ -25,7 +26,7 @@ class HearingScheduled extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return NotificationChannels::withEmail(['database']);
     }
 
     /**

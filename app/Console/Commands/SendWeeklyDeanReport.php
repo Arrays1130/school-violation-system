@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\StudentCase;
 use App\Models\User;
-use App\Support\GoogleAppsScriptMailer;
+use App\Support\SchoolMailer;
 use App\Support\SchoolSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -66,7 +66,8 @@ class SendWeeklyDeanReport extends Command
                 .'Log in to VioTrack for full details.';
 
             try {
-                GoogleAppsScriptMailer::send($dean->email, 'Weekly Violation Report — VioTrack', $body);
+                $html = '<pre style="font-family:sans-serif;white-space:pre-wrap;">'.e($body).'</pre>';
+                SchoolMailer::send($dean->email, 'Weekly Violation Report — VioTrack', $html);
                 $this->info("Sent weekly report to {$dean->email}");
             } catch (\Throwable $e) {
                 Log::error('Weekly dean report failed', ['dean' => $dean->id, 'error' => $e->getMessage()]);

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\SystemSetting;
-use App\Support\GoogleAppsScriptMailer;
+use App\Support\SchoolMailer;
 use App\Support\StudentPassword;
 use App\Mail\StudentRegistrationOtpMail;
 use Illuminate\Support\Facades\Cache;
@@ -51,17 +51,16 @@ class PublicStudentRegistrationController extends Controller
         ], now()->addMinutes(10));
 
         try {
-            GoogleAppsScriptMailer::send(
+            SchoolMailer::sendMailable(
                 $validated['email'],
-                'Your SVS Registration OTP',
-                (new StudentRegistrationOtpMail($otp))->render()
+                new StudentRegistrationOtpMail($otp),
             );
         } catch (\Exception $e) {
-            \Log::error('Failed to send OTP email: ' . $e->getMessage());
-            // If email fails, we still want to redirect but show an error. 
-            // In a real prod environment we\'d handle this carefully.
-            // For now, let\'s redirect to verify with a warning if mail fails, but we don\'t want them stuck.
-            // Actually it\'s better to just proceed and they can resend, or fail early.
+            \Log::error('Failed to send OTP email: '.$e->getMessage());
+
+            return back()
+                ->withInput()
+                ->with('error', 'We could not send the OTP email. Please try again or contact the school administrator.');
         }
 
         session(['pending_registration_email' => $validated['email']]);
@@ -137,13 +136,14 @@ class PublicStudentRegistrationController extends Controller
         ], now()->addMinutes(10));
 
         try {
-            GoogleAppsScriptMailer::send(
+            SchoolMailer::sendMailable(
                 $email,
-                'Your SVS Registration OTP',
-                (new StudentRegistrationOtpMail($otp))->render()
+                new StudentRegistrationOtpMail($otp),
             );
         } catch (\Exception $e) {
-            \Log::error('Failed to resend OTP email: ' . $e->getMessage());
+            \Log::error('Failed to resend OTP email: '.$e->getMessage());
+
+            return redirect()->back()->with('error', 'We could not resend the OTP email. Please try again in a few minutes.');
         }
 
         return redirect()->back()->with('success', 'A new OTP has been sent to your email.');
