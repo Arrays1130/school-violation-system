@@ -36,8 +36,8 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Public student self-registration (OTP via institutional email)
-Route::prefix('student')->name('student.')->group(function () {
+// Public student self-registration (OTP via institutional email; disabled by default)
+Route::prefix('student')->name('student.')->middleware(\App\Http\Middleware\EnsureStudentRegistrationEnabled::class)->group(function () {
     Route::get('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'showRegistrationForm'])->name('register.form');
     Route::post('/register', [\App\Http\Controllers\PublicStudentRegistrationController::class, 'sendOtp'])
         ->middleware('throttle:5,1')

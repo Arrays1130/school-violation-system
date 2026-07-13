@@ -15,6 +15,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public student self-registration
+    |--------------------------------------------------------------------------
+    |
+    | Students added by staff import or admin should stay the default in
+    | production. Enable only during enrollment periods you actively monitor.
+    |
+    */
+    'student_registration_enabled' => (bool) env('STUDENT_REGISTRATION_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Temporary Student Password
     |--------------------------------------------------------------------------
     |
