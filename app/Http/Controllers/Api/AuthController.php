@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -16,7 +17,19 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        $throttleKey = $this->loginThrottleKey($request);
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return response()->json([
+                'message' => 'Too many login attempts. Please try again in '.$seconds.' seconds.',
+            ], 429);
+        }
+
         if (! Auth::attempt($request->only('email', 'password'))) {
+            RateLimiter::hit($throttleKey);
+
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
@@ -27,6 +40,8 @@ class AuthController extends Controller
 
             return response()->json(['message' => 'This account is not authorized for mobile access.'], 403);
         }
+
+        RateLimiter::clear($throttleKey);
 
         $deviceName = $request->input('device_name', 'mobile_device');
         $token = $user->createToken($deviceName)->plainTextToken;
@@ -54,5 +69,10 @@ class AuthController extends Controller
         $user->update(['fcm_token' => $request->fcm_token]);
 
         return response()->json(['message' => 'FCM Token updated successfully']);
+    }
+
+    protected function loginThrottleKey(Request $request): string
+    {
+        return Str::transliterate(Str::lower($request->input('email')).'|'.$request->ip());
     }
 }

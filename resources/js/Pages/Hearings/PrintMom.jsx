@@ -2,6 +2,7 @@ import React from 'react';
 import PrintLayout from '@/Layouts/PrintLayout';
 import { Printer } from 'lucide-react';
 import dayjs from 'dayjs';
+import BrandText from '@/Components/BrandText';
 
 export default function PrintMom({ hearing }) {
     const padCaseId = (id) => String(id).padStart(4, '0');
@@ -91,7 +92,7 @@ export default function PrintMom({ hearing }) {
             <div className="mom-body">
                 <div className="mom-container">
                     <div className="mom-header">
-                        <h1>I-LINK COLLEGE OF SCIENCE AND TECHNOLOGY</h1>
+                        <h1><BrandText>I-LINK COLLEGE OF SCIENCE AND TECHNOLOGY</BrandText></h1>
                         <h2>Office of Student Affairs</h2>
                         <p><strong>HEARING RECORD</strong></p>
                     </div>

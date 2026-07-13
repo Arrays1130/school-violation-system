@@ -27,14 +27,15 @@ class SettingsController extends Controller
             'schoolName' => SchoolSettings::get('school_name', config('school.name')),
             'closedCasesToArchive' => $closedCasesToArchive,
             'canArchive' => auth()->user()->isSuperAdmin(),
+            'canUpdate' => auth()->user()->isSuperAdmin(),
             'academicYears' => $academicYears,
         ]);
     }
 
     public function update(Request $request)
     {
-        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->isDean()) {
-            abort(403, 'Unauthorized access to system settings.');
+        if (! auth()->user()->isSuperAdmin()) {
+            abort(403, 'Only super administrators can update system settings.');
         }
 
         $validated = $request->validate([

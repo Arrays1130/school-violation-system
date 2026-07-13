@@ -52,7 +52,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void refreshFromPoller() {
     if (!mounted) return;
-    _refreshData(showLoading: false, forcedRefresh: false);
+    _refreshData(showLoading: false, forcedRefresh: true);
   }
 
   Future<void> _loadUserName() async {

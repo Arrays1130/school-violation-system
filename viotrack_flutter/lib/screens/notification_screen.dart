@@ -39,7 +39,7 @@ class NotificationScreenState extends State<NotificationScreen> {
 
   void refreshFromPoller() {
     if (!mounted) return;
-    _fetchNotifications(showLoading: false, reset: true, forcedRefresh: false);
+    _fetchNotifications(showLoading: false, reset: true, forcedRefresh: true);
   }
 
   void _onScroll() {

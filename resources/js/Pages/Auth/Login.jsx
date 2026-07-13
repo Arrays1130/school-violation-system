@@ -1,22 +1,27 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
+import RecaptchaField from "@/Components/RecaptchaField";
+import BrandText from "@/Components/BrandText";
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, recaptchaSiteKey }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
+        "g-recaptcha-response": "",
     });
 
     const [showPassword, setShowPassword] = useState(false);
     const [logoSrc, setLogoSrc] = useState(asset("brand_logo.png"));
+    const recaptchaRef = useRef(null);
 
     const submit = (e) => {
         e.preventDefault();
         post(route("login"), {
             onFinish: () => reset("password"),
+            onError: () => recaptchaRef.current?.reset(),
         });
     };
 
@@ -41,7 +46,9 @@ export default function Login({ status, canResetPassword }) {
                         />
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
-                    <p className="text-sm font-medium text-blue-700 mt-1">i-Link College of Science and Technology</p>
+                    <p className="text-sm font-medium text-blue-700 mt-1">
+                        <BrandText>i-Link College of Science and Technology</BrandText>
+                    </p>
                 </div>
 
                 {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
@@ -124,6 +131,13 @@ export default function Login({ status, canResetPassword }) {
                         )}
                     </div>
 
+                    <RecaptchaField
+                        ref={recaptchaRef}
+                        siteKey={recaptchaSiteKey}
+                        onChange={(token) => setData("g-recaptcha-response", token)}
+                        error={errors["g-recaptcha-response"]}
+                    />
+
                     <div className="mt-8">
                         <button
                             type="submit"
@@ -137,7 +151,8 @@ export default function Login({ status, canResetPassword }) {
             </div>
 
             <div className="relative z-10 mt-8 text-center text-xs text-white drop-shadow-md">
-                &copy; {new Date().getFullYear()} I-Link College of Science and Technology
+                &copy; {new Date().getFullYear()}{' '}
+                <BrandText>I-Link College of Science and Technology</BrandText>
             </div>
         </div>
     );

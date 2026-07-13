@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\User;
 use App\Support\DepartmentResolver;
 use App\Support\DashboardCache;
+use App\Support\MobileCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class StudentCase extends Model
     public static function clearDashboardCache($case = null): void
     {
         DashboardCache::bust();
+        MobileCache::bust();
     }
 
     /**

@@ -22,6 +22,7 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'recaptchaSiteKey' => config('services.recaptcha.site_key'),
         ]);
     }
 
@@ -32,6 +33,7 @@ class AuthenticatedSessionController extends Controller
     {
         return Inertia::render('Auth/DeanLogin', [
             'status' => session('status'),
+            'recaptchaSiteKey' => config('services.recaptcha.site_key'),
         ]);
     }
 

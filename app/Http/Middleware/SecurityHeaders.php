@@ -23,6 +23,7 @@ class SecurityHeaders
             "base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'"
         );
         $response->headers->remove('X-Powered-By');
+        header_remove('X-Powered-By');
 
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

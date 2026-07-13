@@ -71,9 +71,7 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     ) {
       _notificationScreenKey.currentState?.refreshFromPoller();
       _dashboardScreenKey.currentState?.refreshFromPoller();
-      if (_selectedIndex == 1) {
-        _casesScreenKey.currentState?.refreshFromPoller();
-      }
+      _casesScreenKey.currentState?.refreshFromPoller();
     });
     NotificationPoller.instance.start();
     WidgetsBinding.instance.addPostFrameCallback((_) {

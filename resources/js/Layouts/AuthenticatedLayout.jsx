@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import MobileBottomNav from '@/Components/MobileBottomNav';
 import AiAssistantFab from '@/Components/AiAssistantFab';
+import BrandText from '@/Components/BrandText';
 
 export default function Authenticated({ user, header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -248,7 +249,7 @@ export default function Authenticated({ user, header, children }) {
                             <Shield className="w-5.5 h-5.5 text-white" />
                         </div>
                         <div>
-                            <p className="text-slate-900 dark:text-white font-extrabold text-[15px] tracking-tight leading-none uppercase">I-Link CST</p>
+                            <BrandText className="text-slate-900 dark:text-white font-extrabold text-[15px] tracking-tight leading-none uppercase">I-Link CST</BrandText>
                         </div>
                     </div>
                     {/* Close button for mobile */}

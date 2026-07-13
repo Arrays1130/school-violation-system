@@ -17,13 +17,7 @@ class ViolationController extends Controller
 
         // Filter based on role
         if ($user->isDean()) {
-            $query->whereHas('student', function ($q) use ($user) {
-                $longName = \App\Models\Student::resolveDepartmentLongName($user->department);
-                $q->where(function($sub) use ($user, $longName) {
-                    $sub->where('department', $user->department)
-                        ->orWhere('department', $longName);
-                });
-            });
+            $query->whereHas('student', fn ($q) => $q->forDeanDepartment($user->department));
         }
 
         $perPage = min((int) $request->input('per_page', 15), 50);

@@ -3,6 +3,7 @@ import PrintLayout from '@/Layouts/PrintLayout';
 import { Link } from '@inertiajs/react';
 import { Printer } from 'lucide-react';
 import dayjs from 'dayjs';
+import BrandText from '@/Components/BrandText';
 
 export default function Print({ auth, case: caseRecord }) {
     const padId = (id) => String(id).padStart(5, '0');
@@ -130,7 +131,7 @@ export default function Print({ auth, case: caseRecord }) {
 
                 <div className="case-print-paper">
                     <div className="case-print-header">
-                        <h1>I-Link College of Science and Technology</h1>
+                        <h1><BrandText>I-Link College of Science and Technology</BrandText></h1>
                         <h2>Office of Student Affairs</h2>
                         <p>Official Student Violation Record</p>
                     </div>

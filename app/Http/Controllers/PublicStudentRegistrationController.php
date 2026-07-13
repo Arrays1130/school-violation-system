@@ -2,53 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\SendStudentRegistrationRequest;
+use App\Mail\StudentRegistrationOtpMail;
 use App\Models\Student;
 use App\Models\SystemSetting;
+use App\Support\RegistrationOtp;
 use App\Support\SchoolMailer;
 use App\Support\StudentPassword;
-use App\Mail\StudentRegistrationOtpMail;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Request;
 
 class PublicStudentRegistrationController extends Controller
 {
     public function showRegistrationForm()
     {
         $currentAcademicYear = SystemSetting::where('key', 'current_academic_year')->value('value') ?? 'SY 2024-2025';
-        return view('auth.student-registration', compact('currentAcademicYear'));
+
+        return view('auth.student-registration', [
+            'currentAcademicYear' => $currentAcademicYear,
+            'recaptchaSiteKey' => config('services.recaptcha.site_key'),
+        ]);
     }
 
-    public function sendOtp(Request $request)
+    public function sendOtp(SendStudentRegistrationRequest $request)
     {
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'unique:students,email',
-                function ($attribute, $value, $fail) {
-                    if (!str_ends_with(strtolower($value), '@ilinkcst.edu.ph')) {
-                        $fail('The email must be an institutional @ilinkcst.edu.ph address.');
-                    }
-                },
-            ],
-            'section' => 'required|string|max:255',
-            'year_level' => 'required|string|max:255',
-            'academic_year' => 'nullable|string|max:255',
-            'department' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'guardian_name' => 'nullable|string|max:255',
-            'guardian_email' => 'nullable|email',
-            'guardian_phone' => 'nullable|string|max:20',
-        ]);
+        $validated = $request->validated();
+        unset($validated['g-recaptcha-response']);
 
-        $otp = sprintf("%06d", mt_rand(1, 999999));
-        $cacheKey = 'registration_otp_' . $validated['email'];
-
-        Cache::put($cacheKey, [
-            'otp' => $otp,
-            'data' => $validated
-        ], now()->addMinutes(10));
+        $otp = RegistrationOtp::generate();
+        RegistrationOtp::store($validated['email'], $validated, $otp);
 
         try {
             SchoolMailer::sendMailable(
@@ -70,7 +51,7 @@ class PublicStudentRegistrationController extends Controller
 
     public function showVerifyForm()
     {
-        if (!session()->has('pending_registration_email')) {
+        if (! session()->has('pending_registration_email')) {
             return redirect()->route('student.register.form');
         }
 
@@ -80,35 +61,26 @@ class PublicStudentRegistrationController extends Controller
     public function verifyOtp(Request $request)
     {
         $request->validate([
-            'otp' => 'required|string|size:6'
+            'otp' => 'required|string|size:6',
         ]);
 
         $email = session('pending_registration_email');
-        if (!$email) {
+        if (! $email) {
             return redirect()->route('student.register.form')->with('error', 'Session expired. Please register again.');
         }
 
-        $cacheKey = 'registration_otp_' . $email;
-        $cachedData = Cache::get($cacheKey);
+        $result = RegistrationOtp::verify($email, $request->otp);
 
-        if (!$cachedData) {
-            return redirect()->route('student.register.form')->with('error', 'OTP expired. Please register again.');
+        if (! $result['success']) {
+            return redirect()->back()->with('error', $result['error']);
         }
 
-        if ($cachedData['otp'] !== $request->otp) {
-            return redirect()->back()->with('error', 'Invalid OTP code. Please try again.');
-        }
-
-        // OTP is correct, create the student
-        $studentData = $cachedData['data'];
-        
+        $studentData = $result['data'];
         $studentData['password'] = StudentPassword::hash();
         $studentData['password_changed_at'] = null;
 
         Student::create($studentData);
 
-        // Clear cache and session
-        Cache::forget($cacheKey);
         session()->forget('pending_registration_email');
 
         return redirect()->route('student.register.success');
@@ -117,23 +89,19 @@ class PublicStudentRegistrationController extends Controller
     public function resendOtp(Request $request)
     {
         $email = session('pending_registration_email');
-        if (!$email) {
+        if (! $email) {
             return redirect()->route('student.register.form')->with('error', 'Session expired. Please register again.');
         }
 
-        $cacheKey = 'registration_otp_' . $email;
-        $cachedData = Cache::get($cacheKey);
+        $cacheKey = RegistrationOtp::cacheKey($email);
+        $cachedData = \Illuminate\Support\Facades\Cache::get($cacheKey);
 
-        if (!$cachedData) {
+        if (! $cachedData) {
             return redirect()->route('student.register.form')->with('error', 'Session expired. Please register again.');
         }
 
-        $otp = sprintf("%06d", mt_rand(1, 999999));
-        
-        Cache::put($cacheKey, [
-            'otp' => $otp,
-            'data' => $cachedData['data']
-        ], now()->addMinutes(10));
+        $otp = RegistrationOtp::generate();
+        RegistrationOtp::store($email, $cachedData['data'], $otp);
 
         try {
             SchoolMailer::sendMailable(

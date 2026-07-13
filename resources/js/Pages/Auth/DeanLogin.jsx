@@ -1,20 +1,25 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
+import RecaptchaField from "@/Components/RecaptchaField";
+import BrandText from "@/Components/BrandText";
 
-export default function DeanLogin({ status }) {
+export default function DeanLogin({ status, recaptchaSiteKey }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
+        "g-recaptcha-response": "",
     });
 
     const [logoSrc, setLogoSrc] = useState(asset("brand_logo.png"));
+    const recaptchaRef = useRef(null);
 
     const submit = (e) => {
         e.preventDefault();
         post(route("dean.login.post"), {
             onFinish: () => reset("password"),
+            onError: () => recaptchaRef.current?.reset(),
         });
     };
 
@@ -98,6 +103,13 @@ export default function DeanLogin({ status }) {
                         </Link>
                     </div>
 
+                    <RecaptchaField
+                        ref={recaptchaRef}
+                        siteKey={recaptchaSiteKey}
+                        onChange={(token) => setData("g-recaptcha-response", token)}
+                        error={errors["g-recaptcha-response"]}
+                    />
+
                     <div className="flex items-center justify-end mt-6">
                         <button
                             className="w-full flex justify-center items-center px-4 py-3 bg-blue-600 border border-transparent rounded-xl font-semibold text-sm text-white hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50 shadow-sm shadow-blue-600/20"
@@ -110,7 +122,8 @@ export default function DeanLogin({ status }) {
             </div>
 
             <div className="relative z-10 mt-8 text-center text-xs text-white/90 drop-shadow">
-                &copy; {new Date().getFullYear()} I-Link College of Science and Technology
+                &copy; {new Date().getFullYear()}{' '}
+                <BrandText>I-Link College of Science and Technology</BrandText>
             </div>
         </div>
     );

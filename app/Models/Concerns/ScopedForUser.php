@@ -3,7 +3,6 @@
 namespace App\Models\Concerns;
 
 use App\Models\User;
-use App\Support\DepartmentResolver;
 use Illuminate\Database\Eloquent\Builder;
 
 trait ScopedForUser
@@ -15,9 +14,7 @@ trait ScopedForUser
         }
 
         if ($user->isDean()) {
-            $department = DepartmentResolver::shortcutToLong($user->department);
-
-            return $query->whereRaw('TRIM(department) = ?', [trim((string) $department)]);
+            return $query->forDeanDepartment($user->department);
         }
 
         return $query->whereRaw('0 = 1');

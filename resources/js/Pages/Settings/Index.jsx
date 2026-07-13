@@ -11,6 +11,7 @@ export default function Index({
     schoolName,
     closedCasesToArchive,
     canArchive,
+    canUpdate,
     academicYears,
 }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -68,6 +69,7 @@ export default function Index({
                                     onChange={(e) => setData('school_name', e.target.value)}
                                     className="form-input"
                                     required
+                                    disabled={!canUpdate}
                                 />
                                 {errors.school_name && <p className="mt-1 text-sm text-red-600">{errors.school_name}</p>}
                             </div>
@@ -85,6 +87,7 @@ export default function Index({
                                     onChange={(e) => setData('current_academic_year', e.target.value)}
                                     className="form-input"
                                     required
+                                    disabled={!canUpdate}
                                 >
                                     {academicYears.map((year) => (
                                         <option key={year} value={year}>{year}</option>
@@ -93,6 +96,13 @@ export default function Index({
                                 {errors.current_academic_year && <p className="mt-1 text-sm text-red-600">{errors.current_academic_year}</p>}
                             </div>
 
+                            {!canUpdate && (
+                                <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+                                    Only super administrators can change global system settings.
+                                </p>
+                            )}
+
+                            {canUpdate && (
                             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                                 <button
                                     type="submit"
@@ -102,6 +112,7 @@ export default function Index({
                                     {processing ? 'Saving...' : 'Save Settings'}
                                 </button>
                             </div>
+                            )}
                         </form>
                     </div>
                 </MotionItem>

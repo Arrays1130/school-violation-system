@@ -3,6 +3,7 @@ import PrintLayout from '@/Layouts/PrintLayout';
 import { Link } from '@inertiajs/react';
 import { Printer } from 'lucide-react';
 import dayjs from 'dayjs';
+import BrandText from '@/Components/BrandText';
 
 export default function Print({ auth, student }) {
     const lastAction = (caseItem) => {
@@ -39,7 +40,7 @@ export default function Print({ auth, student }) {
 
             <div className="print-header">
                 <h1 className="text-xl font-bold">STUDENT VIOLATION RECORD</h1>
-                <p>I-Link CST Violation System | Official Record</p>
+                <p><BrandText>I-Link CST Violation System</BrandText> | Official Record</p>
                 <p>Generated: {dayjs().format('MMMM D, YYYY h:mm A')}</p>
             </div>
 

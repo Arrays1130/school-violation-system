@@ -227,6 +227,12 @@
                 </div>
 
                 <div class="px-5 sm:px-8 py-5 bg-gray-50/80 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-end gap-3">
+                    @if($recaptchaSiteKey ?? null)
+                        <div class="w-full sm:mr-auto flex justify-center sm:justify-start">
+                            <div class="g-recaptcha" data-sitekey="{{ $recaptchaSiteKey }}"></div>
+                        </div>
+                        @error('g-recaptcha-response') <p class="text-red-500 text-xs font-bold w-full text-center sm:text-left">{{ $message }}</p> @enderror
+                    @endif
                     <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
                         <i data-lucide="send" class="w-4.5 h-4.5"></i>
                         Send OTP Verification
@@ -236,6 +242,10 @@
         </form>
     </div>
     
+    @if($recaptchaSiteKey ?? null)
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @endif
+
     <style>
         @keyframes fade-in-up {
             from { opacity: 0; transform: translateY(20px); }

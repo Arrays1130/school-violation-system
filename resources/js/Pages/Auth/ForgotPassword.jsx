@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { Mail } from "lucide-react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
+import BrandText from "@/Components/BrandText";
 
 export default function ForgotPassword({ status }) {
     const { data, setData, post, processing, errors } = useForm({ email: "" });
@@ -87,7 +88,8 @@ export default function ForgotPassword({ status }) {
             </div>
 
             <div className="relative z-10 mt-8 text-center text-xs text-white drop-shadow-md">
-                &copy; {new Date().getFullYear()} I-Link College of Science and Technology
+                &copy; {new Date().getFullYear()}{' '}
+                <BrandText>I-Link College of Science and Technology</BrandText>
             </div>
         </div>
     );

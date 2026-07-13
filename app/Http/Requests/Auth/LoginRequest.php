@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Http\Concerns\ValidatesRecaptcha;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    use ValidatesRecaptcha;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -26,10 +29,18 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-        ];
+        ], $this->recaptchaRules());
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return $this->recaptchaMessages();
     }
 
     /**

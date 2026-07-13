@@ -6,6 +6,7 @@ use App\Models\Concerns\ScopedForUser;
 use App\Support\DepartmentResolver;
 use App\Support\DashboardCache;
 use App\Support\YearLevel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -115,6 +116,22 @@ class Student extends Authenticatable
     public static function resolveDepartmentLongName($acronym): ?string
     {
         return DepartmentResolver::shortcutToLong($acronym);
+    }
+
+    public function scopeForDeanDepartment(Builder $query, ?string $deanDepartment): Builder
+    {
+        if ($deanDepartment === null || $deanDepartment === '') {
+            return $query;
+        }
+
+        $longDept = DepartmentResolver::shortcutToLong($deanDepartment);
+
+        return $query->where(function ($sub) use ($deanDepartment, $longDept) {
+            $sub->whereRaw('TRIM(department) = ?', [trim($deanDepartment)]);
+            if ($longDept && strcasecmp(trim((string) $longDept), trim($deanDepartment)) !== 0) {
+                $sub->orWhereRaw('TRIM(department) = ?', [trim((string) $longDept)]);
+            }
+        });
     }
 
     /**

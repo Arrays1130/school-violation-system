@@ -118,7 +118,7 @@ class CasesScreenState extends State<CasesScreen> {
 
   void refreshFromPoller() {
     if (!mounted) return;
-    _fetchData(showLoading: false, forcedRefresh: false);
+    _fetchData(showLoading: false, forcedRefresh: true);
   }
 
   Future<void> _fetchData({

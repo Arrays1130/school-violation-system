@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import BrandText from '@/Components/BrandText';
 
 export default function Guest({ children, title = 'I-Link CST' }) {
     return (
@@ -7,7 +8,7 @@ export default function Guest({ children, title = 'I-Link CST' }) {
             <div className="w-full max-w-md">
                 <div className="text-center mb-6">
                     <Link href={route('login')} className="text-xl font-bold text-indigo-900 dark:text-white">
-                        I-Link CST
+                        <BrandText>I-Link CST</BrandText>
                     </Link>
                 </div>
                 <div className="bg-slate-900 rounded-2xl shadow-xl border border-indigo-100 dark:border-slate-700 p-8">

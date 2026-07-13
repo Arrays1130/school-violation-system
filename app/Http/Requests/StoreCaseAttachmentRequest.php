@@ -2,13 +2,29 @@
 
 namespace App\Http\Requests;
 
+use App\Models\StudentCase;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCaseAttachmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $case = $this->route('case');
+
+        if (! $case instanceof StudentCase) {
+            $caseId = $this->input('case_id');
+            if (! $caseId) {
+                return false;
+            }
+
+            $case = StudentCase::find($caseId);
+        }
+
+        if (! $case) {
+            return false;
+        }
+
+        return $this->user()->can('update', $case);
     }
 
     public function rules(): array
