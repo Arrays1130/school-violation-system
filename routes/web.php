@@ -75,7 +75,7 @@ Route::get('/dean-app/{path}', function (string $path) {
 })->where('path', '.*');
 
 
-Route::middleware(['auth', 'verified', 'recaptcha.verified'])->group(function () {
+Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dean/dashboard', [DeanDashboardController::class, 'index'])->name('dean.dashboard');
@@ -191,7 +191,7 @@ Route::middleware(['auth', 'verified', 'recaptcha.verified'])->group(function ()
 });
 
 // Settings (Admin & Dean only handled in controller)
-Route::middleware(['auth', 'verified', 'recaptcha.verified'])->group(function () {
+Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/archive-cases', [App\Http\Controllers\SettingsController::class, 'archiveClosedCases'])->name('settings.archive-cases');

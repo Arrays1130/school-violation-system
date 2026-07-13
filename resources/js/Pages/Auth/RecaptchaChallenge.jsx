@@ -37,11 +37,11 @@ export default function RecaptchaChallenge({ recaptchaSiteKey, userName }) {
                         <ShieldCheck className="h-8 w-8" />
                     </div>
                     <h1 id="recaptcha-title" className="text-2xl font-bold text-gray-900">
-                        Security Check
+                        Confirm you're not a robot
                     </h1>
                     <p className="mt-2 text-sm text-gray-600">
                         Welcome back, <span className="font-semibold text-gray-900">{userName}</span>.
-                        Complete verification to continue to your dashboard.
+                        Check the box below to continue to your dashboard.
                     </p>
                 </div>
 
@@ -58,7 +58,7 @@ export default function RecaptchaChallenge({ recaptchaSiteKey, userName }) {
                         disabled={processing || !canContinue}
                         className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {processing ? "Verifying..." : "Continue to Dashboard"}
+                        {processing ? "Verifying..." : "Continue"}
                     </button>
                 </form>
 
