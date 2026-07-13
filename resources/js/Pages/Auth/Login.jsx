@@ -2,26 +2,22 @@ import React, { useRef, useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
-import RecaptchaField from "@/Components/RecaptchaField";
 import BrandText from "@/Components/BrandText";
 
-export default function Login({ status, canResetPassword, recaptchaSiteKey }) {
+export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
-        "g-recaptcha-response": "",
     });
 
     const [showPassword, setShowPassword] = useState(false);
     const [logoSrc, setLogoSrc] = useState(asset("brand_logo.png"));
-    const recaptchaRef = useRef(null);
 
     const submit = (e) => {
         e.preventDefault();
         post(route("login"), {
             onFinish: () => reset("password"),
-            onError: () => recaptchaRef.current?.reset(),
         });
     };
 
@@ -130,13 +126,6 @@ export default function Login({ status, canResetPassword, recaptchaSiteKey }) {
                             </Link>
                         )}
                     </div>
-
-                    <RecaptchaField
-                        ref={recaptchaRef}
-                        siteKey={recaptchaSiteKey}
-                        onChange={(token) => setData("g-recaptcha-response", token)}
-                        error={errors["g-recaptcha-response"]}
-                    />
 
                     <div className="mt-8">
                         <button

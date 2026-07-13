@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\Recaptcha;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +24,6 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
-            'recaptchaSiteKey' => config('services.recaptcha.site_key'),
         ]);
     }
 
@@ -33,7 +34,6 @@ class AuthenticatedSessionController extends Controller
     {
         return Inertia::render('Auth/DeanLogin', [
             'status' => session('status'),
-            'recaptchaSiteKey' => config('services.recaptcha.site_key'),
         ]);
     }
 
@@ -48,17 +48,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($user->isDean()) {
-            return redirect()->intended(route('dean.dashboard', absolute: false));
-        }
-
-        if ($user->isAdmin() || $user->isSuperAdmin()) {
-            return redirect()->intended(route('dashboard', absolute: false))
-                ->with('success', 'Welcome back, ' . $user->name . '!');
-        }
-
-        return redirect()->intended(route('dashboard', absolute: false))
-            ->with('success', 'Welcome back, ' . $user->name . '!');
+        return $this->redirectAfterLogin($request, $user);
     }
 
     /**
@@ -80,8 +70,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dean.dashboard', absolute: false))
-            ->with('success', 'Welcome back, ' . $user->name . '!');
+        return $this->redirectAfterLogin($request, $user);
     }
 
     /**
@@ -97,5 +86,29 @@ class AuthenticatedSessionController extends Controller
 
         return redirect('/')
             ->with('success', 'Logged out successfully! See you soon.');
+    }
+
+    protected function redirectAfterLogin(Request $request, User $user): RedirectResponse
+    {
+        $url = $this->postLoginUrl($user);
+
+        if (Recaptcha::isEnabled()) {
+            $request->session()->put('auth_recaptcha_passed', false);
+            $request->session()->put('auth_post_recaptcha_url', $url);
+
+            return redirect()->route('recaptcha.challenge');
+        }
+
+        return redirect()->to($url)
+            ->with('success', 'Welcome back, '.$user->name.'!');
+    }
+
+    protected function postLoginUrl(User $user): string
+    {
+        if ($user->isDean()) {
+            return route('dean.dashboard', absolute: false);
+        }
+
+        return route('dashboard', absolute: false);
     }
 }

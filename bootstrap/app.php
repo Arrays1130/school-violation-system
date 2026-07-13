@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'recaptcha.verified' => \App\Http\Middleware\EnsureRecaptchaVerified::class,
         ]);
 
     })

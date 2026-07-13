@@ -8,12 +8,7 @@ trait ValidatesRecaptcha
 {
     protected function recaptchaEnabled(): bool
     {
-        if (app()->environment('testing')) {
-            return false;
-        }
-
-        return filled(config('services.recaptcha.site_key'))
-            && filled(config('services.recaptcha.secret_key'));
+        return \App\Support\Recaptcha::isEnabled();
     }
 
     /**

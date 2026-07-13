@@ -1,25 +1,21 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
-import RecaptchaField from "@/Components/RecaptchaField";
 import BrandText from "@/Components/BrandText";
 
-export default function DeanLogin({ status, recaptchaSiteKey }) {
+export default function DeanLogin({ status }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
-        "g-recaptcha-response": "",
     });
 
-    const [logoSrc, setLogoSrc] = useState(asset("brand_logo.png"));
-    const recaptchaRef = useRef(null);
+    const [logoSrc, setLogoSrc] = React.useState(asset("brand_logo.png"));
 
     const submit = (e) => {
         e.preventDefault();
         post(route("dean.login.post"), {
             onFinish: () => reset("password"),
-            onError: () => recaptchaRef.current?.reset(),
         });
     };
 
@@ -102,13 +98,6 @@ export default function DeanLogin({ status, recaptchaSiteKey }) {
                             Forgot password?
                         </Link>
                     </div>
-
-                    <RecaptchaField
-                        ref={recaptchaRef}
-                        siteKey={recaptchaSiteKey}
-                        onChange={(token) => setData("g-recaptcha-response", token)}
-                        error={errors["g-recaptcha-response"]}
-                    />
 
                     <div className="flex items-center justify-end mt-6">
                         <button
