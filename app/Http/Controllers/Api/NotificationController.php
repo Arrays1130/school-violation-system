@@ -9,7 +9,14 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $notifications = $request->user()->notifications()->paginate(20);
+        $query = $request->user()->notifications()->latest();
+
+        if ($request->boolean('unread_only')) {
+            $query->whereNull('read_at');
+        }
+
+        $notifications = $query->paginate((int) $request->input('per_page', 20));
+
         return response()->json($notifications);
     }
 

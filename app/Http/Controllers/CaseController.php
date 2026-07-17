@@ -135,34 +135,14 @@ class CaseController extends Controller
         $data['created_by'] = auth()->id();
         $data['status'] = 'Pending';
 
-        // 1. Calculate Offense Level
-        $previousCount = \App\Models\StudentCase::where('student_id', $data['student_id'])
-                            ->where('violation_id', $data['violation_id'])
-                            ->count();
-        $offenseLevel = $previousCount + 1;
+        // 1. Calculate Offense Level + catalog sanction
+        $advice = app(\App\Services\OffenseAdviceService::class);
+        $offenseLevel = $advice->offenseLevelFor((int) $data['student_id'], (int) $data['violation_id']);
         $data['offense_level'] = $offenseLevel;
-
-        // 2. Determine Sanction based on level
-        $violation = \App\Models\Violation::find($data['violation_id']);
-        $sanction = match($offenseLevel) {
-            1 => $violation->first_offense,
-            2 => $violation->second_offense,
-            3 => $violation->third_offense,
-            default => 'Recurring Offense (Refer to Student Affairs)',
-        };
-
-        // Fallback or explicit "null" handling if needed
-        $data['sanction'] = $sanction ?: 'Sanction pending determination.';
+        $data['sanction'] = $advice->sanctionFor($violation, $offenseLevel);
 
         $case = \App\Models\StudentCase::createForStaff($data, auth()->id());
-        
-        // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY (QUEUED) ---
-        $guardianPhone = $case->student->guardian_phone;
-        if ($guardianPhone && env('ENABLE_SMS_GATEWAY', false)) {
-            $smsMessage = "SVS Notice: Your student {$case->student->full_name} has a recorded violation: {$violation->title}. Sanction: {$data['sanction']}. Please contact the school.";
-            \App\Jobs\SendSmsViaGateway::dispatch($guardianPhone, $smsMessage);
-        }
-        
+
         // Dispatch Real-time Event (Queued)
         event(new \App\Events\ViolationRecorded($case));
 
@@ -191,18 +171,17 @@ class CaseController extends Controller
             'sanction' => $data['sanction'],
         ]);
 
-        // --- AUTOMATED ESCALATION LOGIC ---
-        // 1. Check if the newly added case is a Minor offense
-        if ($violation->severity === 'Minor') {
-            // 2. Count total Minor offenses for this student
-            $totalMinors = \App\Models\StudentCase::where('student_id', $data['student_id'])
-                ->whereHas('violation', function ($q) {
-                    $q->where('severity', 'Minor');
-                })->count();
+        // Notify student, parent, and department deans for the original case
+        \App\Support\StakeholderNotifier::notifyViolationRecorded($case);
 
-            // 3. If total minors is a multiple of 3 (e.g., 3, 6, 9...)
-            if ($totalMinors > 0 && $totalMinors % 3 === 0) {
-                
+        // --- AUTOMATED ESCALATION LOGIC ---
+        if ($violation->severity === 'Minor') {
+            $escalationForecast = $advice->minorEscalationForecast((int) $data['student_id']);
+
+            if ($escalationForecast['triggers_escalation_now']) {
+                $totalMinors = $escalationForecast['total_minors'];
+                $escalationLevel = (int) $escalationForecast['escalation_level'];
+
                 // Get or update the System Generated Major Violation
                 $escalationViolation = \App\Models\Violation::updateOrCreate(
                     ['code' => 'SYS-001'],
@@ -217,15 +196,7 @@ class CaseController extends Controller
                     ]
                 );
 
-                // Calculate how many times they've escalated (e.g. 6 minors = 2 escalations)
-                $escalationLevel = $totalMinors / 3;
-
-                $escalationSanction = match($escalationLevel) {
-                    1 => $escalationViolation->first_offense,
-                    2 => $escalationViolation->second_offense,
-                    3 => $escalationViolation->third_offense,
-                    default => 'Severe Recurring Offense (Refer to Discipline Committee)',
-                };
+                $escalationSanction = $advice->sanctionFor($escalationViolation, $escalationLevel);
 
                 // Create the Major Case
                 $escalatedCase = \App\Models\StudentCase::createForStaff([
@@ -258,27 +229,10 @@ class CaseController extends Controller
                     'is_escalation' => true,
                 ]);
 
-                // Notify for the escalated case (Student)
-                if ($escalatedCase->student->email) {
-                    try {
-                        $escalatedCase->student->notify(new \App\Notifications\ViolationRecorded($escalatedCase));
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error("Failed to send escalation notification (Student): " . $e->getMessage());
-                    }
-                }
+                // Notify student, parent, and deans for the escalated major case
+                \App\Support\StakeholderNotifier::notifyViolationRecorded($escalatedCase);
 
-                // Notify Deans for the escalated case
-                try {
-                    $deans = \App\Models\User::where('role', 'dean')
-                        ->where('department', $escalatedCase->student->department_shortcut)
-                        ->get();
-                    
-                    foreach ($deans as $dean) {
-                        $dean->notify(new \App\Notifications\DeanViolationNotification($escalatedCase));
-                    }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to notify Deans about escalation: " . $e->getMessage());
-                }
+                \App\Support\QueueHelper::triggerBackgroundWorker();
 
                 // Redirect to the new escalated case with a special message
                 return redirect()->route('cases.show', $escalatedCase)
@@ -286,39 +240,6 @@ class CaseController extends Controller
             }
         }
         // --- END ESCALATION LOGIC ---
-
-        // Send Notifications (queued to database)
-        if ($case->student->email) {
-            try {
-                $case->student->notify(new \App\Notifications\ViolationRecorded($case));
-            } catch (\Exception $e) {
-                // Log but don't crash
-                \Illuminate\Support\Facades\Log::error("Failed to send notification: " . $e->getMessage());
-            }
-        }
-
-        // Also send to guardian email if available
-        if ($case->student->guardian_email) {
-            try {
-                \Illuminate\Support\Facades\Notification::route('school_mail', $case->student->guardian_email)
-                    ->notify(new \App\Notifications\ViolationRecorded($case));
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to send guardian notification: " . $e->getMessage());
-            }
-        }
-
-        // Send to Deans of the department
-        try {
-            $deans = \App\Models\User::where('role', 'dean')
-                ->where('department', $case->student->department_shortcut)
-                ->get();
-            
-            foreach ($deans as $dean) {
-                $dean->notify(new \App\Notifications\DeanViolationNotification($case));
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to notify Deans: " . $e->getMessage());
-        }
 
         session()->flash('success', 'Violation recorded successfully.');
 
@@ -454,6 +375,9 @@ class CaseController extends Controller
         }
 
         $case->markClosed(auth()->id());
+        $case->load(['student', 'violation']);
+
+        \App\Support\StakeholderNotifier::notifyCaseClosed($case);
 
         // Trigger Webhook for Case Closed Asynchronously
         \App\Jobs\TriggerN8nWebhook::dispatch('case_closed', [
@@ -461,11 +385,14 @@ class CaseController extends Controller
             'student_db_id' => $case->student->id,
             'student_name' => $case->student->full_name,
             'student_email' => $case->student->email,
+            'guardian_email' => $case->student->guardian_email,
             'guardian_contact' => $case->student->guardian_phone,
             'violation_title' => $case->violation->title,
             'sanction' => $case->sanction,
             'closed_at' => $case->closed_at->toIso8601String(),
         ]);
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
 
         return back()->with('success', 'Case has been officially closed.');
     }

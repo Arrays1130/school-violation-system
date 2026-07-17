@@ -39,6 +39,18 @@ return [
         'server_key' => env('FCM_SERVER_KEY'),
     ],
 
+    'sms_gateway' => [
+        'enabled' => env('ENABLE_SMS_GATEWAY', false),
+        'url' => env('SMS_GATEWAY_URL'),
+        'username' => env('SMS_GATEWAY_USERNAME'),
+        'password' => env('SMS_GATEWAY_PASSWORD'),
+        'queue' => env('SMS_GATEWAY_QUEUE', 'notifications'),
+    ],
+
+    'monitoring' => [
+        'log_channel' => env('MONITORING_LOG_CHANNEL', 'stack'),
+    ],
+
     'recaptcha' => [
         'site_key' => env('RECAPTCHA_SITE_KEY'),
         'secret_key' => env('RECAPTCHA_SECRET_KEY'),

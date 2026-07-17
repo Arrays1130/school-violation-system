@@ -41,22 +41,12 @@ class HearingController extends Controller
         $hearing->load(['case.student', 'case.violation']);
 
         $hearing->case->transitionStatus('Hearing Scheduled');
-        
-        // --- SEND SMS TO GUARDIAN VIA ANDROID GATEWAY (QUEUED) ---
-        $guardianPhone = $hearing->case->student->guardian_phone;
-        if ($guardianPhone) {
-            $formattedDate = \Carbon\Carbon::parse($hearing->scheduled_at)->format('F j, Y g:i A');
-            $studentName = $hearing->case->student->full_name ?? ($hearing->case->student->first_name . ' ' . $hearing->case->student->last_name);
-            $smsMessage = "SVS Notice: A hearing is scheduled for your student {$studentName} regarding {$hearing->case->violation->title} on {$formattedDate} at {$hearing->venue}. Please be present.";
-            
-            \App\Jobs\SendSmsViaGateway::dispatch($guardianPhone, $smsMessage);
-        }
 
         \App\Jobs\TriggerN8nWebhook::dispatch('hearing_scheduled', [
             'hearing_id' => $hearing->id,
             'case_id' => $hearing->case->id,
             'student_id' => $hearing->case->student->student_id,
-            'student_name' => collect([$hearing->case->student->first_name, $hearing->case->student->middle_name, $hearing->case->student->last_name])->filter()->join(' '),
+            'student_name' => $hearing->case->student->full_name,
             'student_email' => $hearing->case->student->email,
             'guardian_email' => $hearing->case->student->guardian_email,
             'guardian_contact' => $hearing->case->student->guardian_phone,
@@ -66,22 +56,7 @@ class HearingController extends Controller
             'violation_title' => $hearing->case->violation->title,
         ]);
 
-        try {
-            if ($hearing->case->student->email) {
-                $hearing->case->student->notify(new \App\Notifications\HearingScheduled($hearing));
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to notify student about hearing: '.$e->getMessage());
-        }
-
-        try {
-            $allDeans = \App\Models\User::where('role', 'dean')->get();
-            foreach ($allDeans as $dean) {
-                $dean->notify(new \App\Notifications\DeanHearingNotification($hearing));
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to notify all Deans about hearing: '.$e->getMessage());
-        }
+        \App\Support\StakeholderNotifier::notifyHearingScheduled($hearing);
 
         try {
             event(new DashboardUpdated('Hearing scheduled'));
@@ -126,19 +101,16 @@ class HearingController extends Controller
             'meeting_minutes' => $data['meeting_minutes'] ?? null,
         ]);
 
-        try {
-            if ($hearing->case->student->email) {
-                $hearing->case->student->notify(new \App\Notifications\HearingScheduled($hearing));
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to notify student about hearing update: '.$e->getMessage());
-        }
+        $hearing->load(['case.student', 'case.violation']);
+        \App\Support\StakeholderNotifier::notifyHearingScheduled($hearing, isUpdate: true);
 
         try {
             event(new DashboardUpdated('Hearing updated'));
         } catch (\Exception $e) {
             \Log::warning('Dashboard event dispatch failed after hearing update', ['error' => $e->getMessage()]);
         }
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
 
         session()->flash('success', 'Hearing updated successfully.');
 
@@ -180,6 +152,24 @@ class HearingController extends Controller
         $case = $hearing->case;
         $case->update(['sanction' => $request->sanction]);
         $case->markClosed(auth()->id());
+        $case->load(['student', 'violation']);
+
+        \App\Support\StakeholderNotifier::notifyCaseClosed($case);
+
+        \App\Jobs\TriggerN8nWebhook::dispatch('case_closed', [
+            'case_id' => $case->id,
+            'student_db_id' => $case->student->id,
+            'student_name' => $case->student->full_name,
+            'student_email' => $case->student->email,
+            'guardian_email' => $case->student->guardian_email,
+            'guardian_contact' => $case->student->guardian_phone,
+            'violation_title' => $case->violation->title,
+            'sanction' => $case->sanction,
+            'closed_at' => $case->closed_at->toIso8601String(),
+            'via_hearing' => true,
+        ]);
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
 
         return back()->with('success', 'Hearing marked as completed and case closed with sanction.');
     }

@@ -10,7 +10,7 @@ export default function View({ auth, attachment }) {
     const isPdf = ext === 'pdf';
     const isImage = IMAGE_EXTENSIONS.includes(ext);
     const displayName = attachment.label || attachment.file_name;
-    const downloadUrl = attachment.download_url;
+    const downloadUrl = attachment.signed_download_url || attachment.download_url;
 
     return (
         <AuthenticatedLayout user={auth.user}>

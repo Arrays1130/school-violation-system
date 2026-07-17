@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Violation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AttachmentAuthorizationTest extends TestCase
@@ -100,5 +101,39 @@ class AttachmentAuthorizationTest extends TestCase
         $this->actingAs($dean)
             ->delete(route('attachments.destroy', $attachment))
             ->assertForbidden();
+    }
+
+    public function test_signed_attachment_download_requires_valid_signature(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->admin()->create();
+        $student = Student::factory()->inDepartment('CCE')->create();
+        $violation = Violation::factory()->create();
+        $case = StudentCase::factory()->create([
+            'student_id' => $student->id,
+            'violation_id' => $violation->id,
+        ]);
+
+        $path = 'attachments/signed.pdf';
+        Storage::disk('local')->put($path, 'signed-content');
+
+        $attachment = CaseAttachment::create([
+            'case_id' => $case->id,
+            'uploaded_by' => $admin->id,
+            'file_name' => 'signed.pdf',
+            'file_path' => $path,
+            'file_type' => 'application/pdf',
+            'file_size' => 12,
+        ]);
+
+        $validUrl = URL::temporarySignedRoute(
+            'attachments.signed-download',
+            now()->addMinutes(10),
+            ['attachment' => $attachment->id]
+        );
+
+        $this->actingAs($admin)->get($validUrl)->assertOk();
+        $this->actingAs($admin)->get(route('attachments.signed-download', $attachment))->assertForbidden();
     }
 }

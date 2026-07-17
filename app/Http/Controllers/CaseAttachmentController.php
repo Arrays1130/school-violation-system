@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use App\Support\AttachmentStorage;
 
 class CaseAttachmentController extends Controller
@@ -211,6 +212,11 @@ class CaseAttachmentController extends Controller
                 'label' => $attachment->label,
                 'file_ext' => $ext,
                 'download_url' => route('attachments.download', $attachment),
+                'signed_download_url' => URL::temporarySignedRoute(
+                    'attachments.signed-download',
+                    now()->addMinutes(10),
+                    ['attachment' => $attachment->id]
+                ),
             ],
         ]);
     }
@@ -224,6 +230,11 @@ class CaseAttachmentController extends Controller
         }
 
         return AttachmentStorage::disk()->download($attachment->file_path, $attachment->file_name);
+    }
+
+    public function signedDownload(CaseAttachment $attachment)
+    {
+        return $this->download($attachment);
     }
 
     public function destroy(CaseAttachment $attachment)

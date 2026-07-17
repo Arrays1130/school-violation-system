@@ -3,9 +3,40 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Railway health check
 Route::get('/health', function () {
-    return response()->json(['status' => 'ok', 'timestamp' => now()]);
+    $checks = [
+        'database' => false,
+        'cache' => false,
+        'queue' => false,
+        'sms_configured' => false,
+    ];
+
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $checks['database'] = true;
+    } catch (\Throwable) {
+    }
+
+    try {
+        $key = 'health:'.str()->random(8);
+        \Illuminate\Support\Facades\Cache::put($key, 'ok', 10);
+        $checks['cache'] = \Illuminate\Support\Facades\Cache::get($key) === 'ok';
+        \Illuminate\Support\Facades\Cache::forget($key);
+    } catch (\Throwable) {
+    }
+
+    $checks['queue'] = config('queue.default') !== 'sync';
+    $checks['sms_configured'] = (bool) (config('services.sms_gateway.url') && config('services.sms_gateway.username'));
+
+    // Only DB reachability is required for "health".
+    // Cache/queue status is informational for readiness.
+    $healthy = (bool) $checks['database'];
+
+    return response()->json([
+        'status' => $healthy ? 'ok' : 'degraded',
+        'checks' => $checks,
+        'timestamp' => now()->toIso8601String(),
+    ], $healthy ? 200 : 503);
 });
 
 Route::prefix('mobile')->group(function () {

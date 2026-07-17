@@ -19,16 +19,33 @@ use App\Http\Controllers\ViolationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
+    $checks = [
+        'database' => false,
+        'cache' => false,
+        'queue' => false,
+    ];
+
     try {
         \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $checks['database'] = true;
+
+        $key = 'health:'.str()->random(8);
+        \Illuminate\Support\Facades\Cache::put($key, 'ok', 10);
+        $checks['cache'] = \Illuminate\Support\Facades\Cache::get($key) === 'ok';
+        \Illuminate\Support\Facades\Cache::forget($key);
+        $checks['queue'] = config('queue.default') !== 'sync';
+        // Only DB reachability is required for "health".
+        // Cache/queue status is informational for readiness.
+        $healthy = $checks['database'];
 
         return response()->json([
-            'status' => 'ok',
+            'status' => $healthy ? 'ok' : 'degraded',
             'app' => config('app.name'),
+            'checks' => $checks,
             'time' => now()->toIso8601String(),
-        ]);
+        ], $healthy ? 200 : 503);
     } catch (\Throwable) {
-        return response()->json(['status' => 'error'], 503);
+        return response()->json(['status' => 'error', 'checks' => $checks], 503);
     }
 })->name('health');
 
@@ -141,6 +158,9 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::post('/cases/{case}/attachments', [CaseAttachmentController::class, 'storeForCase'])->name('cases.attachments.store');
     Route::get('/attachments/{attachment}/view', [CaseAttachmentController::class, 'view'])->name('attachments.view');
     Route::get('/attachments/{attachment}/download', [CaseAttachmentController::class, 'download'])->name('attachments.download');
+    Route::get('/attachments/{attachment}/signed-download', [CaseAttachmentController::class, 'signedDownload'])
+        ->middleware('signed')
+        ->name('attachments.signed-download');
     Route::delete('/attachments/{attachment}', [CaseAttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::get('/ai-assistant', [App\Http\Controllers\AiAssistantController::class, 'index'])->name('ai-assistant.index');

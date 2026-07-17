@@ -24,10 +24,8 @@ class ViolationRecorded extends Notification implements ShouldQueue
      */
     public function via($notifiable)
     {
-        $channels = NotificationChannels::withEmail(['database']);
-        $channels[] = \App\Channels\SmsChannel::class;
-
-        return $channels;
+        // SMS is sent separately via SmsGateway for the student's personal phone only.
+        return NotificationChannels::withEmail(['database']);
     }
 
     /**
@@ -68,15 +66,4 @@ class ViolationRecorded extends Notification implements ShouldQueue
         ];
     }
 
-    /**
-     * Get the SMS representation of the notification.
-     */
-    public function toSms(object $notifiable): string
-    {
-        $studentName = explode(' ', trim($this->case->student->full_name))[0]; // Get first name
-        $violationTitle = $this->case->violation->title;
-        $date = $this->case->occurred_at->format('M j, Y');
-
-        return "I-Link CST Alert: Hi {$studentName}, a violation ({$violationTitle}) was recorded on {$date}. Please check your student portal or contact the Discipline Office.";
-    }
 }

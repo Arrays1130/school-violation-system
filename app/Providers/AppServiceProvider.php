@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +25,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        DB::whenQueryingForLongerThan((int) env('DB_SLOW_QUERY_MS', 500), function ($connection, $event) {
+            Log::warning('Slow query detected.', [
+                'connection' => $connection->getName(),
+                'time_ms' => $event->time,
+                'sql' => $event->sql,
+            ]);
+        });
+
         Notification::extend('fcm', function ($app) {
             return $app->make(\App\Notifications\Channels\FcmChannel::class);
         });

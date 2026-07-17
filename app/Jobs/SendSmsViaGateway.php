@@ -14,6 +14,10 @@ class SendSmsViaGateway implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 4;
+
+    public array $backoff = [30, 120, 300];
+
     /**
      * Create a new job instance.
      */
@@ -27,12 +31,16 @@ class SendSmsViaGateway implements ShouldQueue
      */
     public function handle(): void
     {
-        $smsUrl = env('SMS_GATEWAY_URL');
-        $smsUser = env('SMS_GATEWAY_USERNAME');
-        $smsPass = env('SMS_GATEWAY_PASSWORD');
+        $smsUrl = config('services.sms_gateway.url');
+        $smsUser = config('services.sms_gateway.username');
+        $smsPass = config('services.sms_gateway.password');
+        $requestId = (string) str()->uuid();
 
         if (! $smsUrl || ! $smsUser || ! $smsPass) {
-            Log::warning('SMS gateway skipped: credentials not configured.');
+            Log::warning('SMS gateway skipped: credentials not configured.', [
+                'request_id' => $requestId,
+                'phone' => $this->phone,
+            ]);
 
             return;
         }
@@ -51,13 +59,38 @@ class SendSmsViaGateway implements ShouldQueue
                     'phoneNumbers' => [$phone]
                 ]);
 
-            if ($response->successful()) {
-                Log::info('SMS sent successfully via gateway to ' . $phone);
-            } else {
-                Log::error('SMS gateway error: ' . $response->body());
+            if (! $response->successful()) {
+                Log::warning('SMS gateway returned non-success response.', [
+                    'request_id' => $requestId,
+                    'phone' => $phone,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                throw new \RuntimeException('SMS gateway returned status '.$response->status());
             }
-        } catch (\Exception $e) {
-            Log::error('Failed to send SMS via gateway: ' . $e->getMessage());
+
+            Log::info('SMS sent successfully via gateway.', [
+                'request_id' => $requestId,
+                'phone' => $phone,
+                'status' => $response->status(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send SMS via gateway.', [
+                'request_id' => $requestId,
+                'phone' => $this->phone,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
         }
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        Log::critical('SMS job permanently failed.', [
+            'phone' => $this->phone,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

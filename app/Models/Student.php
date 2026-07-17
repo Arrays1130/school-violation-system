@@ -142,8 +142,7 @@ class Student extends Authenticatable
      */
     public function routeNotificationForSms($notification)
     {
-        // First preference is the student's personal phone.
-        // Fallback to guardian phone if they don't have one on file.
-        return $this->phone ?: $this->guardian_phone;
+        // Student SMS only — guardian SMS is dispatched separately via SmsGateway.
+        return $this->phone;
     }
 }

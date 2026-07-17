@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#000"/>
+    </marker>
+    <style>
+      .box { fill: #fff; stroke: #000; stroke-width: 1.5; }
+      .entity { fill: #fff; stroke: #000; stroke-width: 2; }
+      .store-fill { fill: #fff; }
+      .txt { font-family: Arial, Helvetica, sans-serif; fill: #000; }
+      .title { font-size: 14px; font-weight: bold; }
+      .label { font-size: 10px; }
+      .proc-num { font-size: 12px; font-weight: bold; text-anchor: middle; }
+      .proc-name { font-size: 11px; text-anchor: middle; }
+      .entity-txt { font-size: 13px; font-weight: bold; text-anchor: middle; }
+      .store-txt { font-size: 11px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1400" height="720" fill="#fff"/>
+
+  <!-- Caption -->
+  <text x="40" y="28" class="txt title">Figure 5. Level 1 Data Flow Diagram</text>
+
+  <!-- System boundary -->
+  <rect x="160" y="48" width="1080" height="640" fill="none" stroke="#000" stroke-width="2"/>
+
+  <!-- ========== EXTERNAL ENTITY: Dean (left) ========== -->
+  <rect x="20" y="220" width="90" height="280" class="entity"/>
+  <text x="65" y="365" class="txt entity-txt">Dean</text>
+
+  <!-- ========== EXTERNAL ENTITY: Admin/OSA (right) ========== -->
+  <rect x="1290" y="220" width="90" height="280" class="entity"/>
+  <text x="1335" y="350" class="txt entity-txt">Admin/</text>
+  <text x="1335" y="368" class="txt entity-txt">OSA</text>
+
+  <!-- ========== DATA STORES ========== -->
+  <!-- D1 -->
+  <g id="D1">
+    <rect x="250" y="90" width="130" height="42" class="store-fill" stroke="#000" stroke-width="1.5"/>
+    <line x1="258" y1="90" x2="258" y2="132" stroke="#000" stroke-width="2.5"/>
+    <line x1="380" y1="90" x2="380" y2="132" stroke="#fff" stroke-width="3"/>
+    <text x="268" y="116" class="txt store-txt">D1 User Accounts</text>
+  </g>
+  <!-- D2 -->
+  <g id="D2">
+    <rect x="250" y="260" width="130" height="42" class="store-fill" stroke="#000" stroke-width="1.5"/>
+    <line x1="258" y1="260" x2="258" y2="302" stroke="#000" stroke-width="2.5"/>
+    <line x1="380" y1="260" x2="380" y2="302" stroke="#fff" stroke-width="3"/>
+    <text x="268" y="286" class="txt store-txt">D2 Students</text>
+  </g>
+  <!-- D3 -->
+  <g id="D3">
+    <rect x="250" y="450" width="130" height="42" class="store-fill" stroke="#000" stroke-width="1.5"/>
+    <line x1="258" y1="450" x2="258" y2="492" stroke="#000" stroke-width="2.5"/>
+    <line x1="380" y1="450" x2="380" y2="492" stroke="#fff" stroke-width="3"/>
+    <text x="268" y="476" class="txt store-txt">D3 Violations</text>
+  </g>
+  <!-- D4 -->
+  <g id="D4">
+    <rect x="700" y="110" width="140" height="42" class="store-fill" stroke="#000" stroke-width="1.5"/>
+    <line x1="708" y1="110" x2="708" y2="152" stroke="#000" stroke-width="2.5"/>
+    <line x1="840" y1="110" x2="840" y2="152" stroke="#fff" stroke-width="3"/>
+    <text x="718" y="136" class="txt store-txt">D4 Notifications</text>
+  </g>
+  <!-- D5 -->
+  <g id="D5">
+    <rect x="700" y="330" width="140" height="42" class="store-fill" stroke="#000" stroke-width="1.5"/>
+    <line x1="708" y1="330" x2="708" y2="372" stroke="#000" stroke-width="2.5"/>
+    <line x1="840" y1="330" x2="840" y2="372" stroke="#fff" stroke-width="3"/>
+    <text x="718" y="356" class="txt store-txt">D5 Reports</text>
+  </g>
+
+  <!-- ========== PROCESSES 1.0 - 3.0 ========== -->
+  <!-- 1.0 -->
+  <g id="P1">
+    <rect x="480" y="70" width="150" height="70" class="box"/>
+    <line x1="480" y1="92" x2="630" y2="92" stroke="#000" stroke-width="1.5"/>
+    <text x="555" y="86" class="txt proc-num">1.0</text>
+    <text x="555" y="112" class="txt proc-name">Validate User</text>
+    <text x="555" y="128" class="txt proc-name">Login Credentials</text>
+  </g>
+  <!-- 2.0 -->
+  <g id="P2">
+    <rect x="480" y="240" width="150" height="70" class="box"/>
+    <line x1="480" y1="262" x2="630" y2="262" stroke="#000" stroke-width="1.5"/>
+    <text x="555" y="256" class="txt proc-num">2.0</text>
+    <text x="555" y="282" class="txt proc-name">Manage Student</text>
+    <text x="555" y="298" class="txt proc-name">Record</text>
+  </g>
+  <!-- 3.0 -->
+  <g id="P3">
+    <rect x="480" y="430" width="150" height="70" class="box"/>
+    <line x1="480" y1="452" x2="630" y2="452" stroke="#000" stroke-width="1.5"/>
+    <text x="555" y="446" class="txt proc-num">3.0</text>
+    <text x="555" y="472" class="txt proc-name">Manage Violation</text>
+    <text x="555" y="488" class="txt proc-name">Records</text>
+  </g>
+
+  <!-- ========== PROCESSES 4.0 - 6.0 ========== -->
+  <!-- 4.0 -->
+  <g id="P4">
+    <rect x="930" y="90" width="160" height="70" class="box"/>
+    <line x1="930" y1="112" x2="1090" y2="112" stroke="#000" stroke-width="1.5"/>
+    <text x="1010" y="106" class="txt proc-num">4.0</text>
+    <text x="1010" y="132" class="txt proc-name">Process Notification</text>
+    <text x="1010" y="148" class="txt proc-name">Messages</text>
+  </g>
+  <!-- 5.0 -->
+  <g id="P5">
+    <rect x="930" y="310" width="160" height="70" class="box"/>
+    <line x1="930" y1="332" x2="1090" y2="332" stroke="#000" stroke-width="1.5"/>
+    <text x="1010" y="326" class="txt proc-num">5.0</text>
+    <text x="1010" y="352" class="txt proc-name">Generate Dashboard</text>
+    <text x="1010" y="368" class="txt proc-name">&amp; Statistics</text>
+  </g>
+  <!-- 6.0 -->
+  <g id="P6">
+    <rect x="930" y="520" width="160" height="70" class="box"/>
+    <line x1="930" y1="542" x2="1090" y2="542" stroke="#000" stroke-width="1.5"/>
+    <text x="1010" y="536" class="txt proc-num">6.0</text>
+    <text x="1010" y="562" class="txt proc-name">Send Notification</text>
+    <text x="1010" y="578" class="txt proc-name">Alerts</text>
+  </g>
+
+  <!-- ========== FLOWS: Dean <-> processes ========== -->
+  <!-- Login Credentials Dean -> 1.0 -->
+  <path d="M110,250 H200 V100 H480" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="130" y="242" class="txt label">Login Credentials</text>
+
+  <!-- Login Confirmation 1.0 -> Dean -->
+  <path d="M480,125 H190 V300 H110" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="125" y="318" class="txt label">Login Confirmation</text>
+
+  <!-- Reports 2.0/3.0 -> Dean (shared bus) -->
+  <path d="M480,280 H210 V400 H110" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <path d="M480,465 H220 V400" fill="none" stroke="#000" stroke-width="1.2"/>
+  <text x="125" y="420" class="txt label">Reports</text>
+
+  <!-- ========== FLOWS: D1 <-> 1.0 ========== -->
+  <path d="M380,100 H480" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="390" y="94" class="txt label">User Account Data</text>
+  <path d="M480,130 H380" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="390" y="148" class="txt label">Account Verification Data</text>
+
+  <!-- ========== FLOWS: D2 <-> 2.0 ========== -->
+  <path d="M380,270 H480" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="395" y="264" class="txt label">Student Information</text>
+  <path d="M480,295 H380" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="400" y="314" class="txt label">Student Record</text>
+
+  <!-- ========== FLOWS: D3 <-> 3.0 ========== -->
+  <path d="M380,460 H480" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="400" y="454" class="txt label">Violation Data</text>
+  <path d="M480,485 H380" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="400" y="506" class="txt label">Violation Record</text>
+
+  <!-- ========== FLOWS: Left processes <-> Admin (via mid corridor) ========== -->
+  <!-- Login Credentials Admin -> 1.0 -->
+  <path d="M1290,250 H1120 V80 H630" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1125" y="72" class="txt label">Login Credentials</text>
+
+  <!-- Login Confirmation 1.0 -> Admin -->
+  <path d="M630,105 H1110 V270 H1290" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1115" y="262" class="txt label">Login Confirmation</text>
+
+  <!-- Record Management Data Admin -> 2.0 -->
+  <path d="M1290,300 H1140 V255 H630" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1145" y="248" class="txt label">Record Management Data</text>
+
+  <!-- Information Reports 2.0 -> Admin -->
+  <path d="M630,290 H1100 V330 H1290" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1110" y="322" class="txt label">Information Reports</text>
+
+  <!-- Violation Report Updates Admin -> 3.0 -->
+  <path d="M1290,380 H1150 V445 H630" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1155" y="437" class="txt label">Violation Report Updates</text>
+
+  <!-- Violation Reports 3.0 -> Admin -->
+  <path d="M630,475 H1120 V420 H1290" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1125" y="412" class="txt label">Violation Reports</text>
+
+  <!-- ========== FLOWS: D4 <-> 4.0 ========== -->
+  <path d="M840,120 H930" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="850" y="114" class="txt label">Notification Data</text>
+  <path d="M930,145 H840" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="848" y="164" class="txt label">Notification Details</text>
+
+  <!-- ========== FLOWS: D5 <-> 5.0 ========== -->
+  <path d="M840,340 H930" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="855" y="334" class="txt label">Stored Reports</text>
+  <path d="M930,360 H840" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="850" y="378" class="txt label">Generate Reports</text>
+
+  <!-- Notification Message Admin -> 4.0 -->
+  <path d="M1290,240 H1160 V125 H1090" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1165" y="118" class="txt label">Notification Message</text>
+
+  <!-- Student/Violation data into 5.0 (from left processes conceptually) -->
+  <path d="M630,300 H780 V345 H930" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="700" y="295" class="txt label">Student Data</text>
+  <path d="M630,490 H760 V370 H930" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="660" y="482" class="txt label">Violation Data</text>
+
+  <!-- Notification alerts into 6.0 -->
+  <path d="M630,500 H780 V540 H930" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="700" y="530" class="txt label">Notification Alerts</text>
+  <path d="M630,530 H800 V560 H930" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="710" y="578" class="txt label">Sent Notification Logs</text>
+
+  <!-- 5.0 -> Admin -->
+  <path d="M1090,330 H1200 V310 H1290" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1160" y="304" class="txt label">Dashboard Summary</text>
+  <path d="M1090,360 H1220 V360 H1290" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1165" y="352" class="txt label">Violation Reports</text>
+
+  <!-- 6.0 -> Admin -->
+  <path d="M1090,555 H1200 V450 H1290" fill="none" stroke="#000" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="1160" y="442" class="txt label">System Notification</text>
+</svg>

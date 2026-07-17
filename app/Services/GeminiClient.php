@@ -40,7 +40,7 @@ class GeminiClient
             ],
             [
                 'name' => 'analyze_student_incident',
-                'description' => 'Risk analysis and recommendation for a student.',
+                'description' => 'Risk analysis and recommendation for a student using offense levels, severity, and minor-escalation rules.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -50,6 +50,27 @@ class GeminiClient
                         ],
                     ],
                     'required' => ['student_name_or_id'],
+                ],
+            ],
+            [
+                'name' => 'suggest_sanction_and_next_step',
+                'description' => 'Suggest the catalog sanction and concrete OSA next steps for a student, optional violation code, or current case context.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'student_name_or_id' => [
+                            'type' => 'string',
+                            'description' => 'Student full name or numeric ID. Optional when page case context is available.',
+                        ],
+                        'violation_code' => [
+                            'type' => 'string',
+                            'description' => 'Optional violation code like V-099 to preview sanction for a new incident.',
+                        ],
+                        'case_id' => [
+                            'type' => 'integer',
+                            'description' => 'Optional case ID to advise on an existing case workflow.',
+                        ],
+                    ],
                 ],
             ],
             [
@@ -68,7 +89,7 @@ class GeminiClient
             ],
             [
                 'name' => 'get_all_violations',
-                'description' => 'List all configured violation rules and codes.',
+                'description' => 'List all configured violation rules with codes, severity, and 1st/2nd/3rd offense sanctions.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [

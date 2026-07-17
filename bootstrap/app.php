@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append([
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\LogRequestContext::class,
         ]);
 
         $middleware->web(append: [
@@ -31,6 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->report(function (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::channel(config('services.monitoring.log_channel', 'stack'))
+                ->error('Unhandled exception captured.', [
+                    'exception' => $e->getMessage(),
+                ]);
+        });
+
         $exceptions->shouldRenderJsonWhen(function ($request, $e) {
             if ($request->is('api/*') || $request->is('mobile/*')) {
                 return true;

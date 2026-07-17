@@ -155,4 +155,47 @@ class AiServiceLogicTest extends TestCase
         $this->assertStringNotContainsString('get_student_cases', $clean);
         $this->assertStringNotContainsString('print(test)', $clean);
     }
+
+    public function test_sanction_questions_prefetch_suggest_tool(): void
+    {
+        $student = \App\Models\Student::factory()->create(['full_name' => 'Juan Dela Cruz']);
+        $violation = \App\Models\Violation::factory()->create(['code' => 'V-088']);
+        \App\Models\StudentCase::factory()->create([
+            'student_id' => $student->id,
+            'violation_id' => $violation->id,
+        ]);
+
+        $tools = $this->toolNames($this->invokeAutoDetect('What sanction should we apply for Juan Dela Cruz V-088?'));
+
+        $this->assertContains('suggest_sanction_and_next_step', $tools);
+    }
+
+    public function test_page_case_context_includes_next_steps(): void
+    {
+        $dept = config('school.departments.CCE');
+        $student = \App\Models\Student::factory()->create(['department' => $dept]);
+        $violation = \App\Models\Violation::factory()->create();
+        $case = \App\Models\StudentCase::factory()->create([
+            'student_id' => $student->id,
+            'violation_id' => $violation->id,
+            'sanction' => 'Verbal warning',
+            'offense_level' => 1,
+        ]);
+
+        $service = app(AiService::class);
+        $pageContextProp = new \ReflectionProperty(AiService::class, 'pageContext');
+        $pageContextProp->setAccessible(true);
+        $pageContextProp->setValue($service, ['case_id' => $case->id, 'student_id' => $student->id]);
+
+        $method = new ReflectionMethod(AiService::class, 'buildPageContextTools');
+        $method->setAccessible(true);
+        $tools = $method->invoke($service);
+
+        $caseContext = collect($tools)->firstWhere('tool', 'case_context');
+        $this->assertNotNull($caseContext);
+        $payload = json_decode($caseContext['result'], true);
+        $this->assertSame('Verbal warning', $payload['recommended_sanction']);
+        $this->assertArrayHasKey('next_steps', $payload);
+        $this->assertNotEmpty($payload['next_steps']);
+    }
 }
