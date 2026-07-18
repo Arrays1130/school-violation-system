@@ -268,7 +268,7 @@ class CaseController extends Controller
         $offenseSummary = [
             'total'  => $allStudentCases->count(),
             'minor'  => $allStudentCases->filter(fn($c) => $c->violation?->severity === 'Minor')->count(),
-            'major'  => $allStudentCases->filter(fn($c) => in_array($c->violation?->severity, ['Major', 'Critical']))->count(),
+            'major'  => $allStudentCases->filter(fn($c) => $c->violation?->severity === 'Major')->count(),
         ];
 
         return inertia('Cases/Show', [

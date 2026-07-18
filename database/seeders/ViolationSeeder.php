@@ -22,7 +22,7 @@ class ViolationSeeder extends Seeder
             ['code' => 'V-103', 'title' => 'Bullying', 'category' => 'Conduct', 'severity' => 'Major', 'default_description' => 'Verbal harassment of another student.'],
             ['code' => 'V-104', 'title' => 'Skipping Class', 'category' => 'Attendance', 'severity' => 'Major', 'default_description' => 'Cut classes without valid reason.'],
 
-            // Critical Offenses (Mapped to Major per schema changes)
+            // Heavy Major Offenses
             ['code' => 'V-201', 'title' => 'Physical Assault', 'category' => 'Conduct', 'severity' => 'Major', 'default_description' => 'Physically harming another person.'],
             ['code' => 'V-202', 'title' => 'Possession of Alcohol/Drugs', 'category' => 'Conduct', 'severity' => 'Major', 'default_description' => 'Found in possession of prohibited substances.'],
             ['code' => 'V-203', 'title' => 'Theft', 'category' => 'Conduct', 'severity' => 'Major', 'default_description' => 'Stealing property.'],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import ConfirmDialog from '@/Components/ConfirmDialog';
@@ -15,18 +15,33 @@ export default function Index({ auth, users, filters }) {
     const [search, setSearch] = useState(filters?.search || '');
     const [role, setRole] = useState(filters?.role || '');
     const [deleteUserId, setDeleteUserId] = useState(null);
+    const searchInputRef = useRef(null);
 
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (search !== filters?.search || role !== filters?.role) {
+            if (search !== (filters?.search || '') || role !== (filters?.role || '')) {
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
                 router.get(route('users.index'), { search, role }, {
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
+                    only: ['users', 'filters'],
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
                 });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timer);
     }, [search, role]);
 
@@ -106,6 +121,7 @@ export default function Index({ auth, users, filters }) {
                 {/* Search & Filters */}
                 <MotionItem>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={search}
                         onSearchChange={setSearch}
                         onClear={handleClear}

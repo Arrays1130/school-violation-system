@@ -72,9 +72,9 @@ class OffenseAdviceServiceTest extends TestCase
 
         $analysis = $this->advice->analyzeStudent($student);
 
-        $this->assertNotSame('CRITICAL', $analysis['risk_level']);
         $this->assertStringNotContainsString('Expulsion', $analysis['risk_level']);
         $this->assertStringNotContainsString('Expulsion', $analysis['recommendation']);
+        $this->assertContains($analysis['risk_level'], ['LOW', 'MODERATE', 'HIGH']);
     }
 
     public function test_suggest_for_new_violation_uses_catalog_third_offense(): void

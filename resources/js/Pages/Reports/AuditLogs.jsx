@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import Pagination from '@/Components/Pagination';
@@ -26,6 +26,7 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
     const [causerId, setCauserId] = useState(filters?.causer_id || '');
     const [dateFrom, setDateFrom] = useState(filters?.date_from || '');
     const [dateTo, setDateTo] = useState(filters?.date_to || '');
+    const searchInputRef = useRef(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -39,9 +40,26 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
                 date_to: filters?.date_to || '',
             };
             if (JSON.stringify(next) !== JSON.stringify(current)) {
-                router.get(route('reports.audit-logs'), next, { preserveState: true, preserveScroll: true, replace: true });
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
+                router.get(route('reports.audit-logs'), next, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
+                });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timer);
     }, [search, event, subjectType, causerId, dateFrom, dateTo]);
 
@@ -120,6 +138,7 @@ export default function AuditLogs({ auth, logs, stats, users, subjectTypes, filt
 
                 <MotionItem>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={search}
                         onSearchChange={setSearch}
                         onClear={hasFilters ? clearFilters : undefined}

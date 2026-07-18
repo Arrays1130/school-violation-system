@@ -143,7 +143,7 @@ class StakeholderNotifier
         }
 
         self::notifyParentHearing($hearing, $isUpdate);
-        self::notifyAllDeansOfHearing($hearing);
+        self::notifyDepartmentDeanOfHearing($hearing, $isUpdate);
     }
 
     public static function notifyParentHearing(Hearing $hearing, bool $isUpdate = false): void
@@ -180,15 +180,70 @@ class StakeholderNotifier
         ], 'guardian');
     }
 
-    public static function notifyAllDeansOfHearing(Hearing $hearing): void
+    /**
+     * Phase 1 (hearing scheduled/rescheduled): notify only the dean of the
+     * student's department via email + push + in-app + SMS.
+     */
+    public static function notifyDepartmentDeanOfHearing(Hearing $hearing, bool $isUpdate = false): void
     {
+        $hearing->loadMissing(['case.student', 'case.violation']);
+        $student = $hearing->case->student;
+
+        try {
+            $deans = User::where('role', 'dean')
+                ->where('department', $student->department_shortcut)
+                ->get();
+
+            foreach ($deans as $dean) {
+                $dean->notify(new DeanHearingNotification($hearing));
+
+                if ($dean->phone) {
+                    $when = $hearing->scheduled_at->format('M j, Y g:i A');
+                    $verb = $isUpdate ? 'rescheduled' : 'scheduled';
+                    $sent = SmsGateway::dispatch(
+                        $dean->phone,
+                        "I-Link CST: Hearing {$verb} for {$student->full_name} on {$when} at {$hearing->venue}. Please be advised."
+                    );
+                    self::markStatusFromSmsDispatch('dean_hearing_scheduled', $dean->phone, $sent, [
+                        'hearing_id' => $hearing->id,
+                        'case_id' => $hearing->case_id,
+                        'dean_id' => $dean->id,
+                        'is_update' => $isUpdate,
+                    ], 'dean');
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to notify department dean about hearing: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Phase 2 (hearing started): notify ALL deans via email + push + in-app + SMS.
+     */
+    public static function notifyAllDeansHearingStarted(Hearing $hearing): void
+    {
+        $hearing->loadMissing(['case.student', 'case.violation']);
+        $student = $hearing->case->student;
+
         try {
             $allDeans = User::where('role', 'dean')->get();
             foreach ($allDeans as $dean) {
                 $dean->notify(new DeanHearingNotification($hearing));
+
+                if ($dean->phone) {
+                    $sent = SmsGateway::dispatch(
+                        $dean->phone,
+                        "I-Link CST: Hearing for {$student->full_name} is now starting at {$hearing->venue}."
+                    );
+                    self::markStatusFromSmsDispatch('dean_hearing_started', $dean->phone, $sent, [
+                        'hearing_id' => $hearing->id,
+                        'case_id' => $hearing->case_id,
+                        'dean_id' => $dean->id,
+                    ], 'dean');
+                }
             }
         } catch (\Exception $e) {
-            Log::error('Failed to notify deans about hearing: '.$e->getMessage());
+            Log::error('Failed to notify all deans about hearing start: '.$e->getMessage());
         }
     }
 

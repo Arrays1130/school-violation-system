@@ -71,7 +71,7 @@ class StakeholderNotificationTest extends TestCase
         ]);
     }
 
-    public function test_hearing_scheduled_notifies_student_parent_and_all_deans(): void
+    public function test_hearing_scheduled_notifies_student_parent_and_department_dean_only(): void
     {
         Notification::fake();
         Bus::fake();
@@ -81,8 +81,8 @@ class StakeholderNotificationTest extends TestCase
             'guardian_email' => 'parent@example.com',
             'guardian_phone' => '09179876543',
         ]);
-        $deanA = User::factory()->dean('CCE')->create();
-        $deanB = User::factory()->dean('CBA')->create();
+        $deanA = User::factory()->dean('CCE')->create(['phone' => '09170001111']);
+        $deanB = User::factory()->dean('CBA')->create(['phone' => '09170002222']);
         $case = StudentCase::factory()->create(['student_id' => $student->id]);
         $hearing = Hearing::create([
             'case_id' => $case->id,
@@ -95,12 +95,62 @@ class StakeholderNotificationTest extends TestCase
 
         Notification::assertSentTo($student, HearingScheduled::class);
         Notification::assertSentOnDemand(ParentHearingNotification::class);
+
+        // Only the dean of the student's department (CCE) is notified at scheduling.
         Notification::assertSentTo($deanA, DeanHearingNotification::class);
-        Notification::assertSentTo($deanB, DeanHearingNotification::class);
+        Notification::assertNotSentTo($deanB, DeanHearingNotification::class);
 
         Bus::assertDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
             return $job->phone === '09179876543' && str_contains($job->message, 'scheduled');
         });
+        Bus::assertDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
+            return $job->phone === '09170001111';
+        });
+        Bus::assertNotDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
+            return $job->phone === '09170002222';
+        });
+
+        $this->assertDatabaseHas('notification_deliveries', [
+            'event' => 'dean_hearing_scheduled',
+            'channel' => 'sms',
+            'recipient' => '09170001111',
+            'recipient_type' => 'dean',
+        ]);
+    }
+
+    public function test_hearing_started_notifies_all_deans(): void
+    {
+        Notification::fake();
+        Bus::fake();
+
+        $student = Student::factory()->create();
+        $deanA = User::factory()->dean('CCE')->create(['phone' => '09170001111']);
+        $deanB = User::factory()->dean('CBA')->create(['phone' => '09170002222']);
+        $case = StudentCase::factory()->create(['student_id' => $student->id]);
+        $hearing = Hearing::create([
+            'case_id' => $case->id,
+            'venue' => 'Guidance Office',
+            'scheduled_at' => now()->addDay(),
+            'participants' => ['Student', 'Dean'],
+        ]);
+
+        StakeholderNotifier::notifyAllDeansHearingStarted($hearing);
+
+        Notification::assertSentTo($deanA, DeanHearingNotification::class);
+        Notification::assertSentTo($deanB, DeanHearingNotification::class);
+
+        Bus::assertDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
+            return $job->phone === '09170001111' && str_contains($job->message, 'starting');
+        });
+        Bus::assertDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
+            return $job->phone === '09170002222' && str_contains($job->message, 'starting');
+        });
+
+        $this->assertDatabaseHas('notification_deliveries', [
+            'event' => 'dean_hearing_started',
+            'channel' => 'sms',
+            'recipient_type' => 'dean',
+        ]);
     }
 
     public function test_hearing_update_notifies_parent_and_deans(): void

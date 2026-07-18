@@ -17,9 +17,8 @@ export const CHART = {
 };
 
 export const SEVERITY_COLORS = {
-    Minor: '#818cf8',
-    Major: '#4f46e5',
-    Critical: '#f43f5e',
+    Minor: '#1d4ed8',
+    Major: '#FC2847',
 };
 
 export const chartBaseOptions = {

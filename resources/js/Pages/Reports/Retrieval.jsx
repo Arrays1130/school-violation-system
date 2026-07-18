@@ -23,6 +23,7 @@ export default function Retrieval({ cases, departments, violations, academicYear
     });
 
     const isFirstRender = useRef(true);
+    const searchInputRef = useRef(null);
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -30,11 +31,24 @@ export default function Retrieval({ cases, departments, violations, academicYear
             return;
         }
         const timeout = setTimeout(() => {
+            const el = searchInputRef.current;
+            const hadFocus = el && document.activeElement === el;
+            const caret = el ? el.selectionStart : null;
+
             get(route('reports.retrieval'), {
                 preserveState: true,
-                preserveScroll: true
+                preserveScroll: true,
+                onFinish: () => {
+                    if (hadFocus && searchInputRef.current) {
+                        const input = searchInputRef.current;
+                        input.focus();
+                        if (caret !== null) {
+                            try { input.setSelectionRange(caret, caret); } catch (_) {}
+                        }
+                    }
+                },
             });
-        }, 300);
+        }, 600);
         return () => clearTimeout(timeout);
     }, [data.student_search, data.department, data.academic_year, data.violation_id, data.severity, data.date_from, data.date_to, data.date_month]);
 
@@ -114,6 +128,7 @@ export default function Retrieval({ cases, departments, violations, academicYear
                     {/* Advanced Filters */}
                     <MotionItem>
                         <FilterBar
+                            inputRef={searchInputRef}
                             search={data.student_search}
                             onSearchChange={(value) => setData('student_search', value)}
                             onClear={hasFilters ? clearFilters : undefined}
@@ -206,8 +221,7 @@ export default function Retrieval({ cases, departments, violations, academicYear
                                     {cases.data.map((item) => {
                                         const sevColorMap = {
                                             'Minor': 'bg-blue-50 text-blue-700 border-blue-100',
-                                            'Major': 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 border-amber-100',
-                                            'Critical': 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 border-rose-100',
+                                            'Major': 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 border-rose-100',
                                         };
                                         const sevColor = sevColorMap[item.violation?.severity] || 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
                                         

@@ -235,8 +235,7 @@ export default function Create({ auth, student, violations, students }) {
                                                 className={`w-full text-left p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${data.violation_id == v.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                             >
                                                 <div className={`mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                                                    v.severity === 'Minor' ? 'bg-amber-400' :
-                                                    v.severity === 'Major' ? 'bg-orange-500' : 'bg-red-600'
+                                                    v.severity === 'Minor' ? 'bg-blue-500' : 'bg-rose-600'
                                                 }`} />
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between">

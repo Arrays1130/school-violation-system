@@ -15,6 +15,7 @@ export default function FilterBar({
     placeholder = 'Search...',
     className = '',
     filtersClassName = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 [&>*]:min-w-0',
+    inputRef,
 }) {
     return (
         <div className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-[0_2px_16px_-4px_rgba(0,0,0,0.45)] p-4 md:p-5 ${className}`}>
@@ -26,6 +27,7 @@ export default function FilterBar({
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
                         <input
+                            ref={inputRef}
                             id="filter-search"
                             type="search"
                             value={search}

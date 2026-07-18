@@ -183,20 +183,21 @@ export default function DeanDashboard({
     };
 
     const severityColors = {
-        'Minor': '#38bdf8', // sky-400
-        'Major': '#f59e0b', // amber-500
-        'Critical': '#e11d48', // rose-600
+        'Minor': '#1d4ed8',
+        'Major': '#FC2847',
     };
 
+    const severityEntries = Object.entries(chartData?.severityBreakdown || {});
+    const severityTotal = severityEntries.reduce((sum, [, count]) => sum + Number(count || 0), 0) || stats.total || 0;
+
     const severityData = {
-        labels: Object.keys(chartData.severityBreakdown).map(key => `${key} (${chartData.severityBreakdown[key]})`),
+        labels: severityEntries.map(([key]) => key),
         datasets: [{
-            data: Object.values(chartData.severityBreakdown),
-            backgroundColor: Object.keys(chartData.severityBreakdown).map(key => severityColors[key] || '#94a3b8'),
+            data: severityEntries.map(([, count]) => count),
+            backgroundColor: severityEntries.map(([key]) => severityColors[key] || '#94a3b8'),
             borderColor: isDark ? '#0f172a' : '#ffffff',
-            borderWidth: 6,
-            borderRadius: 8,
-            hoverOffset: 8,
+            borderWidth: 3,
+            hoverOffset: 4,
         }]
     };
 
@@ -306,27 +307,41 @@ export default function DeanDashboard({
 
                     {/* BENTO ITEM 2: Severity Doughnut (Spans 1 Col) */}
                     <div className="bg-white dark:bg-slate-900 rounded-[2rem] ring-1 ring-slate-200/50 dark:ring-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] transition-all duration-500 flex flex-col h-[400px]">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Severity Split</h3>
-                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Cases by severity</p>
+                                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Minor vs Major cases</p>
                             </div>
-                            <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
+                            <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                                 <AlertTriangle className="w-5 h-5" />
                             </div>
                         </div>
-                        <div className="flex-1 min-h-0 w-full flex items-center justify-center relative mt-4">
-                            <Doughnut data={severityData} options={{ 
-                                ...chartBaseOptions, 
-                                maintainAspectRatio: false, 
-                                cutout: '75%', 
+                        <div className="flex-1 min-h-0 w-full relative">
+                            <Doughnut data={severityData} options={{
+                                ...chartBaseOptions,
+                                maintainAspectRatio: false,
+                                cutout: '68%',
                                 scales: { x: { display: false }, y: { display: false } },
-                                plugins: { ...chartBaseOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 12, weight: '600', family: "'Inter', sans-serif" }, color: '#64748b', usePointStyle: true, padding: 20 } } } 
+                                plugins: { ...chartBaseOptions.plugins, legend: { display: false } }
                             }} />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-30px]">
-                                <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.total}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total</p>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{severityTotal}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Total</p>
                             </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                            {severityEntries.map(([key, count]) => {
+                                const pct = severityTotal ? Math.round((Number(count) / severityTotal) * 100) : 0;
+                                return (
+                                    <div key={key} className="flex items-center gap-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 px-3 py-2.5">
+                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: severityColors[key] || '#94a3b8' }} />
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">{key}</span>
+                                            <span className="block text-[10px] font-semibold text-slate-400">{count} · {pct}%</span>
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 

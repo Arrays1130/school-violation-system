@@ -249,8 +249,7 @@ export default function System({
                                 topViolations.map((v, i) => {
                                     const sevMap = {
                                         'Minor': 'bg-blue-50 text-blue-700 border-blue-100',
-                                        'Major': 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 border-amber-100',
-                                        'Critical': 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 border-rose-100',
+                                        'Major': 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 border-rose-100',
                                     };
                                     const sc = sevMap[v.severity] || 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
                                     

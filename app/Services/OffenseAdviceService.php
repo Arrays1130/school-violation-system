@@ -86,7 +86,7 @@ class OffenseAdviceService
      *   total_cases: int,
      *   open_cases: int,
      *   closed_cases: int,
-     *   severity_breakdown: array{Minor: int, Major: int, Critical: int},
+     *   severity_breakdown: array{Minor: int, Major: int},
      *   risk_level: string,
      *   risk_reasons: array<int, string>,
      *   escalation: array,
@@ -106,7 +106,6 @@ class OffenseAdviceService
         $severity = [
             'Minor' => $cases->filter(fn ($c) => ($c->violation?->severity ?? '') === 'Minor')->count(),
             'Major' => $cases->filter(fn ($c) => ($c->violation?->severity ?? '') === 'Major')->count(),
-            'Critical' => $cases->filter(fn ($c) => ($c->violation?->severity ?? '') === 'Critical')->count(),
         ];
 
         $escalation = $this->minorEscalationForecast($student->id, $caseQuery);
@@ -146,7 +145,7 @@ class OffenseAdviceService
         if ($violation->severity === 'Minor' && ($escalation['triggers_escalation_now'] ?? false)) {
             $nextSteps[] = 'System will also generate Major offense SYS-001 due to reaching 3 minor offenses.';
             $nextSteps[] = 'Review the escalated major case for OSA intervention / hearing.';
-        } elseif (in_array($violation->severity, ['Major', 'Critical'], true)) {
+        } elseif ($violation->severity === 'Major') {
             $nextSteps[] = 'Document at least one OSA intervention before endorsing or closing without a hearing.';
             $nextSteps[] = 'Consider scheduling a hearing if required by severity.';
         } else {
@@ -251,8 +250,7 @@ class OffenseAdviceService
         $reasons = [];
         $nextSteps = [];
         $open = $cases->whereNotIn('status', ['Closed', 'Dismissed']);
-        $openMajorCritical = $open->filter(fn ($c) => in_array($c->violation?->severity, ['Major', 'Critical'], true));
-        $openCritical = $open->filter(fn ($c) => ($c->violation?->severity ?? '') === 'Critical');
+        $openMajor = $open->filter(fn ($c) => ($c->violation?->severity ?? '') === 'Major');
         $thirdOrHigher = $cases->filter(fn ($c) => (int) $c->offense_level >= 3);
 
         if ($cases->isEmpty()) {
@@ -266,13 +264,9 @@ class OffenseAdviceService
 
         $level = 'MODERATE';
 
-        if ($openCritical->isNotEmpty()) {
-            $level = 'CRITICAL';
-            $reasons[] = 'Open Critical severity case(s) require urgent OSA handling.';
-            $nextSteps[] = 'Prioritize Critical case: document OSA actions and schedule hearing / endorse as required.';
-        } elseif ($openMajorCritical->isNotEmpty()) {
+        if ($openMajor->isNotEmpty()) {
             $level = 'HIGH';
-            $reasons[] = 'Open Major/Critical case(s) need intervention or hearing tracking.';
+            $reasons[] = 'Open Major case(s) need intervention or hearing tracking.';
             $nextSteps[] = 'Review open major cases: record OSA interventions, endorse or schedule hearing.';
         }
 
@@ -307,7 +301,6 @@ class OffenseAdviceService
         }
 
         $recommendation = match ($level) {
-            'CRITICAL' => 'Urgent OSA attention: resolve open Critical cases with intervention and hearing workflow.',
             'HIGH' => 'Elevated risk: follow major-offense / escalation procedures and keep dean informed.',
             'MODERATE' => 'Monitor and apply catalog sanctions for new or open minor cases.',
             default => 'Low risk: routine monitoring and handbook guidance.',
@@ -369,7 +362,7 @@ class OffenseAdviceService
 
     private function maxRisk(string $current, string $candidate): string
     {
-        $order = ['LOW' => 0, 'MODERATE' => 1, 'HIGH' => 2, 'CRITICAL' => 3];
+        $order = ['LOW' => 0, 'MODERATE' => 1, 'HIGH' => 2];
 
         return ($order[$candidate] ?? 0) > ($order[$current] ?? 0) ? $candidate : $current;
     }

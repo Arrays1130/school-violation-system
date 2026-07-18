@@ -175,7 +175,7 @@
     }
 
     .vt-page-hero {
-        @apply relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20;
+        @apply relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950 px-6 py-5 shadow-xl shadow-slate-900/10 border border-slate-800/80;
     }
 
     .vt-hero-chip {

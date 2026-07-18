@@ -1,7 +1,7 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, UserPlus, Save, Shield, Key, Mail, User } from 'lucide-react';
+import { ArrowLeft, UserPlus, Save, Shield, Key, Mail, User, Phone } from 'lucide-react';
 import InputError from '@/Components/InputError';
 import Breadcrumbs from '@/Components/Breadcrumbs';
 
@@ -9,6 +9,7 @@ export default function Create({ auth }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
         role: 'dean',
@@ -96,6 +97,24 @@ export default function Create({ auth }) {
                                                 />
                                             </div>
                                             <InputError message={errors.email} className="mt-2" />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Contact Number</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                                    <Phone className="w-4 h-4" />
+                                                </div>
+                                                <input 
+                                                    type="tel" 
+                                                    value={data.phone}
+                                                    onChange={e => setData('phone', e.target.value)}
+                                                    placeholder="e.g. 09171234567"
+                                                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                                />
+                                            </div>
+                                            <p className="mt-1.5 text-[11px] text-slate-400">Used for hearing SMS alerts (deans).</p>
+                                            <InputError message={errors.phone} className="mt-2" />
                                         </div>
                                     </div>
                                 </div>

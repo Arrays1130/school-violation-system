@@ -34,6 +34,7 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
     });
 
     const isFirstRender = useRef(true);
+    const searchInputRef = useRef(null);
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -42,9 +43,26 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
         }
         const timeout = setTimeout(() => {
             if (searchQuery !== (filters?.search || '')) {
-                router.get(route('meeting-minutes.index'), { search: searchQuery }, { preserveState: true, preserveScroll: true, replace: true });
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
+                router.get(route('meeting-minutes.index'), { search: searchQuery }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
+                });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timeout);
     }, [searchQuery]);
 
@@ -164,6 +182,7 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                 {/* Repository Container */}
                 <MotionItem className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl ring-1 ring-slate-100/80 shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden p-8 space-y-6">
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={searchQuery}
                         onSearchChange={setSearchQuery}
                         onClear={searchQuery ? handleClearSearch : undefined}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
@@ -7,7 +7,7 @@ import {
     Eye, Edit, Trash2, FilePlus, GraduationCap, TrendingUp, Link as LinkIcon
 } from 'lucide-react';
 import useInertiaLoading from '@/hooks/useInertiaLoading';
-import { ListPageSkeleton } from '@/Components/ui/Skeleton';
+import Skeleton, { ListPageSkeleton } from '@/Components/ui/Skeleton';
 import EmptyState from '@/Components/EmptyState';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import FilterBar, { filterFieldClass, filterLabelClass } from '@/Components/FilterBar';
@@ -20,18 +20,33 @@ export default function Index({ auth, students, departments, summary, filterAcad
     const [department, setDepartment] = useState(filters?.department || '');
     const [yearLevel, setYearLevel] = useState(filters?.yearLevel || '');
     const [academicYear, setAcademicYear] = useState(filters?.academicYear || 'All');
+    const searchInputRef = useRef(null);
 
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (search !== filters?.search || department !== filters?.department || yearLevel !== filters?.yearLevel || academicYear !== filters?.academicYear) {
+            if (search !== (filters?.search || '') || department !== (filters?.department || '') || yearLevel !== (filters?.yearLevel || '') || academicYear !== (filters?.academicYear || 'All')) {
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
                 router.get(route('students.index'), { search, department, yearLevel, academicYear }, {
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
+                    only: ['students', 'summary', 'filters'],
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
                 });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timer);
     }, [search, department, yearLevel, academicYear]);
 
@@ -149,11 +164,6 @@ export default function Index({ auth, students, departments, summary, filterAcad
                 confirmLabel="Yes, Promote"
             />
 
-            {isLoading ? (
-                <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <ListPageSkeleton />
-                </div>
-            ) : (
             <motion.div 
                 className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
                 variants={containerVariants}
@@ -207,6 +217,7 @@ export default function Index({ auth, students, departments, summary, filterAcad
                 {/* Search & Filters */}
                 <motion.div variants={itemVariants}>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={search}
                         onSearchChange={setSearch}
                         onClear={handleClear}
@@ -239,7 +250,10 @@ export default function Index({ auth, students, departments, summary, filterAcad
 
                 {/* Records List */}
                 <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto no-scrollbar">
+                    {isLoading && (
+                        <div className="h-0.5 w-full bg-indigo-500/70 animate-pulse" aria-hidden="true" />
+                    )}
+                    <div className={`overflow-x-auto no-scrollbar transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
                         <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left block md:table">
                             <thead className="bg-slate-50/80 dark:bg-slate-800/80 dark:bg-slate-800/80 hidden md:table-header-group">
                                 <tr>
@@ -366,7 +380,6 @@ export default function Index({ auth, students, departments, summary, filterAcad
                     )}
                 </motion.div>
             </motion.div>
-            )}
         </AuthenticatedLayout>
     );
 }

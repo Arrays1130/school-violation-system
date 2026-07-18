@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import ConfirmDialog from '@/Components/ConfirmDialog';
@@ -12,18 +12,33 @@ import PageMotion, { MotionItem } from '@/Components/PageMotion';
 export default function Index({ auth, violations, categories, filters }) {
     const [search, setSearch] = useState(filters?.search || '');
     const [category, setCategory] = useState(filters?.category || '');
+    const searchInputRef = useRef(null);
 
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (search !== filters?.search || category !== filters?.category) {
+            if (search !== (filters?.search || '') || category !== (filters?.category || '')) {
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
                 router.get(route('violations.index'), { search, category }, {
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
+                    only: ['violations', 'filters'],
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
                 });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timer);
     }, [search, category]);
 
@@ -92,6 +107,7 @@ export default function Index({ auth, violations, categories, filters }) {
                 {/* Search & Filters */}
                 <MotionItem>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={search}
                         onSearchChange={setSearch}
                         onClear={handleClear}

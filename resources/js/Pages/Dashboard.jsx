@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Users2, FileText, AlertCircle, Gavel, ArrowUpRight, TrendingUp, ShieldAlert, Zap, Layers, Globe, ChevronRight, Plus, Activity, X, FilePlus } from 'lucide-react';
+import { Users2, FileText, AlertCircle, Gavel, ArrowUpRight, TrendingUp, Layers, ChevronRight, LayoutDashboard, Zap } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import StatusBadge from '@/Components/StatusBadge';
+import DashboardHero from '@/Components/Dashboard/DashboardHero';
 import {
     Chart as ChartJS,
     CategoryScale, LinearScale, BarElement,
@@ -97,9 +98,12 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             label: 'Total Students',
             value: stats.total_students,
             icon: Users2,
-            gradient: 'from-blue-500 to-cyan-400',
-            iconColor: 'text-blue-600 dark:text-blue-400',
-            iconBg: 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-100/50',
+            iconColor: 'text-blue-700 dark:text-blue-300',
+            iconBg: 'bg-white/80 dark:bg-blue-500/15 border-blue-200/70 dark:border-blue-500/25 shadow-sm',
+            surface: 'from-blue-50/90 via-white to-white dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900',
+            border: 'border-blue-100 dark:border-blue-900/40 hover:border-blue-300 dark:hover:border-blue-700',
+            glow: 'bg-blue-400/20',
+            accent: 'bg-blue-600',
             href: '/students',
         },
         {
@@ -107,9 +111,12 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             label: 'Violation Cases',
             value: stats.total_cases,
             icon: FileText,
-            gradient: 'from-indigo-500 to-violet-500',
-            iconColor: 'text-indigo-600 dark:text-indigo-400',
-            iconBg: 'bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-indigo-100/50',
+            iconColor: 'text-slate-700 dark:text-slate-200',
+            iconBg: 'bg-white/80 dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm',
+            surface: 'from-slate-50 via-white to-white dark:from-slate-800/50 dark:via-slate-900 dark:to-slate-900',
+            border: 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600',
+            glow: 'bg-slate-400/15',
+            accent: 'bg-slate-700 dark:bg-slate-400',
             href: '/cases',
         },
         {
@@ -117,9 +124,12 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             label: 'Active Cases',
             value: stats.open_cases,
             icon: AlertCircle,
-            gradient: 'from-rose-500 to-pink-500',
-            iconColor: 'text-rose-600 dark:text-rose-400',
-            iconBg: 'bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border-rose-100/50',
+            iconColor: 'text-rose-700 dark:text-rose-300',
+            iconBg: 'bg-white/80 dark:bg-rose-500/15 border-rose-200/70 dark:border-rose-500/25 shadow-sm',
+            surface: 'from-rose-50/90 via-white to-white dark:from-rose-950/35 dark:via-slate-900 dark:to-slate-900',
+            border: 'border-rose-100 dark:border-rose-900/40 hover:border-rose-300 dark:hover:border-rose-700',
+            glow: 'bg-rose-400/20',
+            accent: 'bg-rose-500',
             href: '/cases',
         },
         {
@@ -127,9 +137,12 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             label: 'Hearings',
             value: stats.hearings_this_month,
             icon: Gavel,
-            gradient: 'from-amber-500 to-orange-400',
-            iconColor: 'text-amber-600 dark:text-amber-400',
-            iconBg: 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-100/50',
+            iconColor: 'text-amber-700 dark:text-amber-300',
+            iconBg: 'bg-white/80 dark:bg-amber-500/15 border-amber-200/70 dark:border-amber-500/25 shadow-sm',
+            surface: 'from-amber-50/90 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900',
+            border: 'border-amber-100 dark:border-amber-900/40 hover:border-amber-300 dark:hover:border-amber-700',
+            glow: 'bg-amber-400/20',
+            accent: 'bg-amber-500',
             href: '/reports',
         },
     ];
@@ -161,10 +174,11 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                 shadowBlur: 15,
                 callbacks: {
                     label: function (context) {
-                        let label = context.dataset.label || '';
-                        if (label) label += ': ';
-                        if (context.parsed.y !== null) label += context.parsed.y + (context.parsed.y === 1 ? ' case' : ' cases');
-                        return label;
+                        const value = context.parsed?.y ?? context.parsed ?? context.raw;
+                        const label = context.dataset.label || context.label || '';
+                        const count = typeof value === 'number' ? value : 0;
+                        const prefix = label ? `${label}: ` : '';
+                        return `${prefix}${count}${count === 1 ? ' case' : ' cases'}`;
                     }
                 }
             }
@@ -194,10 +208,10 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
         datasets: [{
             label: 'Incidents',
             data: Object.values(monthlyTrend || {}),
-            borderColor: '#2563eb', // blue-600
+            borderColor: '#1d4ed8', // blue-700 brand
             borderWidth: 3,
             pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#2563eb',
+            pointBorderColor: '#1d4ed8',
             pointBorderWidth: 3,
             pointRadius: 4,
             pointHoverRadius: 8,
@@ -206,10 +220,10 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             backgroundColor: (context) => {
                 const chart = context.chart;
                 const { ctx, chartArea } = chart;
-                if (!chartArea) return 'rgba(37, 99, 235, 0.1)';
+                if (!chartArea) return 'rgba(29, 78, 216, 0.1)';
                 const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                gradient.addColorStop(0, 'rgba(37, 99, 235, 0.00)');
-                gradient.addColorStop(1, 'rgba(37, 99, 235, 0.15)');
+                gradient.addColorStop(0, 'rgba(29, 78, 216, 0.00)');
+                gradient.addColorStop(1, 'rgba(29, 78, 216, 0.12)');
                 return gradient;
             },
         }],
@@ -223,35 +237,37 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             backgroundColor: (context) => {
                 const chart = context.chart;
                 const { ctx, chartArea } = chart;
-                if (!chartArea) return '#3b82f6';
+                if (!chartArea) return '#1d4ed8';
                 const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                gradient.addColorStop(0, '#2563eb'); // blue-600
-                gradient.addColorStop(1, '#60a5fa'); // blue-400
+                gradient.addColorStop(0, '#1e3a8a'); // blue-900
+                gradient.addColorStop(1, '#3b82f6'); // blue-500
                 return gradient;
             },
             borderColor: 'transparent',
             borderWidth: 0,
             borderRadius: 8,
             barThickness: 24,
-            hoverBackgroundColor: '#1e293b'
+            hoverBackgroundColor: '#0f172a'
         }],
     };
 
     const severityColors = {
-        'Minor': '#38bdf8', // sky-400
-        'Major': '#3b82f6', // blue-500
-        'Critical': '#f43f5e', // rose-500
+        'Minor': '#1d4ed8', // blue-700
+        'Major': '#FC2847',
     };
 
+    const severityEntries = Object.entries(casesPerSeverity || {});
+    const severityTotal = severityEntries.reduce((sum, [, count]) => sum + Number(count || 0), 0) || stats.total_cases || 0;
+
     const severityChartData = {
-        labels: Object.keys(casesPerSeverity).map(key => `${key} (${casesPerSeverity[key]})`),
+        labels: severityEntries.map(([key]) => key),
         datasets: [{
-            data: Object.values(casesPerSeverity),
-            backgroundColor: Object.keys(casesPerSeverity).map(key => severityColors[key] || '#94a3b8'),
-            borderWidth: 0,
-            borderRadius: 5,
-            spacing: 5,
-            hoverOffset: 8,
+            data: severityEntries.map(([, count]) => count),
+            backgroundColor: severityEntries.map(([key]) => severityColors[key] || '#94a3b8'),
+            borderColor: '#ffffff',
+            borderWidth: 3,
+            hoverBorderWidth: 3,
+            hoverOffset: 4,
         }],
     };
 
@@ -272,10 +288,7 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
 
     return (
         <AuthenticatedLayout user={auth.user}>
-            <Head title="Premium Dashboard" />
-
-            {/* Sub-header background element */}
-            <div className="absolute top-0 left-0 w-full h-[40vh] bg-slate-50 dark:bg-slate-900 -z-10 border-b border-slate-200 dark:border-slate-800"></div>
+            <Head title="Dashboard" />
 
             {isLoading ? (
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -283,55 +296,55 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                 </div>
             ) : (
             <motion.div
-                className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8"
+                className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6"
                 variants={containerVariants}
                 initial="hidden"
                 animate="show"
             >
 
-                {/* ── HEADER SECTION ── */}
-                <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">System Dashboard</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Welcome back, <span className="text-slate-800 dark:text-white font-bold">{auth.user.name}</span>. Here is your overview.</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400 pl-3 uppercase tracking-wider">A.Y.</span>
-                        <select
-                            className="text-sm border-0 bg-slate-50 dark:bg-slate-900 font-bold text-slate-900 dark:text-white rounded-lg focus:ring-0 py-2 pl-3 pr-8 cursor-pointer"
-                            value={selectedAcademicYear}
-                            onChange={(e) => window.location.href = route('dashboard', { academic_year: e.target.value })}
-                        >
-                            <option value="All">All Years</option>
-                            {filterAcademicYears.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                            ))}
-                        </select>
+                {/* ── HERO ── */}
+                <motion.div variants={itemVariants}>
+                    <DashboardHero
+                        badge="Overview"
+                        badgeIcon={LayoutDashboard}
+                        title="System Dashboard"
+                        description={`Welcome back, ${auth.user.name}. Live overview of students, cases, and hearings.`}
+                    >
+                        <div className="flex items-center gap-3 bg-white/10 p-1.5 rounded-xl border border-white/15 backdrop-blur-md">
+                            <span className="text-xs font-bold text-white/70 pl-3 uppercase tracking-wider">A.Y.</span>
+                            <select
+                                className="text-sm border-0 bg-white/10 font-bold text-white rounded-lg focus:ring-0 py-2 pl-3 pr-8 cursor-pointer"
+                                value={selectedAcademicYear}
+                                onChange={(e) => window.location.href = route('dashboard', { academic_year: e.target.value })}
+                            >
+                                <option value="All" className="text-slate-900">All Years</option>
+                                {filterAcademicYears.map(year => (
+                                    <option key={year} value={year} className="text-slate-900">{year}</option>
+                                ))}
+                            </select>
                         </div>
-                    </div>
+                    </DashboardHero>
                 </motion.div>
 
-                {/* ── STATS ROW (SaaS Minimalist Cards) ── */}
+                {/* ── STATS ROW ── */}
                 <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {statCards.map((card) => {
                         const Icon = card.icon;
                         const trend = trends[card.key];
                         return (
-                            <motion.div key={card.label} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-                                <Link href={card.href} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl">
-                                    <Card className="relative overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-gradient-to-b from-white to-slate-50/50 dark:from-slate-900/50 dark:to-slate-900/80 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 flex flex-col justify-between h-full group">
+                            <motion.div key={card.label} whileHover={{ y: -3 }} transition={{ duration: 0.2 }}>
+                                <Link href={card.href} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-2xl">
+                                    <Card className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${card.surface} ${card.border} shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-full group min-h-[148px]`}>
+                                        <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full blur-2xl ${card.glow} pointer-events-none group-hover:scale-125 transition-transform duration-500`} />
 
-                                        {/* Subtle top border highlight */}
-                                        <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${card.gradient} opacity-0 group-hover:opacity-100 transition-all duration-500`}></div>
-
-                                        <CardContent className="p-6 flex flex-col h-full justify-between relative z-10">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="space-y-1">
-                                                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{card.label}</h3>
+                                        <CardContent className="relative z-10 p-6 flex flex-col h-full justify-between">
+                                            <div className="flex items-start justify-between mb-5">
+                                                <div>
+                                                    <h3 className="text-[12px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{card.label}</h3>
+                                                    <div className={`mt-2 h-0.5 w-8 rounded-full ${card.accent} opacity-70 group-hover:w-12 transition-all duration-300`} />
                                                 </div>
-                                                <div className={`p-3 rounded-2xl ${card.iconBg} ${card.iconColor} shadow-sm border`}>
-                                                    <Icon className="w-5 h-5" strokeWidth={2.5} />
+                                                <div className={`p-3 rounded-2xl ${card.iconBg} ${card.iconColor} border group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                                                    <Icon className="w-5 h-5" strokeWidth={2.25} />
                                                 </div>
                                             </div>
 
@@ -340,9 +353,9 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                                     {card.value?.toLocaleString()}
                                                 </span>
                                                 {trend && (
-                                                    <div className={`flex items-center px-2 py-1 rounded-full text-xs font-bold shadow-sm border ${trend.direction === 'up'
-                                                        ? (trend.isPositive ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20')
-                                                        : 'bg-slate-50 text-slate-500 border-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                                    <div className={`flex items-center px-2 py-1 rounded-lg text-xs font-bold border backdrop-blur-sm ${trend.direction === 'up'
+                                                        ? (trend.isPositive ? 'bg-emerald-50/90 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50/90 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20')
+                                                        : 'bg-white/80 text-slate-500 border-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                                                         }`}>
                                                         {trend.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> : trend.direction === 'down' ? <TrendingUp className="w-3.5 h-3.5 mr-0.5 rotate-180" /> : null}
                                                         {trend.percentage}%
@@ -350,8 +363,6 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                                 )}
                                             </div>
                                         </CardContent>
-                                        {/* Decorative background blur element */}
-                                        <div className={`absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br ${card.gradient} rounded-full blur-3xl opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 pointer-events-none`}></div>
                                     </Card>
                                 </Link>
                             </motion.div>
@@ -361,13 +372,13 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
 
                 <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-4 pb-12">
 
-                    {/* BENTO ITEM 1: Line Chart (Spans 2 Cols) */}
+                    {/* Line Chart */}
                     <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-8">
+                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Violation Trends</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Monthly case logging over time</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Violation Trends</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Monthly case logging over time</p>
                                 </div>
                             </div>
                             <div className="flex-1 min-h-0 w-full relative">
@@ -376,25 +387,25 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                         </Card>
                     </motion.div>
 
-                    {/* BENTO ITEM 2: Recent Activity (Spans 1 Col) */}
+                    {/* Activity Feed */}
                     <motion.div variants={itemVariants} className="h-full">
-                        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm flex flex-col h-[400px] overflow-hidden">
-                            <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 z-10 sticky top-0 space-y-0">
+                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[400px] overflow-hidden">
+                            <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 sticky top-0 space-y-0">
                                 <div>
-                                    <CardTitle className="text-lg font-black tracking-tight">Activity Feed</CardTitle>
-                                    <CardDescription className="text-sm font-medium mt-1">Latest recorded incidents</CardDescription>
+                                    <CardTitle className="text-lg font-bold tracking-tight">Activity Feed</CardTitle>
+                                    <CardDescription className="text-sm mt-1">Latest recorded incidents</CardDescription>
                                 </div>
-                                <Button variant="ghost" size="icon" className="rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100" asChild>
+                                <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700" asChild>
                                     <Link href="/cases">
                                         <ChevronRight className="w-5 h-5 text-slate-500" />
                                     </Link>
                                 </Button>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-y-auto no-scrollbar p-6 pt-2 space-y-4">
-                                {(severityFilter ? recentCases.filter(c => c.violation?.severity === severityFilter) : recentCases).map((item, idx) => {
+                            <CardContent className="flex-1 overflow-y-auto no-scrollbar p-6 pt-2 space-y-2">
+                                {(severityFilter ? recentCases.filter(c => c.violation?.severity === severityFilter) : recentCases).map((item) => {
                                     return (
-                                        <div key={item.id} className="group relative flex items-start gap-4 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-2xl transition-all cursor-default">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm flex-shrink-0 group-hover:scale-110 transition-transform">
+                                        <div key={item.id} className="group relative flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl transition-all">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-sm flex-shrink-0 border border-slate-200/80 dark:border-slate-700">
                                                 {(item.student?.full_name || 'U').substring(0, 1)}
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -402,7 +413,7 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">{item.violation?.title}</p>
                                                 <div className="flex items-center gap-2 mt-2">
                                                     <StatusBadge status={item.status} />
-                                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 dark:text-slate-400">{new Date(item.created_at).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">{new Date(item.created_at).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -412,15 +423,15 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                         </Card>
                     </motion.div>
 
-                    {/* BENTO ITEM 3: Cases by Department (Spans 2 Cols) */}
+                    {/* Cases by Department */}
                     <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-8">
+                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Cases by Department</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Distribution across colleges</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Cases by Department</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Distribution across colleges</p>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-600 dark:text-blue-400 shadow-sm border border-blue-100/50 dark:border-blue-800/50">
+                                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/20">
                                     <Layers className="w-5 h-5" />
                                 </div>
                             </div>
@@ -430,58 +441,95 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                         </Card>
                     </motion.div>
 
-                    {/* BENTO ITEM 4: Severity Doughnut (Spans 1 Col) */}
+                    {/* Severity Doughnut */}
                     <motion.div variants={itemVariants} className="h-full">
-                        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-2">
+                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
+                            <div className="flex items-center justify-between mb-4">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Severity Split</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Cases by severity</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Severity Split</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Minor vs Major cases</p>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 text-rose-600 dark:text-rose-400 shadow-sm border border-rose-100/50 dark:border-rose-800/50">
+                                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                     <AlertCircle className="w-5 h-5" />
                                 </div>
                             </div>
-                            <div className="flex-1 min-h-0 w-full flex items-center justify-center relative mt-4">
+
+                            <div className="flex-1 min-h-0 w-full relative">
                                 <Doughnut data={severityChartData} options={{
                                     ...chartBaseOptions,
                                     maintainAspectRatio: false,
-                                    cutout: '75%',
+                                    cutout: '68%',
                                     scales: { x: { display: false }, y: { display: false } },
                                     onClick: (event, elements) => {
                                         if (elements.length > 0) {
                                             const dataIndex = elements[0].index;
-                                            const rawLabel = Object.keys(casesPerSeverity)[dataIndex];
-                                            setSeverityFilter(prev => prev === rawLabel ? null : rawLabel);
+                                            const rawLabel = severityEntries[dataIndex]?.[0];
+                                            if (rawLabel) {
+                                                setSeverityFilter(prev => prev === rawLabel ? null : rawLabel);
+                                            }
                                         }
                                     },
-                                    plugins: { ...chartBaseOptions.plugins, legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 12, weight: '600', family: "'Inter', sans-serif" }, color: '#64748b', usePointStyle: true, padding: 20 } } }
+                                    plugins: {
+                                        ...chartBaseOptions.plugins,
+                                        legend: { display: false },
+                                    },
                                 }} />
-                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-30px]">
-                                    <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.total_cases}</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total</p>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{severityTotal}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Total</p>
+                                    {severityFilter && (
+                                        <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mt-1">Filtered: {severityFilter}</p>
+                                    )}
                                 </div>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                                {severityEntries.map(([key, count]) => {
+                                    const pct = severityTotal ? Math.round((Number(count) / severityTotal) * 100) : 0;
+                                    const active = severityFilter === key;
+                                    return (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => setSeverityFilter(prev => prev === key ? null : key)}
+                                            className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all ${
+                                                active
+                                                    ? 'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-500/10'
+                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:border-slate-200 dark:hover:border-slate-700'
+                                            }`}
+                                        >
+                                            <span
+                                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                                style={{ backgroundColor: severityColors[key] || '#94a3b8' }}
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">{key}</span>
+                                                <span className="block text-[10px] font-semibold text-slate-400">{count} · {pct}%</span>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </Card>
                     </motion.div>
 
-                    {/* BENTO ITEM 5: Top Offenders (Spans 1 Col) */}
+                    {/* Top Offenders */}
                     <motion.div variants={itemVariants} className="h-full">
-                        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm flex flex-col h-[400px] overflow-hidden">
-                            <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 space-y-0">
+                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[400px] overflow-hidden">
+                            <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-0">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Top Offenders</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Students with most infractions</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Top Offenders</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Students with most infractions</p>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 text-violet-600 dark:text-violet-400 shadow-sm border border-violet-100/50 dark:border-violet-800/50">
+                                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                     <Users2 className="w-5 h-5" />
                                 </div>
                             </CardHeader>
-                            <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-4 space-y-3">
+                            <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-4 space-y-2">
                                 {studentsWithViolations.map((student, idx) => {
                                     return (
-                                        <div key={student.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800 transition-colors group">
-                                            <div className="w-10 h-10 flex items-center justify-center text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-xl group-hover:bg-blue-600 group-hover:text-white dark:group-hover:bg-blue-500 shadow-sm transition-all duration-300">
+                                        <div key={student.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors group">
+                                            <div className="w-10 h-10 flex items-center justify-center text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
                                                 {idx + 1}
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -499,47 +547,36 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                         </Card>
                     </motion.div>
 
-                    {/* BENTO ITEM 6: Most Common Offenses (Spans 2 Cols) */}
+                    {/* Common Offenses */}
                     <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-8">
+                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Common Offenses</h3>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Most frequent violation types</p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Common Offenses</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Most frequent violation types</p>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-amber-600 dark:text-amber-400 shadow-sm border border-amber-100/50 dark:border-amber-800/50">
+                                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-500/20">
                                     <Zap className="w-5 h-5" />
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto no-scrollbar pr-4 space-y-6">
+                            <div className="flex-1 overflow-y-auto no-scrollbar pr-2 space-y-5">
                                 {topViolations.map((v, idx) => {
-                                    // Use a monochromatic scale for a cleaner look
-                                    const colors = [
-                                        { progress: 'bg-indigo-600', bg: 'bg-indigo-100 dark:bg-indigo-500/20' },
-                                        { progress: 'bg-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
-                                        { progress: 'bg-indigo-400', bg: 'bg-slate-50 dark:bg-slate-800' },
-                                        { progress: 'bg-indigo-300', bg: 'bg-slate-50 dark:bg-slate-800' },
-                                        { progress: 'bg-indigo-200', bg: 'bg-slate-50 dark:bg-slate-800' }
-                                    ];
-                                    const c = colors[idx] || colors[4];
                                     const maxCount = topViolations[0]?.count || 1;
                                     const percent = Math.round((v.count / maxCount) * 100);
 
                                     return (
                                         <div key={v.title} className="space-y-2 group">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4 min-w-0">
-                                                    <span className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-[11px] font-black text-slate-500 dark:text-slate-400 flex-shrink-0 group-hover:scale-110 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all duration-300">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[11px] font-black text-slate-500 dark:text-slate-400 flex-shrink-0 border border-slate-200/80 dark:border-slate-700">
                                                         {idx + 1}
                                                     </span>
                                                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{v.title}</span>
                                                 </div>
                                                 <span className="text-sm font-black text-slate-900 dark:text-white">{v.count} <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider ml-1">Cases</span></span>
                                             </div>
-                                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden shadow-inner">
-                                                <div className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-1000 relative overflow-hidden" style={{ width: `${percent}%` }}>
-                                                    <div className="absolute inset-0 bg-white/20 w-full h-full" style={{ animation: 'shimmer 2s infinite linear', transform: 'translateX(-100%)' }}></div>
-                                                </div>
+                                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                                                <div className="h-full bg-blue-600 rounded-full transition-all duration-700" style={{ width: `${percent}%` }}></div>
                                             </div>
                                         </div>
                                     );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
@@ -11,7 +11,6 @@ import Pagination from '@/Components/Pagination';
 import StatusBadge from '@/Components/StatusBadge';
 import FilterBar from '@/Components/FilterBar';
 import useInertiaLoading from '@/hooks/useInertiaLoading';
-import { ListPageSkeleton } from '@/Components/ui/Skeleton';
 
 export default function Index({ auth, cases, summary, departments = [], academicYears = [], filters }) {
     const isLoading = useInertiaLoading();
@@ -22,6 +21,7 @@ export default function Index({ auth, cases, summary, departments = [], academic
     const [academicYear, setAcademicYear] = useState(filters?.academic_year || '');
     const [dateFrom, setDateFrom] = useState(filters?.date_from || '');
     const [dateTo, setDateTo] = useState(filters?.date_to || '');
+    const searchInputRef = useRef(null);
 
     const filterParams = { search, status, severity, department, academic_year: academicYear, date_from: dateFrom, date_to: dateTo };
 
@@ -36,13 +36,27 @@ export default function Index({ auth, cases, summary, departments = [], academic
                 dateFrom !== (filters?.date_from || '') ||
                 dateTo !== (filters?.date_to || '')
             ) {
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
                 router.get(route('cases.index'), filterParams, {
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
+                    only: ['cases', 'summary', 'filters'],
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
                 });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timer);
     }, [search, status, severity, department, academicYear, dateFrom, dateTo]);
 
@@ -62,9 +76,7 @@ export default function Index({ auth, cases, summary, departments = [], academic
             case 'Minor':
                 return <span className="text-sky-600 font-bold text-xs">Minor</span>;
             case 'Major':
-                return <span className="text-amber-600 dark:text-amber-400 font-bold text-xs">Major</span>;
-            case 'Critical':
-                return <span className="text-rose-600 dark:text-rose-400 font-bold text-xs">Critical</span>;
+                return <span className="text-rose-600 dark:text-rose-400 font-bold text-xs">Major</span>;
             default:
                 return <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">{severity}</span>;
         }
@@ -87,11 +99,6 @@ export default function Index({ auth, cases, summary, departments = [], academic
         >
             <Head title="Violation Cases" />
 
-            {isLoading ? (
-                <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <ListPageSkeleton />
-                </div>
-            ) : (
             <motion.div 
                 className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
                 variants={containerVariants}
@@ -142,6 +149,7 @@ export default function Index({ auth, cases, summary, departments = [], academic
                 {/* Search & Filters */}
                 <motion.div variants={itemVariants}>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={search}
                         onSearchChange={setSearch}
                         onClear={handleClear}
@@ -192,7 +200,10 @@ export default function Index({ auth, cases, summary, departments = [], academic
 
                 {/* Records List */}
                 <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto no-scrollbar">
+                    {isLoading && (
+                        <div className="h-0.5 w-full bg-indigo-500/70 animate-pulse" aria-hidden="true" />
+                    )}
+                    <div className={`overflow-x-auto no-scrollbar transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
                         <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left block md:table">
                             <thead className="bg-slate-50/80 dark:bg-slate-800/80 hidden md:table-header-group">
                                 <tr>
@@ -273,7 +284,6 @@ export default function Index({ auth, cases, summary, departments = [], academic
                     )}
                 </motion.div>
                 </motion.div>
-            )}
         </AuthenticatedLayout>
     );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import Pagination from '@/Components/Pagination';
@@ -11,13 +11,31 @@ import EmptyState from '@/Components/EmptyState';
 export default function EmailLogs({ auth, logs, filters }) {
     const [selected, setSelected] = useState(null);
     const [search, setSearch] = useState(filters?.search || '');
+    const searchInputRef = useRef(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             if (search !== (filters?.search || '')) {
-                router.get(route('reports.email-logs'), { search }, { preserveState: true, preserveScroll: true, replace: true });
+                const el = searchInputRef.current;
+                const hadFocus = el && document.activeElement === el;
+                const caret = el ? el.selectionStart : null;
+
+                router.get(route('reports.email-logs'), { search }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    onFinish: () => {
+                        if (hadFocus && searchInputRef.current) {
+                            const input = searchInputRef.current;
+                            input.focus();
+                            if (caret !== null) {
+                                try { input.setSelectionRange(caret, caret); } catch (_) {}
+                            }
+                        }
+                    },
+                });
             }
-        }, 300);
+        }, 600);
         return () => clearTimeout(timer);
     }, [search]);
 
@@ -52,6 +70,7 @@ export default function EmailLogs({ auth, logs, filters }) {
 
                 <MotionItem>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={search}
                         onSearchChange={setSearch}
                         onClear={filters?.search ? handleClear : undefined}

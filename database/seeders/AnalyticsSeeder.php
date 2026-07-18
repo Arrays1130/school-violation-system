@@ -28,7 +28,7 @@ class AnalyticsSeeder extends Seeder
            Violation::create(['code' => 'V-002', 'title' => 'Littering', 'category' => 'Minor', 'severity' => 'Minor']);
            Violation::create(['code' => 'V-003', 'title' => 'Cutting Classes', 'category' => 'Major', 'severity' => 'Major']);
            Violation::create(['code' => 'V-004', 'title' => 'Smoking/Vaping', 'category' => 'Major', 'severity' => 'Major']);
-           Violation::create(['code' => 'V-005', 'title' => 'Vandalism', 'category' => 'Serious', 'severity' => 'Serious']);
+           Violation::create(['code' => 'V-005', 'title' => 'Vandalism', 'category' => 'Major', 'severity' => 'Major']);
         }
 
         $students = Student::all();

@@ -205,11 +205,11 @@ class StudentCase extends Model
     }
 
     /**
-     * Whether the violation is major/critical severity.
+     * Whether the violation is major severity.
      */
     public function isMajorOffense(): bool
     {
-        return in_array($this->violation?->severity, ['Major', 'Critical']);
+        return $this->violation?->severity === 'Major';
     }
 
     public function endorseBlockReason(): ?string

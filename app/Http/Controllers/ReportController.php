@@ -235,7 +235,7 @@ class ReportController extends Controller
         $monthlyMajorTrend = (clone $cases)
             ->join('violations as major_violations', 'cases.violation_id', '=', 'major_violations.id')
             ->whereYear('cases.occurred_at', $currentYear)
-            ->whereIn('major_violations.severity', ['Major', 'Critical'])
+            ->where('major_violations.severity', 'Major')
             ->selectRaw("{$monthExpr} as month, COUNT(*) as total")
             ->groupByRaw($monthExpr)
             ->orderBy('month')

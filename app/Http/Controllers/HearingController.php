@@ -180,6 +180,10 @@ class HearingController extends Controller
 
         $hearing->case->transitionStatus('Hearing');
 
+        \App\Support\StakeholderNotifier::notifyAllDeansHearingStarted($hearing);
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
+
         return back()->with('success', 'Hearing has officially started.');
     }
 

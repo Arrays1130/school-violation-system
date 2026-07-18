@@ -12,6 +12,7 @@ export default function Index({ auth, handbooks, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     const [deleteHandbookId, setDeleteHandbookId] = useState(null);
     const isFirstRender = React.useRef(true);
+    const searchInputRef = React.useRef(null);
 
     React.useEffect(() => {
         if (isFirstRender.current) {
@@ -19,8 +20,25 @@ export default function Index({ auth, handbooks, filters }) {
             return;
         }
         const timeout = setTimeout(() => {
-            router.get(route('handbooks.index'), { search: searchQuery }, { preserveState: true, preserveScroll: true, replace: true });
-        }, 300);
+            const el = searchInputRef.current;
+            const hadFocus = el && document.activeElement === el;
+            const caret = el ? el.selectionStart : null;
+
+            router.get(route('handbooks.index'), { search: searchQuery }, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onFinish: () => {
+                    if (hadFocus && searchInputRef.current) {
+                        const input = searchInputRef.current;
+                        input.focus();
+                        if (caret !== null) {
+                            try { input.setSelectionRange(caret, caret); } catch (_) {}
+                        }
+                    }
+                },
+            });
+        }, 600);
         return () => clearTimeout(timeout);
     }, [searchQuery]);
 
@@ -83,6 +101,7 @@ export default function Index({ auth, handbooks, filters }) {
                 {/* Search */}
                 <MotionItem>
                     <FilterBar
+                        inputRef={searchInputRef}
                         search={searchQuery}
                         onSearchChange={setSearchQuery}
                         onClear={() => setSearchQuery('')}
