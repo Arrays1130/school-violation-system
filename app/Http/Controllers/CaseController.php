@@ -171,7 +171,7 @@ class CaseController extends Controller
             'sanction' => $data['sanction'],
         ]);
 
-        // Notify student, parent, and department deans for the original case
+        // Phased: Minor → student + dept dean; Major → also guardian
         \App\Support\StakeholderNotifier::notifyViolationRecorded($case);
 
         // --- AUTOMATED ESCALATION LOGIC ---
@@ -229,7 +229,7 @@ class CaseController extends Controller
                     'is_escalation' => true,
                 ]);
 
-                // Notify student, parent, and deans for the escalated major case
+                // Escalated Major → student + guardian + dept dean
                 \App\Support\StakeholderNotifier::notifyViolationRecorded($escalatedCase);
 
                 \App\Support\QueueHelper::triggerBackgroundWorker();

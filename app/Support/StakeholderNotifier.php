@@ -20,13 +20,21 @@ use Illuminate\Support\Facades\Notification;
 
 class StakeholderNotifier
 {
+    /**
+     * Phased alerts on case create:
+     * - Minor: student + department dean only (guardian later at hearing/close)
+     * - Major (including auto-escalation): student + guardian + department dean
+     */
     public static function notifyViolationRecorded(StudentCase $case, bool $includeStudentSms = true): void
     {
         $case->loadMissing(['student', 'violation']);
-        $student = $case->student;
 
         self::notifyStudentViolation($case, $includeStudentSms);
-        self::notifyParentViolation($case);
+
+        if ($case->isMajorOffense()) {
+            self::notifyParentViolation($case);
+        }
+
         self::notifyDepartmentDeansOfViolation($case);
     }
 

@@ -36,7 +36,7 @@ class StakeholderNotificationTest extends TestCase
         Config::set('school.google_apps_script_url', 'https://script.google.com/macros/s/example/exec');
     }
 
-    public function test_violation_recorded_notifies_student_parent_and_dean(): void
+    public function test_minor_violation_recorded_notifies_student_and_dean_not_parent(): void
     {
         Notification::fake();
         Bus::fake();
@@ -47,8 +47,52 @@ class StakeholderNotificationTest extends TestCase
             'guardian_phone' => '09179876543',
         ]);
         $dean = User::factory()->dean('CCE')->create();
+        $violation = Violation::factory()->create(['severity' => 'Minor']);
         $case = StudentCase::factory()->create([
             'student_id' => $student->id,
+            'violation_id' => $violation->id,
+            'status' => 'Pending',
+        ]);
+
+        StakeholderNotifier::notifyViolationRecorded($case);
+
+        Notification::assertSentTo($student, ViolationRecorded::class);
+        Notification::assertSentTo($dean, DeanViolationNotification::class);
+        Notification::assertSentOnDemandTimes(ParentViolationNotification::class, 0);
+
+        Bus::assertDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
+            return $job->phone === '09171234567';
+        });
+        Bus::assertNotDispatched(SendSmsViaGateway::class, function (SendSmsViaGateway $job) {
+            return $job->phone === '09179876543';
+        });
+
+        $this->assertDatabaseHas('notification_deliveries', [
+            'event' => 'student_violation_recorded',
+            'channel' => 'mail',
+            'status' => 'sent',
+        ]);
+        $this->assertDatabaseMissing('notification_deliveries', [
+            'event' => 'parent_violation_recorded',
+        ]);
+    }
+
+    public function test_major_violation_recorded_notifies_student_parent_and_dean(): void
+    {
+        Notification::fake();
+        Bus::fake();
+
+        $student = Student::factory()->create([
+            'phone' => '09171234567',
+            'guardian_email' => 'parent@example.com',
+            'guardian_phone' => '09179876543',
+        ]);
+        $dean = User::factory()->dean('CCE')->create();
+        $violation = Violation::factory()->major()->create();
+        $case = StudentCase::factory()->create([
+            'student_id' => $student->id,
+            'violation_id' => $violation->id,
+            'status' => 'Pending',
         ]);
 
         StakeholderNotifier::notifyViolationRecorded($case);
@@ -65,7 +109,7 @@ class StakeholderNotificationTest extends TestCase
         });
 
         $this->assertDatabaseHas('notification_deliveries', [
-            'event' => 'student_violation_recorded',
+            'event' => 'parent_violation_recorded',
             'channel' => 'mail',
             'status' => 'sent',
         ]);
@@ -220,7 +264,11 @@ class StakeholderNotificationTest extends TestCase
             'guardian_phone' => '09179876543',
             'guardian_email' => 'parent@example.com',
         ]);
-        $case = StudentCase::factory()->create(['student_id' => $student->id]);
+        $violation = Violation::factory()->major()->create();
+        $case = StudentCase::factory()->create([
+            'student_id' => $student->id,
+            'violation_id' => $violation->id,
+        ]);
 
         StakeholderNotifier::notifyViolationRecorded($case);
 
