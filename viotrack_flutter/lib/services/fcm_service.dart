@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import '../api_service.dart';
+import 'app_icon_badge_service.dart';
 import 'auth_storage_service.dart';
 import 'notification_poller.dart';
 import 'push_navigation_service.dart';
@@ -103,10 +104,27 @@ class FCMService {
           icon: android?.smallIcon ?? '@mipmap/ic_launcher',
           importance: Importance.max,
           priority: Priority.high,
+          number: _badgeNumberFromMessage(message),
+          channelShowBadge: true,
         ),
       ),
       payload: message.data.isNotEmpty ? jsonEncode(message.data) : null,
     );
+
+    final badge = _badgeNumberFromMessage(message);
+    if (badge != null) {
+      unawaited(AppIconBadgeService.update(badge));
+    }
+  }
+
+  static int? _badgeNumberFromMessage(RemoteMessage message) {
+    final raw = message.data['unread_count'] ?? message.notification?.android?.count;
+    if (raw == null) {
+      final polled = NotificationPoller.instance.unreadCount.value;
+      return polled > 0 ? polled : null;
+    }
+    final parsed = int.tryParse(raw.toString());
+    return parsed != null && parsed > 0 ? parsed : null;
   }
 
   static void _onLocalNotificationTap(NotificationResponse response) {
@@ -159,4 +177,10 @@ Future<void> handleBackgroundMessage(RemoteMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   debugPrint('Background FCM message: ${message.messageId}');
+
+  final raw = message.data['unread_count'];
+  final badge = int.tryParse(raw?.toString() ?? '');
+  if (badge != null && badge > 0) {
+    await AppIconBadgeService.update(badge);
+  }
 }

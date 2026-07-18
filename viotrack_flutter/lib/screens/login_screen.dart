@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _canBiometric = false;
   bool _biometricSupported = false;
-  String _biometricLabel = 'Fingerprint';
+  String _biometricLabel = 'Biometrics';
   String? _errorMessage;
   String? _savedEmail;
   bool _showPasswordForm = false;
@@ -381,8 +381,8 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Expanded(
               child: _LoginOptionTile(
-                icon: Icons.fingerprint_rounded,
-                label: 'Biometrics\nLogin',
+                icon: SecurityService.iconForLabel(_biometricLabel),
+                label: '$_biometricLabel\nLogin',
                 onTap: _biometricLogin,
               ),
             ),
@@ -638,7 +638,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           _closePasswordForm();
                           _biometricLogin();
                         },
-                  icon: const Icon(Icons.fingerprint_rounded, size: 18),
+                  icon: Icon(
+                    SecurityService.iconForLabel(_biometricLabel),
+                    size: 18,
+                  ),
                   label: Text(_biometricLabel),
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.accentCyan,

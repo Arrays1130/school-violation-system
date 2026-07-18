@@ -27,6 +27,11 @@ class FcmChannel
             $payload['hearing_id'] = (string) $data['hearing_id'];
         }
 
-        $this->fcm->send($notifiable->fcm_token, $title, $body, $payload);
+        $badge = null;
+        if (method_exists($notifiable, 'unreadNotifications')) {
+            $badge = (int) $notifiable->unreadNotifications()->count();
+        }
+
+        $this->fcm->send($notifiable->fcm_token, $title, $body, $payload, $badge);
     }
 }

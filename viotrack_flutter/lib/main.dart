@@ -72,7 +72,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _isUnlocking = false;
   bool _didAttemptAutoUnlock = false;
   String? _unlockMessage;
-  String _biometricLabel = 'Fingerprint';
+  String _biometricLabel = 'Biometrics';
 
   @override
   void initState() {
@@ -205,8 +205,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
                             color: Colors.white.withValues(alpha: 0.2),
                           ),
                         ),
-                        child: const Icon(
-                          Icons.fingerprint_rounded,
+                        child: Icon(
+                          SecurityService.iconForLabel(_biometricLabel),
                           color: Colors.white,
                           size: 48,
                         ),
@@ -273,7 +273,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                                     color: AppTheme.primary,
                                   ),
                                 )
-                              : const Icon(Icons.fingerprint_rounded),
+                              : Icon(
+                                  SecurityService.iconForLabel(_biometricLabel),
+                                ),
                           label: Text(
                             _isUnlocking
                                 ? 'Verifying...'

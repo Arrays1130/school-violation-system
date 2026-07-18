@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viotrack_flutter/config/api_config.dart';
+import 'package:viotrack_flutter/services/app_icon_badge_service.dart';
 import 'package:viotrack_flutter/services/auth_storage_service.dart';
 import 'package:viotrack_flutter/services/session_service.dart';
 
@@ -74,7 +75,7 @@ class ApiService {
             body: {
               'email': email,
               'password': password,
-              'device_name': 'viotrack_mobile',
+              'device_name': kIsWeb ? 'viotrack_pwa' : 'viotrack_mobile',
             },
           )
           .timeout(Duration(seconds: ApiConfig.isProduction ? 90 : 30));
@@ -142,6 +143,7 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user');
     SessionService.reset();
+    await AppIconBadgeService.clear();
   }
 
   Future<dynamic> getViolations({bool forcedRefresh = false, int page = 1}) async {

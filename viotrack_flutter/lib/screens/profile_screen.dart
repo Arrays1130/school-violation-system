@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isBiometricEnabled = false;
   bool _isHardwareAvailable = false;
   bool _isTogglingBiometric = false;
-  String _biometricLabel = 'Fingerprint';
+  String _biometricLabel = 'Biometrics';
   bool _isLoading = true;
   String _userName = '';
   String _userEmail = '';
@@ -180,11 +181,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (!saved) return;
         }
 
-        final ok = await SecurityService.authenticate(
-          reason: 'Enable $_biometricLabel login for your dean account.',
+        final ok = await SecurityService.ensurePlatformAuthenticator(
+          email: _userEmail,
+          displayName: _userName,
         );
         if (!ok) {
-          _showSnack('$_biometricLabel verification failed.', success: false);
+          _showSnack(
+            '$_biometricLabel setup failed. On iPhone, use Add to Home Screen and try again.',
+            success: false,
+          );
           return;
         }
       } else {
@@ -364,7 +369,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                                 child: Icon(
-                                  Icons.fingerprint_rounded,
+                                  SecurityService.iconForLabel(_biometricLabel),
                                   size: 30,
                                   color: _isBiometricEnabled
                                       ? Colors.white
@@ -391,8 +396,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   _isHardwareAvailable
                                       ? (_isBiometricEnabled
                                           ? 'Tap icon to test · unlock app faster'
-                                          : 'Sign in and unlock with your finger')
-                                      : 'Not available on this device',
+                                          : (kIsWeb
+                                              ? 'Add to Home Screen, then enable $_biometricLabel'
+                                              : 'Sign in and unlock with $_biometricLabel'))
+                                      : (kIsWeb
+                                          ? 'Use HTTPS + Add to Home Screen for Face ID'
+                                          : 'Not available on this device'),
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
                                     color: AppTheme.textMuted,

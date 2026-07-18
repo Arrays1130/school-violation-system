@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../api_service.dart';
+import 'app_icon_badge_service.dart';
 import 'auth_storage_service.dart';
 
 /// Computes the delay before the next poll attempt after failures.
@@ -169,6 +170,7 @@ class NotificationPoller {
       _lastCount = count;
       _hasBaseline = true;
       unreadCount.value = count;
+      unawaited(AppIconBadgeService.update(count));
       if (refreshLists) {
         listRefresh.add(null);
       }
@@ -178,6 +180,7 @@ class NotificationPoller {
     final previous = _lastCount;
     _lastCount = count;
     unreadCount.value = count;
+    unawaited(AppIconBadgeService.update(count));
 
     if (refreshLists || count != previous) {
       listRefresh.add(null);
