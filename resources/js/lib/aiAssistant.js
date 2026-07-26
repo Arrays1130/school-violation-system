@@ -1,3 +1,30 @@
+/** Read Laravel's XSRF-TOKEN cookie (not HttpOnly). */
+export function getXsrfToken() {
+    const row = document.cookie
+        .split('; ')
+        .find((part) => part.startsWith('XSRF-TOKEN='));
+    if (!row) return '';
+    return decodeURIComponent(row.slice('XSRF-TOKEN='.length));
+}
+
+/** Headers Laravel accepts for JSON fetch() POSTs (meta + cookie). */
+export function csrfHeaders(extra = {}) {
+    const meta = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const xsrf = getXsrfToken();
+    return {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': meta,
+        ...(xsrf ? { 'X-XSRF-TOKEN': xsrf } : {}),
+        ...extra,
+    };
+}
+
+export function syncCsrfMeta(token) {
+    if (!token) return;
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) meta.setAttribute('content', token);
+}
+
 export function aiAssistantUrl({ prompt, studentId, caseId, source } = {}) {
     const params = new URLSearchParams();
 

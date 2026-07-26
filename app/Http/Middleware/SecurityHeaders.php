@@ -29,6 +29,13 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
+        // Prevent CDN/browser from caching HTML with a stale CSRF token (HTTP 419 on POSTs).
+        $contentType = (string) $response->headers->get('Content-Type', '');
+        if (str_contains($contentType, 'text/html') || $request->header('X-Inertia')) {
+            $response->headers->set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+        }
+
         return $response;
     }
 }

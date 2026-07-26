@@ -10,10 +10,12 @@ import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { handleFlashMessages } from '@/lib/sweetAlert';
+import { syncCsrfMeta } from '@/lib/aiAssistant';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 router.on('success', (event) => {
+    syncCsrfMeta(event.detail.page.props.csrf_token);
     handleFlashMessages(event.detail.page.props.flash);
 });
 
@@ -25,6 +27,7 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
+        syncCsrfMeta(props.initialPage?.props?.csrf_token);
         handleFlashMessages(props.initialPage?.props?.flash);
 
         try {

@@ -34,6 +34,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            // Keep SPA fetch() CSRF in sync after Inertia navigations (avoids HTTP 419).
+            'csrf_token' => csrf_token(),
             'auth' => [
                 'user' => $request->user(),
                 'unreadNotifications' => $request->user() ? $request->user()->unreadNotifications()->latest()->take(10)->get() : [],

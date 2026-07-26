@@ -8,7 +8,7 @@ import {
     ThumbsUp, ThumbsDown, Scale
 } from 'lucide-react';
 import { escapeHtml } from '@/lib/safeHtml';
-import { pageContextPayload } from '@/lib/aiAssistant';
+import { pageContextPayload, csrfHeaders } from '@/lib/aiAssistant';
 
 const SESSION_PREFIX = 'nexus_ai_chat_';
 
@@ -84,11 +84,11 @@ function MessageBlock({ msg, onRegenerate, onFeedback }) {
         try {
             await fetch(route('ai-assistant.feedback'), {
                 method: 'POST',
-                headers: {
+                credentials: 'same-origin',
+                headers: csrfHeaders({
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
                     'Accept': 'application/json',
-                },
+                }),
                 body: JSON.stringify({ usage_log_id: msg.usageLogId, rating }),
             });
         } catch (_) {
@@ -333,11 +333,11 @@ export default function AiAssistant({
             const streamUrl = window.location.pathname.replace(/\/$/, '') + '/stream';
             const res = await fetch(streamUrl, {
                 method: 'POST',
-                headers: {
+                credentials: 'same-origin',
+                headers: csrfHeaders({
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
                     'Accept': 'text/event-stream',
-                },
+                }),
                 body: JSON.stringify({
                     message: text,
                     conversation_id: conversationId,
@@ -345,6 +345,9 @@ export default function AiAssistant({
                 }),
             });
 
+            if (res.status === 419) {
+                throw new Error('Session expired (419). Mag-refresh ng page, tapos try again.');
+            }
             if (res.status === 429) {
                 throw new Error('Too many requests. Please wait a moment.');
             }
@@ -480,11 +483,11 @@ export default function AiAssistant({
         try {
             const res = await fetch(route('ai-assistant.clear'), {
                 method: 'POST',
-                headers: {
+                credentials: 'same-origin',
+                headers: csrfHeaders({
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
                     'Accept': 'application/json',
-                },
+                }),
                 body: JSON.stringify({ conversation_id: conversationId }),
             });
             if (res.ok) {
