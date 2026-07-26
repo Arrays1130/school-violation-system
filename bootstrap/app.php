@@ -15,6 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
+        // Auth-protected Nexus AI fetch() endpoints — CSRF headers are often stripped
+        // by Cloudflare/WAF on JSON POSTs, which causes persistent HTTP 419 in production.
+        $middleware->validateCsrfTokens(except: [
+            'ai-assistant/stream',
+            'ai-assistant/chat',
+            'ai-assistant/feedback',
+            'ai-assistant/clear',
+            'api/chat',
+        ]);
+
         $middleware->append([
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\LogRequestContext::class,

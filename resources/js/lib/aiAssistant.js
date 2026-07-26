@@ -19,6 +19,16 @@ export function csrfHeaders(extra = {}) {
     };
 }
 
+/** Include _token in JSON body (survives proxies that strip CSRF headers). */
+export function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+export function withCsrf(payload = {}) {
+    const token = csrfToken();
+    return token ? { _token: token, ...payload } : payload;
+}
+
 export function syncCsrfMeta(token) {
     if (!token) return;
     const meta = document.querySelector('meta[name="csrf-token"]');

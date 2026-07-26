@@ -8,7 +8,7 @@ import {
     ThumbsUp, ThumbsDown, Scale
 } from 'lucide-react';
 import { escapeHtml } from '@/lib/safeHtml';
-import { pageContextPayload, csrfHeaders } from '@/lib/aiAssistant';
+import { pageContextPayload, csrfHeaders, withCsrf } from '@/lib/aiAssistant';
 
 const SESSION_PREFIX = 'nexus_ai_chat_';
 
@@ -89,7 +89,7 @@ function MessageBlock({ msg, onRegenerate, onFeedback }) {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 }),
-                body: JSON.stringify({ usage_log_id: msg.usageLogId, rating }),
+                body: JSON.stringify(withCsrf({ usage_log_id: msg.usageLogId, rating })),
             });
         } catch (_) {
             setFeedback(null);
@@ -338,15 +338,15 @@ export default function AiAssistant({
                     'Content-Type': 'application/json',
                     'Accept': 'text/event-stream',
                 }),
-                body: JSON.stringify({
+                body: JSON.stringify(withCsrf({
                     message: text,
                     conversation_id: conversationId,
                     page_context: activePageContext,
-                }),
+                })),
             });
 
             if (res.status === 419) {
-                throw new Error('Session expired (419). Mag-refresh ng page, tapos try again.');
+                throw new Error('Session expired (419). Mag-refresh (Ctrl+Shift+R), tapos try again.');
             }
             if (res.status === 429) {
                 throw new Error('Too many requests. Please wait a moment.');
@@ -488,7 +488,7 @@ export default function AiAssistant({
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 }),
-                body: JSON.stringify({ conversation_id: conversationId }),
+                body: JSON.stringify(withCsrf({ conversation_id: conversationId })),
             });
             if (res.ok) {
                 const data = await res.json();
