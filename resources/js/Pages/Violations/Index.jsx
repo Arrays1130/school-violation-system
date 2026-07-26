@@ -5,7 +5,7 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 import FilterBar from '@/Components/FilterBar';
 import { 
     ShieldCheck, Plus, 
-    Edit3, Trash2, ShieldQuestion, Users
+    Edit3, Trash2, ShieldQuestion
 } from 'lucide-react';
 import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
@@ -92,7 +92,7 @@ export default function Index({ auth, violations, categories, filters }) {
                                 Policy Management
                             </div>
                             <h1 className="text-3xl font-extrabold text-white tracking-tight">Rules & Regulations</h1>
-                            <p className="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">Browse violation rules, then click a rule to see all students who committed it.</p>
+                            <p className="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">Manage the school violation rulebook — add, edit, or remove policy entries.</p>
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-3">
@@ -132,7 +132,6 @@ export default function Index({ auth, violations, categories, filters }) {
                                     <th className="px-6 py-5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">Violation Rule / Code</th>
                                     <th className="px-6 py-5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center whitespace-nowrap">Category Class</th>
                                     <th className="px-6 py-5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center whitespace-nowrap">Severity Level</th>
-                                    <th className="px-6 py-5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center whitespace-nowrap">Students</th>
                                     <th className="px-6 py-5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right whitespace-nowrap">Actions</th>
                                 </tr>
                             </thead>
@@ -141,8 +140,7 @@ export default function Index({ auth, violations, categories, filters }) {
                                     violations.data.map((violation) => (
                                         <tr
                                             key={violation.id}
-                                            onClick={() => router.visit(route('violations.show', violation.id))}
-                                            className="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800/60 transition-colors duration-200 group cursor-pointer"
+                                            className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors duration-200"
                                         >
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-4">
@@ -152,7 +150,7 @@ export default function Index({ auth, violations, categories, filters }) {
                                                         </span>
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">{violation.title}</p>
+                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{violation.title}</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Identifier: <span className="text-slate-400">#{String(violation.id).padStart(4, '0')}</span></p>
                                                         </div>
@@ -180,17 +178,11 @@ export default function Index({ auth, violations, categories, filters }) {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-5 text-center">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
-                                                    <Users className="w-3.5 h-3.5" />
-                                                    {violation.cases_count ?? 0}
-                                                </span>
-                                            </td>
                                             <td className="px-6 py-5 text-right">
-                                                <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center justify-end gap-2">
                                                     <a 
                                                         href={route('violations.edit', violation.id)} 
-                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:text-indigo-400 hover:border-indigo-300 hover:bg-indigo-50 dark:bg-indigo-900/20 hover:shadow-sm transition-all duration-200"
+                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:shadow-sm transition-all duration-200"
                                                         title="Edit Rule"
                                                         aria-label={`Edit rule: ${violation.title}`}
                                                     >
@@ -198,7 +190,7 @@ export default function Index({ auth, violations, categories, filters }) {
                                                     </a>
                                                     <button 
                                                         onClick={() => handleDelete(violation.id)} 
-                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-300 hover:bg-rose-50 dark:bg-rose-900/20 hover:shadow-sm transition-all duration-200"
+                                                        className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:shadow-sm transition-all duration-200"
                                                         title="Delete Rule"
                                                         aria-label={`Delete rule: ${violation.title}`}
                                                     >
@@ -210,7 +202,7 @@ export default function Index({ auth, violations, categories, filters }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-16 text-center">
+                                        <td colSpan="4" className="px-6 py-16 text-center">
                                             <div className="flex flex-col items-center justify-center text-slate-400 max-w-sm mx-auto">
                                                 <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 flex items-center justify-center text-slate-400 mb-4 shadow-inner">
                                                     <ShieldQuestion className="w-7 h-7" />

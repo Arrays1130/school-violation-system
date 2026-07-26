@@ -33,7 +33,7 @@ class ViolationController extends Controller
             $query->where('severity', $request->severity);
         }
 
-        $violations = $query->withCount('cases')->latest()->paginate(10);
+        $violations = $query->latest()->paginate(10);
         $categories = \App\Models\Violation::distinct()->whereNotNull('category')->pluck('category');
 
         return \Inertia\Inertia::render('Violations/Index', [
