@@ -25,6 +25,16 @@ class DashboardUpdated implements ShouldBroadcast
     }
 
     /**
+     * Skip broadcast when no realtime driver is configured (avoids request hangs on Render).
+     */
+    public function broadcastWhen(): bool
+    {
+        $driver = (string) config('broadcasting.default', 'null');
+
+        return ! in_array($driver, ['null', 'log', ''], true);
+    }
+
+    /**
      * Get the channels the event should broadcast on.
      *
      * @return array<int, \Illuminate\Broadcasting\Channel>

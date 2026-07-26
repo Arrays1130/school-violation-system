@@ -207,37 +207,37 @@ class StudentController extends Controller
     }
 
     /**
-     * Bulk graduate and archive 4th-year students
+     * Bulk graduate and archive 4th-year students.
+     * Single UPDATE (soft-delete + graduated year) — no per-row model events.
      */
     public function graduateFourthYears(Request $request)
     {
-        // Check if user is dean, maybe abort (Deans typically shouldn't do bulk deletes if they can't access trash)
         abort_if(auth()->user()->isDean(), 403);
 
         $request->validate([
-            'academic_year' => 'required|string|max:255'
+            'academic_year' => 'required|string|max:255',
         ]);
 
+        $academicYear = $request->input('academic_year');
         $fourthYearAliases = YearLevel::fourthYearAliases();
-        $students = \App\Models\Student::whereIn('year_level', $fourthYearAliases)->get();
-        $count = $students->count();
+
+        $count = \App\Models\Student::query()
+            ->whereIn('year_level', $fourthYearAliases)
+            ->whereNull('deleted_at')
+            ->update([
+                'academic_year_graduated' => $academicYear,
+                'deleted_at' => now(),
+            ]);
 
         if ($count === 0) {
             return redirect()->back()->with('error', 'No 4th-year students found to graduate.');
         }
 
-        $academicYear = $request->input('academic_year');
-
-        // Bulk update the academic_year_graduated directly (doesn't trigger model events individually)
-        \App\Models\Student::whereIn('year_level', $fourthYearAliases)->update(['academic_year_graduated' => $academicYear]);
-        
-        // Bulk delete (soft delete)
-        \App\Models\Student::whereIn('year_level', $fourthYearAliases)->delete();
-
-        // Clear dashboard cache and dispatch event once after bulk operation
-        \App\Models\StudentCase::clearDashboardCache();
-        try { event(new \App\Events\DashboardUpdated('Bulk graduated 4th-year students')); } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Dashboard event dispatch failed after bulk graduation', ['error' => $e->getMessage()]);
+        \App\Support\DashboardCache::bust();
+        try {
+            event(new \App\Events\DashboardUpdated('Bulk graduated 4th-year students'));
+        } catch (\Exception $e) {
+            Log::warning('Dashboard event dispatch failed after bulk graduation', ['error' => $e->getMessage()]);
         }
 
         return redirect()->route('students.index')->with('success', "Successfully graduated and archived {$count} 4th-year students for {$academicYear}.");
