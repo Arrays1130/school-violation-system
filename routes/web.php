@@ -105,6 +105,9 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/students/{student}/send-custom-message', [StudentController::class, 'sendCustomMessage'])->name('students.sendCustomMessage');
+    Route::post('/students/{student}/generate-guardian-message', [StudentController::class, 'generateGuardianMessage'])
+        ->middleware('throttle:20,1')
+        ->name('students.generateGuardianMessage');
     Route::post('/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote');
     Route::post('/students/graduate-fourth-years', [StudentController::class, 'graduateFourthYears'])->name('students.graduate_fourth_years');
     Route::get('/students/trash', [StudentController::class, 'trash'])->name('students.trash');
@@ -123,6 +126,7 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::get('/cases/create', [CaseController::class, 'create'])->name('cases.create');
     Route::get('/students/{student}/cases/create', [CaseController::class, 'create'])->name('students.cases.create');
     Route::get('/cases/trash', [CaseController::class, 'trash'])->name('cases.trash');
+    Route::get('/cases/by-violation/{violation}', [CaseController::class, 'byViolation'])->name('cases.by-violation');
     Route::post('/cases/{id}/restore', [CaseController::class, 'restore'])->name('cases.restore');
     Route::delete('/cases/{id}/force-delete', [CaseController::class, 'forceDelete'])->name('cases.force-delete');
     Route::get('/cases/{case}/print', [CaseController::class, 'print'])->name('cases.print');

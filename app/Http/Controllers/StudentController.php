@@ -436,6 +436,32 @@ class StudentController extends Controller
     }
 
     /**
+     * AI-draft a guardian message from a selected case.
+     */
+    public function generateGuardianMessage(Request $request, \App\Models\Student $student)
+    {
+        $this->authorize('view', $student);
+        $this->authorize('use-ai-assistant');
+
+        $validated = $request->validate([
+            'case_id' => 'required|integer|exists:cases,id',
+        ]);
+
+        $case = \App\Models\StudentCase::query()
+            ->where('student_id', $student->id)
+            ->forUser($request->user())
+            ->with('violation')
+            ->findOrFail($validated['case_id']);
+
+        $result = app(\App\Services\AiService::class)->generateGuardianMessage($student, $case);
+
+        return response()->json([
+            'message' => $result['message'],
+            'mode' => $result['mode'],
+        ]);
+    }
+
+    /**
      * Send Custom Message (SMS and/or Email)
      */
     public function sendCustomMessage(Request $request, \App\Models\Student $student)

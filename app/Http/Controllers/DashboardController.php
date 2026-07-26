@@ -92,6 +92,7 @@ class DashboardController extends Controller
                 
                 $trends[$key] = [
                     'change' => $change,
+                    'previous' => $previous,
                     'percentage' => abs($percentage),
                     'direction' => $change > 0 ? 'up' : ($change < 0 ? 'down' : 'neutral'),
                     'isPositive' => $key === 'hearings_this_month' ? $change <= 0 : ($key === 'total_students' ? $change >= 0 : $change <= 0),

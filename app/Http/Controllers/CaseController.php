@@ -12,23 +12,109 @@ class CaseController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * Display violations that have cases (drill-down entry point).
      */
     public function index(\Illuminate\Http\Request $request)
     {
-        $query = \App\Models\StudentCase::with(['student', 'violation'])
-            ->forUser($request->user())
-            ->latest('occurred_at');
+        $user = $request->user();
+
+        $casesScope = function ($q) use ($request, $user) {
+            $q->forUser($user);
+            $this->applyCaseListFilters($q, $request, includeSearch: false);
+        };
+
+        $query = \App\Models\Violation::query()
+            ->whereHas('cases', $casesScope)
+            ->withCount(['cases as cases_count' => $casesScope]);
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
+                $q->where('code', 'LIKE', "%{$search}%")
+                    ->orWhere('title', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('severity') && in_array($request->severity, ['Minor', 'Major'], true)) {
+            $query->where('severity', $request->severity);
+        }
+
+        $violations = $query->orderBy('title')->paginate(15)->appends($request->all());
+
+        // Summary stat cards (all scoped cases, not filter-narrowed)
+        $scopedBaseQuery = \App\Models\StudentCase::query()->forUser($user);
+        $scopedBaseQuery->getQuery()->orders = [];
+
+        $statusCounts = (clone $scopedBaseQuery)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('status')->pluck('total', 'status');
+
+        $summary = [
+            'total'   => $statusCounts->sum(),
+            'pending' => $statusCounts['Pending'] ?? 0,
+            'hearing' => $statusCounts['Hearing Scheduled'] ?? 0,
+            'closed'  => $statusCounts['Closed'] ?? 0,
+        ];
+
+        return inertia('Cases/Index', [
+            'violations' => $violations,
+            'summary' => $summary,
+            'departments' => \App\Models\Student::selectRaw('TRIM(department) as department')
+                ->whereNotNull('department')
+                ->distinct()
+                ->orderBy('department')
+                ->pluck('department'),
+            'academicYears' => \App\Models\Student::whereNotNull('academic_year')
+                ->distinct()
+                ->orderByDesc('academic_year')
+                ->pluck('academic_year'),
+            'filters' => $request->only(['search', 'status', 'severity', 'department', 'academic_year', 'date_from', 'date_to']),
+        ]);
+    }
+
+    /**
+     * Students / cases for a single violation type.
+     */
+    public function byViolation(\Illuminate\Http\Request $request, \App\Models\Violation $violation)
+    {
+        $this->authorize('viewAny', \App\Models\StudentCase::class);
+
+        $query = \App\Models\StudentCase::with(['student', 'violation'])
+            ->where('violation_id', $violation->id)
+            ->forUser($request->user())
+            ->latest('occurred_at');
+
+        $this->applyCaseListFilters($query, $request, includeSearch: true);
+
+        $cases = $query->paginate(15)->appends($request->all());
+
+        return inertia('Cases/ByViolation', [
+            'violation' => $violation,
+            'cases' => $cases,
+            'departments' => \App\Models\Student::selectRaw('TRIM(department) as department')
+                ->whereNotNull('department')
+                ->distinct()
+                ->orderBy('department')
+                ->pluck('department'),
+            'academicYears' => \App\Models\Student::whereNotNull('academic_year')
+                ->distinct()
+                ->orderByDesc('academic_year')
+                ->pluck('academic_year'),
+            'filters' => $request->only(['search', 'status', 'severity', 'department', 'academic_year', 'date_from', 'date_to']),
+        ]);
+    }
+
+    /**
+     * Shared case-list filters (status, dept, year, dates; optional student search).
+     */
+    private function applyCaseListFilters($query, \Illuminate\Http\Request $request, bool $includeSearch = true): void
+    {
+        if ($includeSearch && $request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($sq) use ($search) {
                     $sq->where('full_name', 'LIKE', "%{$search}%")
-                      ->orWhere('email', 'LIKE', "%{$search}%")
-                      ->orWhere('section', 'LIKE', "%{$search}%");
-                })->orWhereHas('violation', function ($vq) use ($search) {
-                    $vq->where('title', 'LIKE', "%{$search}%");
+                        ->orWhere('email', 'LIKE', "%{$search}%")
+                        ->orWhere('section', 'LIKE', "%{$search}%");
                 });
             });
         }
@@ -38,15 +124,6 @@ class CaseController extends Controller
                 $query->whereNotNull('endorsed_at');
             } else {
                 $query->where('status', $request->status);
-            }
-        }
-
-        if ($request->filled('severity')) {
-            $severity = $request->severity;
-            if (in_array($severity, ['Minor', 'Major'], true)) {
-                $query->whereHas('violation', function ($vq) use ($severity) {
-                    $vq->where('severity', $severity);
-                });
             }
         }
 
@@ -69,37 +146,6 @@ class CaseController extends Controller
         if ($request->filled('date_to')) {
             $query->whereDate('occurred_at', '<=', $request->date_to);
         }
-
-        $cases = $query->paginate(15)->appends($request->all());
-
-        // Summary stat cards
-        $scopedBaseQuery = \App\Models\StudentCase::query()->forUser($request->user());
-        $scopedBaseQuery->getQuery()->orders = []; // keep counts stable (remove accidental ordering)
-
-        $statusCounts = (clone $scopedBaseQuery)->select('status', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
-            ->groupBy('status')->pluck('total', 'status');
-
-        $summary = [
-            'total'   => $statusCounts->sum(),
-            'pending' => $statusCounts['Pending'] ?? 0,
-            'hearing' => $statusCounts['Hearing Scheduled'] ?? 0,
-            'closed'  => $statusCounts['Closed'] ?? 0,
-        ];
-
-        return inertia('Cases/Index', [
-            'cases' => $cases,
-            'summary' => $summary,
-            'departments' => \App\Models\Student::selectRaw('TRIM(department) as department')
-                ->whereNotNull('department')
-                ->distinct()
-                ->orderBy('department')
-                ->pluck('department'),
-            'academicYears' => \App\Models\Student::whereNotNull('academic_year')
-                ->distinct()
-                ->orderByDesc('academic_year')
-                ->pluck('academic_year'),
-            'filters' => request()->only(['search', 'status', 'severity', 'department', 'academic_year', 'date_from', 'date_to']),
-        ]);
     }
 
     public function create(?\App\Models\Student $student = null)

@@ -23,24 +23,33 @@ export default function DashboardHero({ badge, badgeIcon: BadgeIcon, title, desc
     );
 }
 
-export function Panel({ title, subtitle, icon: Icon, action, children, className = '' }) {
+export function Panel({
+    title,
+    subtitle,
+    icon: Icon,
+    action,
+    children,
+    className = '',
+    contentClassName = 'p-6',
+    iconClassName = 'bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300',
+}) {
     return (
-        <div className={`rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`}>
-            <div className="p-6 pb-4 flex items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
+        <div className={`rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col overflow-hidden ${className}`}>
+            <div className="p-6 pb-4 flex items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <div className="min-w-0">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">{title}</h3>
                     {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     {action}
                     {Icon && (
-                        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-700 dark:text-blue-300">
+                        <div className={`p-2.5 rounded-xl border ${iconClassName}`}>
                             <Icon className="w-5 h-5" />
                         </div>
                     )}
                 </div>
             </div>
-            <div className="flex-1 min-h-0 p-6">{children}</div>
+            <div className={`flex-1 min-h-0 ${contentClassName}`}>{children}</div>
         </div>
     );
 }

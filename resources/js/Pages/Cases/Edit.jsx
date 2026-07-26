@@ -5,6 +5,7 @@ import { FilePlus, ArrowLeft, CheckCircle2, ShieldAlert, Trash2 } from 'lucide-r
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import Breadcrumbs from '@/Components/Breadcrumbs';
 import showUndoToast from '@/lib/undoToast';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function Edit({ auth, caseRecord }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -50,14 +51,16 @@ export default function Edit({ auth, caseRecord }) {
                 destructive
             />
 
-            <div className="py-8">
+            <PageMotion className="py-8">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                    <MotionItem>
                     <Breadcrumbs className="mb-6" items={[
                         { label: 'Dashboard', href: route('dashboard') },
                         { label: 'Violation Cases', href: route('cases.index') },
                         { label: `Case #${caseRecord.id}`, href: route('cases.show', caseRecord.id) },
                         { label: 'Edit' },
                     ]} />
+                    </MotionItem>
                     
                     {/* Header Banner */}
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 p-8 mb-8 shadow-2xl border border-white/5">
@@ -158,7 +161,7 @@ export default function Edit({ auth, caseRecord }) {
                         </form>
                     </div>
                 </div>
-            </div>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

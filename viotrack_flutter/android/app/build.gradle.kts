@@ -70,6 +70,12 @@ dependencies {
 }
 
 val googleServicesFile = file("google-services.json")
-if (googleServicesFile.exists()) {
+val hasGoogleServices = googleServicesFile.exists()
+if (hasGoogleServices) {
     apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.lifecycle(
+        "NOTE: android/app/google-services.json missing — Firebase/FCM disabled. " +
+            "Copy from Firebase Console (see google-services.json.example).",
+    )
 }

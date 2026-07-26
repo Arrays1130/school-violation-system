@@ -33,7 +33,7 @@ class ViolationController extends Controller
             $query->where('severity', $request->severity);
         }
 
-        $violations = $query->latest()->paginate(10);
+        $violations = $query->withCount('cases')->latest()->paginate(10);
         $categories = \App\Models\Violation::distinct()->whereNotNull('category')->pluck('category');
 
         return \Inertia\Inertia::render('Violations/Index', [
@@ -54,9 +54,20 @@ class ViolationController extends Controller
         return redirect()->route('violations.index')->with('success', 'Violation created successfully.');
     }
 
-    public function show(\App\Models\Violation $violation)
+    public function show(Request $request, \App\Models\Violation $violation)
     {
-        return inertia('Violations/Show', compact('violation'));
+        $cases = \App\Models\StudentCase::query()
+            ->where('violation_id', $violation->id)
+            ->with(['student:id,full_name,department,section'])
+            ->forUser($request->user())
+            ->latest('occurred_at')
+            ->paginate(15)
+            ->withQueryString();
+
+        return inertia('Violations/Show', [
+            'violation' => $violation,
+            'cases' => $cases,
+        ]);
     }
 
     public function edit(\App\Models\Violation $violation)

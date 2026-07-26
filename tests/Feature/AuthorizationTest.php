@@ -81,10 +81,20 @@ class AuthorizationTest extends TestCase
             'violation_id' => $violation->id,
         ]);
 
-        $response = $this->actingAs($dean)->get(route('cases.index'));
+        $this->actingAs($dean)
+            ->get(route('cases.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cases/Index')
+                ->has('violations.data', 1)
+                ->where('violations.data.0.id', $violation->id)
+                ->where('violations.data.0.cases_count', 1)
+            );
 
-        $response->assertOk();
-        $response->assertSee($cceStudent->full_name);
-        $response->assertDontSee($ccjeStudent->full_name);
+        $this->actingAs($dean)
+            ->get(route('cases.by-violation', $violation))
+            ->assertOk()
+            ->assertSee($cceStudent->full_name)
+            ->assertDontSee($ccjeStudent->full_name);
     }
 }

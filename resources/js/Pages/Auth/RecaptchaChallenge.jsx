@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Head, router, useForm } from "@inertiajs/react";
 import { ShieldCheck } from "lucide-react";
 import AuthBackground from "@/Components/AuthBackground";
+import AuthLoadingOverlay from "@/Components/AuthLoadingOverlay";
 import RecaptchaField from "@/Components/RecaptchaField";
 
 export default function RecaptchaChallenge({ recaptchaSiteKey, userName }) {
@@ -22,6 +23,7 @@ export default function RecaptchaChallenge({ recaptchaSiteKey, userName }) {
     return (
         <div className="auth-screen relative flex min-h-[100dvh] w-full items-center justify-center px-4 py-8">
             <AuthBackground />
+            <AuthLoadingOverlay show={processing} message="Signing you in…" />
             <Head title="Security Verification" />
 
             <div className="fixed inset-0 z-20 bg-slate-900/55 backdrop-blur-sm" aria-hidden="true" />

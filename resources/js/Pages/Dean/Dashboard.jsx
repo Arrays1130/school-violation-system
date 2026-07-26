@@ -45,6 +45,7 @@ ChartJS.register(
 );
 
 import StatusBadge from '@/Components/StatusBadge';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function DeanDashboard({
     auth,
@@ -208,10 +209,10 @@ export default function DeanDashboard({
             {/* Sub-header background element */}
             <div className="absolute top-0 left-0 w-full h-[40vh] bg-slate-50 dark:bg-slate-800 -z-10 border-b border-slate-200/50 dark:border-slate-700/50"></div>
 
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                
+            <PageMotion className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
                 {/* ── HEADER SECTION ── */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <MotionItem className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-2">
                             <Activity className="w-3.5 h-3.5" />
@@ -220,7 +221,7 @@ export default function DeanDashboard({
                         <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Dean's Dashboard</h1>
                         <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Monitor department cases, hearings, and student incidents.</p>
                     </div>
-                </div>
+                </MotionItem>
 
                 {/* ── STATS ROW (Glass Cards) ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -447,12 +448,12 @@ export default function DeanDashboard({
                     </div>
 
                 </div>
-            </div>
+            </PageMotion>
 
             {/* Simple Case Modal */}
             {isModalOpen && selectedCase && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-slate-200/50 dark:ring-slate-700/50">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-slate-200/50 dark:ring-slate-700/50 animate-in fade-in zoom-in-95 duration-200">
                         <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900">
                             <h3 className="text-lg font-black text-slate-900 dark:text-white">Case Details</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-800 p-2 rounded-full transition-colors">

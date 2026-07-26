@@ -6,6 +6,7 @@ import {
     CheckCircle2, FilePlus, ShieldAlert, UploadCloud, X
 } from 'lucide-react';
 import Breadcrumbs from '@/Components/Breadcrumbs';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function Create({ auth, student, violations, students }) {
     const [step, setStep] = useState(student ? 2 : 1);
@@ -126,16 +127,18 @@ export default function Create({ auth, student, violations, students }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Log Violation" />
 
-            <div className="py-8">
+            <PageMotion className="py-8">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                    <MotionItem>
                     <Breadcrumbs className="mb-6" items={[
                         { label: 'Dashboard', href: route('dashboard') },
                         { label: 'Violation Cases', href: route('cases.index') },
                         { label: 'Record Violation' },
                     ]} />
-                    
+                    </MotionItem>
+
                     {/* Header Banner */}
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 p-8 mb-8 shadow-2xl border border-white/5">
+                    <MotionItem className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 p-8 mb-8 shadow-2xl border border-white/5">
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_0%,rgba(244,63,94,0.25),transparent_65%)]"></div>
                         <div className="relative flex items-center gap-4">
                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-lg shadow-rose-500/30">
@@ -148,9 +151,9 @@ export default function Create({ auth, student, violations, students }) {
                                 <p className="text-rose-200/70 text-sm mt-1">Record a new incident and attach necessary evidence.</p>
                             </div>
                         </div>
-                    </div>
+                    </MotionItem>
 
-                    <div className="bg-white dark:bg-slate-900 overflow-hidden shadow-xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 p-8">
+                    <MotionItem className="bg-white dark:bg-slate-900 overflow-hidden shadow-xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 p-8">
                         {renderStepIndicators()}
 
                         <form onSubmit={submit} className="space-y-6">
@@ -361,9 +364,9 @@ export default function Create({ auth, student, violations, students }) {
                                 )}
                             </div>
                         </form>
-                    </div>
+                    </MotionItem>
                 </div>
-            </div>
+            </PageMotion>
         </AuthenticatedLayout>
     );
 }

@@ -1689,6 +1689,101 @@ PROMPT;
     }
 
     /**
+     * Draft a guardian notification message from a student case.
+     *
+     * @return array{message: string, mode: string}
+     */
+    public function generateGuardianMessage(\App\Models\Student $student, \App\Models\StudentCase $case): array
+    {
+        $case->loadMissing(['violation']);
+
+        $schoolName = SchoolSettings::get('school_name', config('school.name', 'I-Link CST'));
+        $occurred = $case->occurred_at?->format('F j, Y') ?? 'an unrecorded date';
+        $violationTitle = $case->violation?->title ?? 'a school violation';
+        $severity = $case->violation?->severity ?? 'Unspecified';
+        $status = $case->status ?? 'Pending';
+        $sanction = $case->sanction ?: 'to be determined';
+        $guardianName = $student->guardian_name ?: 'Parent/Guardian';
+        $studentName = $student->full_name;
+        $department = $student->department ?: 'N/A';
+        $section = $student->section ?: 'N/A';
+        $description = trim((string) ($case->description ?? ''));
+
+        $facts = implode("\n", array_filter([
+            "School: {$schoolName}",
+            "Guardian: {$guardianName}",
+            "Student: {$studentName}",
+            "Department/Program: {$department}",
+            "Section: {$section}",
+            "Case ID: #{$case->id}",
+            "Violation: {$violationTitle}",
+            "Severity: {$severity}",
+            "Date of incident: {$occurred}",
+            "Case status: {$status}",
+            "Sanction: {$sanction}",
+            $description !== '' ? "Case notes: {$description}" : null,
+        ]));
+
+        $systemPrompt = <<<PROMPT
+You write short guardian notification messages for {$schoolName}'s Office of Student Affairs.
+Return ONLY the message body — no title, no markdown, no quotation marks.
+Language: English only. Use basic, simple English that any parent can understand. Short sentences. No slang, no Filipino, no Taglish.
+Tone: respectful, clear, and polite.
+Keep it under 900 characters so it can be sent by SMS or email.
+Include: greeting to the guardian, student name, violation, date, current status/sanction if known, and a polite request to contact the school.
+Do not invent facts that are not provided. Do not mention AI.
+PROMPT;
+
+        $userPrompt = "Write a guardian message using these case facts:\n\n{$facts}";
+
+        $result = $this->gemini->generate([
+            ['role' => 'user', 'parts' => [['text' => $userPrompt]]],
+        ], $systemPrompt, enableTools: false);
+
+        if (($result['type'] ?? '') === 'text' && ! empty(trim((string) ($result['text'] ?? '')))) {
+            $message = trim(preg_replace("/\n{3,}/", "\n\n", strip_tags($result['text'])));
+
+            return [
+                'message' => Str::limit($message, 1000, ''),
+                'mode' => 'gemini',
+            ];
+        }
+
+        Log::warning('Guardian message AI generation failed; using local draft.', [
+            'error' => $result['error'] ?? 'unknown',
+            'case_id' => $case->id,
+        ]);
+
+        return [
+            'message' => $this->fallbackGuardianMessage(
+                $schoolName,
+                $guardianName,
+                $studentName,
+                $violationTitle,
+                $occurred,
+                $status,
+                $sanction
+            ),
+            'mode' => 'fallback',
+        ];
+    }
+
+    private function fallbackGuardianMessage(
+        string $schoolName,
+        string $guardianName,
+        string $studentName,
+        string $violationTitle,
+        string $occurred,
+        string $status,
+        string $sanction
+    ): string {
+        return "Good day, {$guardianName}.\n\n"
+            ."This is a notice from {$schoolName}. Your child, {$studentName}, has a recorded school violation: {$violationTitle} "
+            ."on {$occurred}. Current status: {$status}. Sanction: {$sanction}.\n\n"
+            .'Please contact the Office of Student Affairs for more details and next steps. Thank you.';
+    }
+
+    /**
      * Simple heuristic to detect Tagalog language in the user message.
      */
     private function isTagalog(string $message): bool

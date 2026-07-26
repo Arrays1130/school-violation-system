@@ -69,7 +69,9 @@ When configured, the app will:
 - Deliver system notifications when the app is backgrounded or closed
 - Open **Case Details** when a dean taps a notification that includes `case_id`
 
-Disable push explicitly with `--dart-define=ENABLE_FCM=false`.
+Push is **off by default** (avoids startup errors without Firebase config).
+Enable with `--dart-define=ENABLE_FCM=true` only after adding `google-services.json`.
+
 
 Push is skipped gracefully if Firebase is not configured.
 

@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Users2, FileText, AlertCircle, Gavel, ArrowUpRight, TrendingUp, Layers, ChevronRight, LayoutDashboard, Zap } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Users2, FileText, AlertCircle, Gavel, ArrowUpRight, TrendingUp, Layers, ChevronRight, LayoutDashboard, Zap, X } from 'lucide-react';
+import { Card, CardContent } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import StatusBadge from '@/Components/StatusBadge';
-import DashboardHero from '@/Components/Dashboard/DashboardHero';
+import DashboardHero, { Panel } from '@/Components/Dashboard/DashboardHero';
 import {
     Chart as ChartJS,
     CategoryScale, LinearScale, BarElement,
@@ -17,6 +17,60 @@ import axios from 'axios';
 import useInertiaLoading from '@/hooks/useInertiaLoading';
 import { BentoSkeleton } from '@/Components/ui/Skeleton';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+
+function formatTrendBadge(trend) {
+    if (!trend) {
+        return null;
+    }
+
+    const previous = Number(trend.previous ?? 0);
+    const change = Number(trend.change ?? 0);
+
+    // Near-zero baselines make huge % swings look broken — show absolute delta / New instead.
+    if (previous < 3) {
+        if (previous === 0 && change > 0) {
+            return { text: 'New', showArrow: false };
+        }
+        if (change === 0) {
+            return { text: 'Flat', showArrow: false };
+        }
+        return {
+            text: `${change > 0 ? '+' : ''}${change}`,
+            showArrow: true,
+        };
+    }
+
+    return {
+        text: `${trend.percentage}%`,
+        showArrow: true,
+    };
+}
+
+const barValueLabelsPlugin = {
+    id: 'barValueLabels',
+    afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+            const meta = chart.getDatasetMeta(datasetIndex);
+            if (meta.hidden) {
+                return;
+            }
+            meta.data.forEach((bar, index) => {
+                const value = dataset.data[index];
+                if (value == null || value === 0) {
+                    return;
+                }
+                ctx.save();
+                ctx.fillStyle = '#64748b';
+                ctx.font = "600 11px 'Inter', sans-serif";
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(String(value), bar.x, bar.y - 4);
+                ctx.restore();
+            });
+        });
+    },
+};
 
 export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity, studentsWithViolations = [], recentCases = [], monthlyTrend = {}, topViolations = [], trends = {}, academicYears = [], selectedAcademicYear, filterAcademicYears = [] }) {
     const isLoading = useInertiaLoading();
@@ -246,7 +300,7 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
             borderColor: 'transparent',
             borderWidth: 0,
             borderRadius: 8,
-            barThickness: 24,
+            barThickness: 32,
             hoverBackgroundColor: '#0f172a'
         }],
     };
@@ -348,19 +402,28 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-end justify-between mt-auto">
+                                            <div className="flex items-end justify-between mt-auto gap-3">
                                                 <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                                                     {card.value?.toLocaleString()}
                                                 </span>
-                                                {trend && (
-                                                    <div className={`flex items-center px-2 py-1 rounded-lg text-xs font-bold border backdrop-blur-sm ${trend.direction === 'up'
-                                                        ? (trend.isPositive ? 'bg-emerald-50/90 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50/90 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20')
-                                                        : 'bg-white/80 text-slate-500 border-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                                        }`}>
-                                                        {trend.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> : trend.direction === 'down' ? <TrendingUp className="w-3.5 h-3.5 mr-0.5 rotate-180" /> : null}
-                                                        {trend.percentage}%
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const badge = formatTrendBadge(trend);
+                                                    if (!badge) {
+                                                        return null;
+                                                    }
+                                                    return (
+                                                        <div className={`flex items-center px-2 py-1 rounded-lg text-xs font-bold border backdrop-blur-sm shrink-0 ${trend.direction === 'up'
+                                                            ? (trend.isPositive ? 'bg-emerald-50/90 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50/90 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20')
+                                                            : trend.direction === 'down'
+                                                                ? (trend.isPositive ? 'bg-emerald-50/90 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50/90 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20')
+                                                                : 'bg-white/80 text-slate-500 border-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                                            }`}>
+                                                            {badge.showArrow && trend.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> : null}
+                                                            {badge.showArrow && trend.direction === 'down' ? <TrendingUp className="w-3.5 h-3.5 mr-0.5 rotate-180" /> : null}
+                                                            {badge.text}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -374,37 +437,74 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
 
                     {/* Line Chart */}
                     <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Violation Trends</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Monthly case logging over time</p>
-                                </div>
-                            </div>
+                        <Panel title="Violation Trends" subtitle="Monthly case logging over time" className="h-[400px]" contentClassName="p-6 pt-4 flex flex-col min-h-0">
                             <div className="flex-1 min-h-0 w-full relative">
                                 <Line data={trendChartData} options={{ ...chartBaseOptions, maintainAspectRatio: false }} />
                             </div>
-                        </Card>
+                        </Panel>
                     </motion.div>
 
                     {/* Activity Feed */}
                     <motion.div variants={itemVariants} className="h-full">
-                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[400px] overflow-hidden">
-                            <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-10 sticky top-0 space-y-0">
-                                <div>
-                                    <CardTitle className="text-lg font-bold tracking-tight">Activity Feed</CardTitle>
-                                    <CardDescription className="text-sm mt-1">Latest recorded incidents</CardDescription>
+                        <Panel
+                            title="Activity Feed"
+                            subtitle="Latest recorded incidents"
+                            className="h-[400px]"
+                            contentClassName="p-4 pt-2 flex flex-col min-h-0 overflow-hidden"
+                            action={
+                                <div className="flex items-center gap-1.5">
+                                    {severityFilter && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSeverityFilter(null)}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:border-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+                                        >
+                                            {severityFilter}
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700" asChild>
+                                        <Link href="/cases">
+                                            <ChevronRight className="w-5 h-5 text-slate-500" />
+                                        </Link>
+                                    </Button>
                                 </div>
-                                <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700" asChild>
-                                    <Link href="/cases">
-                                        <ChevronRight className="w-5 h-5 text-slate-500" />
-                                    </Link>
-                                </Button>
-                            </CardHeader>
-                            <CardContent className="flex-1 overflow-y-auto no-scrollbar p-6 pt-2 space-y-2">
-                                {(severityFilter ? recentCases.filter(c => c.violation?.severity === severityFilter) : recentCases).map((item) => {
-                                    return (
-                                        <div key={item.id} className="group relative flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl transition-all">
+                            }
+                        >
+                            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 pr-1">
+                                {(() => {
+                                    const feedItems = severityFilter
+                                        ? recentCases.filter((c) => c.violation?.severity === severityFilter)
+                                        : recentCases;
+
+                                    if (feedItems.length === 0) {
+                                        return (
+                                            <div className="flex h-full min-h-[200px] flex-col items-center justify-center px-4 text-center">
+                                                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                                    {severityFilter ? `No ${severityFilter.toLowerCase()} incidents` : 'No recent incidents'}
+                                                </p>
+                                                <p className="mt-1 text-xs text-slate-400">
+                                                    {severityFilter ? 'Clear the filter to see all activity.' : 'New cases will show up here.'}
+                                                </p>
+                                                {severityFilter && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSeverityFilter(null)}
+                                                        className="mt-3 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                                                    >
+                                                        Clear filter
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
+                                    return feedItems.map((item) => (
+                                        <Link
+                                            key={item.id}
+                                            href={route('cases.show', item.id)}
+                                            className="group relative flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl transition-all"
+                                        >
                                             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-sm flex-shrink-0 border border-slate-200/80 dark:border-slate-700">
                                                 {(item.student?.full_name || 'U').substring(0, 1)}
                                             </div>
@@ -416,44 +516,48 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                                     <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">{new Date(item.created_at).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </CardContent>
-                        </Card>
+                                        </Link>
+                                    ));
+                                })()}
+                            </div>
+                        </Panel>
                     </motion.div>
 
                     {/* Cases by Department */}
                     <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Cases by Department</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Distribution across colleges</p>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-500/20">
-                                    <Layers className="w-5 h-5" />
-                                </div>
-                            </div>
+                        <Panel
+                            title="Cases by Department"
+                            subtitle="Distribution across colleges"
+                            icon={Layers}
+                            className="h-[400px]"
+                            contentClassName="p-6 pt-4 flex flex-col min-h-0"
+                        >
                             <div className="flex-1 min-h-0 w-full">
-                                <Bar data={deptChartData} options={{ ...chartBaseOptions, maintainAspectRatio: false }} />
+                                <Bar
+                                    data={deptChartData}
+                                    plugins={[barValueLabelsPlugin]}
+                                    options={{
+                                        ...chartBaseOptions,
+                                        maintainAspectRatio: false,
+                                        layout: {
+                                            padding: { top: 24, right: 15, left: 5, bottom: 5 },
+                                        },
+                                    }}
+                                />
                             </div>
-                        </Card>
+                        </Panel>
                     </motion.div>
 
                     {/* Severity Doughnut */}
                     <motion.div variants={itemVariants} className="h-full">
-                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Severity Split</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Minor vs Major cases</p>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                    <AlertCircle className="w-5 h-5" />
-                                </div>
-                            </div>
-
+                        <Panel
+                            title="Severity Split"
+                            subtitle="Minor vs Major cases"
+                            icon={AlertCircle}
+                            iconClassName="bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                            className="h-[400px]"
+                            contentClassName="p-6 pt-4 flex flex-col min-h-0"
+                        >
                             <div className="flex-1 min-h-0 w-full relative">
                                 <Doughnut data={severityChartData} options={{
                                     ...chartBaseOptions,
@@ -477,13 +581,10 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                     <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{severityTotal}</p>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Total</p>
-                                    {severityFilter && (
-                                        <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mt-1">Filtered: {severityFilter}</p>
-                                    )}
                                 </div>
                             </div>
 
-                            <div className="mt-4 grid grid-cols-2 gap-2">
+                            <div className="mt-4 grid grid-cols-2 gap-2 shrink-0">
                                 {severityEntries.map(([key, count]) => {
                                     const pct = severityTotal ? Math.round((Number(count) / severityTotal) * 100) : 0;
                                     const active = severityFilter === key;
@@ -510,79 +611,105 @@ export default function Dashboard({ auth, stats, casesPerDept, casesPerSeverity,
                                     );
                                 })}
                             </div>
-                        </Card>
+                        </Panel>
                     </motion.div>
 
                     {/* Top Offenders */}
                     <motion.div variants={itemVariants} className="h-full">
-                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col h-[400px] overflow-hidden">
-                            <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-0">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Top Offenders</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Students with most infractions</p>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                    <Users2 className="w-5 h-5" />
-                                </div>
-                            </CardHeader>
-                            <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-4 space-y-2">
-                                {studentsWithViolations.map((student, idx) => {
-                                    return (
-                                        <div key={student.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors group">
-                                            <div className="w-10 h-10 flex items-center justify-center text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
+                        <Panel
+                            title="Top Offenders"
+                            subtitle="Students with most infractions"
+                            icon={Users2}
+                            iconClassName="bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                            className="h-[400px]"
+                            contentClassName="p-4 pt-2 flex flex-col min-h-0 overflow-hidden"
+                        >
+                            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 pr-1">
+                                {studentsWithViolations.length === 0 ? (
+                                    <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-slate-400">
+                                        No repeat offenders yet
+                                    </div>
+                                ) : (
+                                    studentsWithViolations.map((student, idx) => (
+                                        <Link
+                                            key={student.id}
+                                            href={route('students.show', student.id)}
+                                            className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors group"
+                                        >
+                                            <div className="w-10 h-10 flex items-center justify-center text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300 shrink-0">
                                                 {idx + 1}
                                             </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{student.full_name}</p>
-                                                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate">{student.department}</p>
+                                            <div className="min-w-0 flex-1 pr-2">
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate" title={student.full_name}>
+                                                    {student.full_name}
+                                                </p>
+                                                <p
+                                                    className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide line-clamp-2 leading-snug mt-0.5"
+                                                    title={student.department}
+                                                >
+                                                    {student.department}
+                                                </p>
                                             </div>
-                                            <div className="text-right flex-shrink-0">
+                                            <div className="text-right shrink-0 w-12">
                                                 <span className="text-sm font-black text-slate-800 dark:text-white">{student.cases_count}</span>
                                                 <p className="text-[10px] font-bold text-slate-400">cases</p>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        </Link>
+                                    ))
+                                )}
                             </div>
-                        </Card>
+                        </Panel>
                     </motion.div>
 
                     {/* Common Offenses */}
                     <motion.div variants={itemVariants} className="lg:col-span-2">
-                        <Card className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6 flex flex-col h-[400px]">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Common Offenses</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Most frequent violation types</p>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-500/20">
-                                    <Zap className="w-5 h-5" />
-                                </div>
-                            </div>
+                        <Panel
+                            title="Common Offenses"
+                            subtitle="Most frequent violation types"
+                            icon={Zap}
+                            iconClassName="bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300"
+                            className="h-[400px]"
+                            contentClassName="p-6 pt-4 flex flex-col min-h-0 overflow-hidden"
+                        >
                             <div className="flex-1 overflow-y-auto no-scrollbar pr-2 space-y-5">
-                                {topViolations.map((v, idx) => {
-                                    const maxCount = topViolations[0]?.count || 1;
-                                    const percent = Math.round((v.count / maxCount) * 100);
+                                {topViolations.length === 0 ? (
+                                    <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-slate-400">
+                                        No offense data yet
+                                    </div>
+                                ) : (
+                                    topViolations.map((v, idx) => {
+                                        const maxCount = Math.max(...topViolations.map((item) => Number(item.count) || 0), 1);
+                                        const rawPercent = (Number(v.count) / maxCount) * 100;
+                                        const percent = Number(v.count) > 0 ? Math.max(rawPercent, 8) : 0;
 
-                                    return (
-                                        <div key={v.title} className="space-y-2 group">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[11px] font-black text-slate-500 dark:text-slate-400 flex-shrink-0 border border-slate-200/80 dark:border-slate-700">
-                                                        {idx + 1}
+                                        return (
+                                            <div key={v.title} className="space-y-2 group">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[11px] font-black text-slate-500 dark:text-slate-400 flex-shrink-0 border border-slate-200/80 dark:border-slate-700">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate" title={v.title}>{v.title}</span>
+                                                    </div>
+                                                    <span className="text-sm font-black text-slate-900 dark:text-white shrink-0">
+                                                        {v.count}{' '}
+                                                        <span className="text-[10px] text-slate-400 font-semibold lowercase tracking-wider">
+                                                            {Number(v.count) === 1 ? 'case' : 'cases'}
+                                                        </span>
                                                     </span>
-                                                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{v.title}</span>
                                                 </div>
-                                                <span className="text-sm font-black text-slate-900 dark:text-white">{v.count} <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider ml-1">Cases</span></span>
+                                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-blue-600 rounded-full transition-all duration-700"
+                                                        style={{ width: `${percent}%` }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                                                <div className="h-full bg-blue-600 rounded-full transition-all duration-700" style={{ width: `${percent}%` }}></div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })
+                                )}
                             </div>
-                        </Card>
+                        </Panel>
                     </motion.div>
 
                 </motion.div>

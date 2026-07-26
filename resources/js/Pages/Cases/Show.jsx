@@ -10,6 +10,8 @@ import {
     ChevronRight, CalendarX, CalendarPlus, CheckCircle2, 
     ExternalLink, Trash2, ClipboardList, Plus, Scale
 } from 'lucide-react';
+import PageMotion, { MotionItem } from '@/Components/PageMotion';
+
 const OSA_LABELS = {
     letter_sent: 'Letter Sent',
     counseling: 'Counseling',
@@ -130,8 +132,9 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
         >
             <Head title={`Case #${String(caseRecord.id).padStart(4, '0')} - Details`} />
 
-            <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <PageMotion>
 
+                <MotionItem>
                 <Breadcrumbs
                     items={[
                         { label: 'Dashboard', href: route('dashboard') },
@@ -139,6 +142,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                         { label: `Case #${String(caseRecord.id).padStart(4, '0')}` },
                     ]}
                 />
+                </MotionItem>
 
                 {/* Modern Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 p-8 shadow-xl shadow-indigo-900/10 mb-8 border border-indigo-900/20">
@@ -495,7 +499,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                         </div>
                     </div>
                 </div>
-            </div>
+            </PageMotion>
 
             <ConfirmDialog
                 open={confirmAction === 'start'}

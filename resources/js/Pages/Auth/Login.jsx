@@ -1,10 +1,12 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import AuthBackground, { asset } from "@/Components/AuthBackground";
 import BrandText from "@/Components/BrandText";
 
 export default function Login({ status, canResetPassword }) {
+    const reduceMotion = useReducedMotion();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
@@ -27,7 +29,12 @@ export default function Login({ status, canResetPassword }) {
 
             <Head title="Log in" />
 
-            <div className="relative z-10 w-full sm:max-w-md px-8 py-10 bg-white/75 backdrop-blur-md shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/60">
+            <motion.div
+                className="relative z-10 w-full sm:max-w-md px-8 py-10 bg-white/75 backdrop-blur-md shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/60"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: reduceMotion ? 0.15 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
                 <div className="mb-6 flex flex-col items-center">
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-2 border-white shadow-sm">
                         <img
@@ -65,6 +72,7 @@ export default function Login({ status, canResetPassword }) {
                                 className="block w-full pl-10 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 shadow-sm transition-all"
                                 placeholder="admin@ilink.edu.ph"
                                 onChange={(e) => setData("email", e.target.value)}
+                                onInput={(e) => setData("email", e.target.value)}
                                 required
                                 autoFocus
                             />
@@ -87,6 +95,7 @@ export default function Login({ status, canResetPassword }) {
                                 className="block w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 shadow-sm transition-all"
                                 placeholder="••••••••"
                                 onChange={(e) => setData("password", e.target.value)}
+                                onInput={(e) => setData("password", e.target.value)}
                                 required
                             />
                             <button
@@ -137,12 +146,17 @@ export default function Login({ status, canResetPassword }) {
                         </button>
                     </div>
                 </form>
-            </div>
+            </motion.div>
 
-            <div className="relative z-10 mt-8 text-center text-xs text-white drop-shadow-md">
+            <motion.div
+                className="relative z-10 mt-8 text-center text-xs text-white drop-shadow-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reduceMotion ? 0 : 0.25, duration: 0.35 }}
+            >
                 &copy; {new Date().getFullYear()}{' '}
                 <BrandText>I-Link College of Science and Technology</BrandText>
-            </div>
+            </motion.div>
         </div>
     );
 }

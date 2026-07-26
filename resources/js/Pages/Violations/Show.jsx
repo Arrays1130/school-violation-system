@@ -1,20 +1,34 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ShieldCheck, Edit3, Hash, Layers, AlertTriangle, Info } from 'lucide-react';
-export default function Show({ auth, violation }) {
+import StatusBadge from '@/Components/StatusBadge';
+import EmptyState from '@/Components/EmptyState';
+import Pagination from '@/Components/Pagination';
+import {
+    ArrowLeft,
+    ShieldCheck,
+    Edit3,
+    Users,
+    Eye,
+    GraduationCap,
+} from 'lucide-react';
+
+export default function Show({ auth, violation, cases }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-slate-200 leading-tight">Violation Rule</h2>}
         >
-            <Head title={violation.code} />
+            <Head title={violation.title} />
 
-            <div className="max-w-3xl mx-auto space-y-6 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="space-y-6 py-8 px-4 sm:px-6 lg:px-8">
                 <div className="vt-page-hero">
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-5">
-                            <Link href={route('violations.index')} className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all">
+                            <Link
+                                href={route('violations.index')}
+                                className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
+                            >
                                 <ArrowLeft className="w-5 h-5" />
                             </Link>
                             <div>
@@ -23,6 +37,9 @@ export default function Show({ auth, violation }) {
                                     {violation.code}
                                 </div>
                                 <h1 className="text-2xl font-extrabold text-white tracking-tight">{violation.title}</h1>
+                                <p className="text-indigo-100/70 text-sm mt-1.5">
+                                    {violation.category} · {violation.severity} · {cases.total} student{cases.total === 1 ? '' : 's'}
+                                </p>
                             </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
@@ -34,44 +51,92 @@ export default function Show({ auth, violation }) {
                     </div>
                 </div>
 
-                <div className="vt-content-card overflow-hidden">
-                    <div className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="flex items-start gap-3">
-                                <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Code</p>
-                                    <p className="text-sm font-bold text-slate-900 mt-1">{violation.code}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <Layers className="w-5 h-5 text-slate-400 mt-0.5" />
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category</p>
-                                    <p className="text-sm font-bold text-slate-900 mt-1">{violation.category}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                            {violation.severity === 'Major' ? (
-                                <AlertTriangle className="w-5 h-5 text-rose-500" />
-                            ) : (
-                                <Info className="w-5 h-5 text-emerald-500" />
-                            )}
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Severity</p>
-                                <p className="text-sm font-bold text-slate-900">{violation.severity}</p>
-                            </div>
-                        </div>
-
-                        {violation.default_description && (
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Standard Sanction / Description</p>
-                                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{violation.default_description}</p>
-                            </div>
-                        )}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-indigo-500" />
+                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                            Students with this violation
+                        </h2>
                     </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left">
+                            <thead className="bg-slate-50/80 dark:bg-slate-800/80">
+                                <tr>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Date / Status</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Student</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sanction</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
+                                {cases.data.length > 0 ? (
+                                    cases.data.map((item) => (
+                                        <tr key={item.id} className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                        {item.occurred_at
+                                                            ? new Date(item.occurred_at).toLocaleDateString('en-US', {
+                                                                  month: 'short',
+                                                                  day: 'numeric',
+                                                                  year: 'numeric',
+                                                              })
+                                                            : '—'}
+                                                    </span>
+                                                    <div>
+                                                        <StatusBadge item={item} variant="compact" />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                        {item.student?.full_name ?? 'Unknown student'}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        {item.student?.department}
+                                                        {item.student?.section ? ` — ${item.student.section}` : ''}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                    {item.sanction || '—'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <Link
+                                                    href={route('cases.show', item.id)}
+                                                    className="inline-flex p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                                                    title="View Case Details"
+                                                    aria-label={`View case for ${item.student?.full_name ?? 'student'}`}
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4">
+                                            <EmptyState
+                                                icon={GraduationCap}
+                                                title="No students yet"
+                                                message="No recorded cases for this violation."
+                                            />
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {cases.links && cases.links.length > 3 && (
+                        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                            <Pagination links={cases.links} />
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

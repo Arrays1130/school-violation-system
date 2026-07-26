@@ -6,11 +6,15 @@ import {
 } from '@/lib/sweetAlert';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Breadcrumbs from '@/Components/Breadcrumbs';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     User, Printer, Edit3, MessageCircle, PlusCircle, Mail, Phone, BadgeCheck,
-    Calendar, Eye, ShieldCheck, X, Send,
+    Calendar, Eye, ShieldCheck, X, Send, Sparkles, Loader2,
 } from 'lucide-react';
+import axios from 'axios';
+import PageMotion, { MotionItem, ModalBackdrop, ModalPanel } from '@/Components/PageMotion';
+import { AnimatePresence } from 'framer-motion';
+
 function getInitials(fullName) {
     if (!fullName) return '??';
     let initials = '';
@@ -63,7 +67,10 @@ function getStatusTextColor(status) {
 }
 
 export default function Show({ auth, student, offenseSummary, messageTemplates }) {
+    const { aiAssistant } = usePage().props;
     const [showMessageModal, setShowMessageModal] = useState(false);
+    const [selectedCaseId, setSelectedCaseId] = useState('');
+    const [generatingAi, setGeneratingAi] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         message: '',
@@ -77,6 +84,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
 
     const risk = getRiskLevel(offenseSummary.total);
     const initials = getInitials(student.full_name);
+    const canUseAi = Boolean(aiAssistant?.canUse);
 
     const toggleDelivery = (method) => {
         const current = data.delivery_method;
@@ -94,6 +102,41 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
         }
     };
 
+    const openMessageModal = () => {
+        const latestCaseId = cases[0]?.id ? String(cases[0].id) : '';
+        setSelectedCaseId(latestCaseId);
+        setShowMessageModal(true);
+    };
+
+    const generateAiMessage = async () => {
+        if (!selectedCaseId) {
+            showErrorAlert('Select a case first so AI can draft the message.', 'Case Required');
+            return;
+        }
+
+        setGeneratingAi(true);
+        try {
+            const { data: payload } = await axios.post(
+                route('students.generateGuardianMessage', student.id),
+                { case_id: Number(selectedCaseId) }
+            );
+            setData('message', payload.message || '');
+            showSuccessToast(
+                payload.mode === 'fallback'
+                    ? 'Draft created from case details (AI unavailable).'
+                    : 'AI drafted a message from the selected case.',
+                'Message Ready'
+            );
+        } catch (error) {
+            const message = error?.response?.data?.message
+                || error?.response?.data?.errors?.case_id?.[0]
+                || 'Could not generate a message right now.';
+            showErrorAlert(message, 'AI Generate Failed');
+        } finally {
+            setGeneratingAi(false);
+        }
+    };
+
     const sendMessage = (e) => {
         e.preventDefault();
         post(route('students.sendCustomMessage', student.id), {
@@ -106,6 +149,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                     showSuccessToast('Message sent to guardian successfully.', 'Message Sent');
                 }
                 reset();
+                setSelectedCaseId('');
                 setShowMessageModal(false);
             },
             onError: (formErrors) => {
@@ -119,6 +163,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
 
     const closeModal = () => {
         setShowMessageModal(false);
+        setSelectedCaseId('');
         reset();
     };
 
@@ -129,8 +174,9 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
         >
             <Head title={`${student.full_name} - Profile`} />
 
-            <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <PageMotion>
 
+                <MotionItem>
                 <Breadcrumbs
                     items={[
                         { label: 'Dashboard', href: route('dashboard') },
@@ -138,7 +184,8 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                         { label: student.full_name },
                     ]}
                 />
-                <div className="vt-page-hero p-8">
+                </MotionItem>
+                <MotionItem className="vt-page-hero p-8">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.15),_transparent_50%)]" />
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
 
@@ -176,7 +223,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                             </Link>
                             <button
                                 type="button"
-                                onClick={() => setShowMessageModal(true)}
+                                onClick={openMessageModal}
                                 className="px-5 py-2.5 bg-emerald-500 border border-emerald-400 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-400 transition-all flex items-center gap-2"
                             >
                                 <MessageCircle className="w-4 h-4" />
@@ -191,9 +238,9 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                             </Link>
                         </div>
                     </div>
-                </div>
+                </MotionItem>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <MotionItem className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="space-y-6">
                         <div className="vt-content-card p-6">
                             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-5">Student Information</h3>
@@ -343,16 +390,14 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </MotionItem>
+            </PageMotion>
 
+            <AnimatePresence>
             {showMessageModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0">
-                    <div
-                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
-                        onClick={closeModal}
-                    />
-                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200">
+                    <ModalBackdrop onClick={closeModal} />
+                    <ModalPanel className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <MessageCircle className="w-5 h-5 text-indigo-500" />
@@ -393,6 +438,26 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                 </div>
 
                                 <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Case for AI draft</label>
+                                    <select
+                                        value={selectedCaseId}
+                                        onChange={(e) => setSelectedCaseId(e.target.value)}
+                                        className="form-input"
+                                        disabled={cases.length === 0}
+                                    >
+                                        {cases.length === 0 ? (
+                                            <option value="">No cases available</option>
+                                        ) : (
+                                            cases.map((caseItem) => (
+                                                <option key={caseItem.id} value={caseItem.id}>
+                                                    #{String(caseItem.id).padStart(4, '0')} · {caseItem.violation?.title || 'Violation'} · {formatDate(caseItem.occurred_at)} · {caseItem.status}
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                </div>
+
+                                <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-2">Pre-made Templates</label>
                                     <select
                                         onChange={handleTemplateChange}
@@ -407,20 +472,38 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Message <span className="text-red-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between gap-3 mb-2">
+                                        <label className="block text-sm font-semibold text-slate-700">
+                                            Message <span className="text-red-500">*</span>
+                                        </label>
+                                        {canUseAi && (
+                                            <button
+                                                type="button"
+                                                onClick={generateAiMessage}
+                                                disabled={generatingAi || !selectedCaseId || cases.length === 0}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                {generatingAi ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <Sparkles className="w-3.5 h-3.5" />
+                                                )}
+                                                {generatingAi ? 'Generating...' : 'Generate with AI'}
+                                            </button>
+                                        )}
+                                    </div>
                                     <textarea
                                         value={data.message}
                                         onChange={(e) => setData('message', e.target.value)}
                                         rows={5}
                                         required
-                                        placeholder="Type your message here or select a template above..."
+                                        placeholder="Type your message, pick a template, or generate with AI from a case..."
                                         className="form-input"
                                     />
                                     {errors.message && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.message}</p>}
                                     <p className="text-xs text-slate-500 mt-2">
                                         The message will be sent directly to {student.guardian_name || 'the guardian'}.
+                                        {canUseAi ? ' AI uses the selected case details to draft the text.' : ''}
                                     </p>
                                 </div>
                             </div>
@@ -443,9 +526,10 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </ModalPanel>
                 </div>
             )}
+            </AnimatePresence>
         </AuthenticatedLayout>
     );
 }

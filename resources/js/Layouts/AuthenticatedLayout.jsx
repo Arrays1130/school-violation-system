@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import { motion } from 'framer-motion';
-import { showInfoToast } from '@/lib/sweetAlert';
+import { motion, useReducedMotion } from 'framer-motion';
+import { showInfoToast, showConfirmDialog } from '@/lib/sweetAlert';
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react';
 import {
     LayoutDashboard, GraduationCap, FolderOpen, ShieldAlert, BookOpen,
@@ -11,13 +11,16 @@ import {
 } from 'lucide-react';
 import MobileBottomNav from '@/Components/MobileBottomNav';
 import AiAssistantFab from '@/Components/AiAssistantFab';
+import AuthLoadingOverlay from '@/Components/AuthLoadingOverlay';
 import BrandText from '@/Components/BrandText';
 
 export default function Authenticated({ user, header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isDark, setIsDark] = useState(false);
+    const [signingOut, setSigningOut] = useState(false);
     const { openCasesCount, auth } = usePage().props;
     const { url } = usePage();
+    const reduceMotion = useReducedMotion();
 
     useEffect(() => {
         const saved = localStorage.getItem('theme');
@@ -32,6 +35,27 @@ export default function Authenticated({ user, header, children }) {
         document.documentElement.classList.toggle('dark', next);
         localStorage.setItem('theme', next ? 'dark' : 'light');
         setIsDark(next);
+    };
+
+    const handleSignOut = async () => {
+        const result = await showConfirmDialog({
+            title: 'Sign out?',
+            text: 'You will need to sign in again to access the system.',
+            confirmText: 'Sign Out',
+            cancelText: 'Stay',
+            destructive: true,
+            icon: 'question',
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        setSigningOut(true);
+        router.post(route('logout'), {}, {
+            onFinish: () => setSigningOut(false),
+            onError: () => setSigningOut(false),
+        });
     };
 
     // Fallback to auth.user if user is not explicitly passed as a prop
@@ -102,7 +126,7 @@ export default function Authenticated({ user, header, children }) {
                         inactiveClass: 'bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'
                     } : null,
                     subItems: [
-                        { name: 'All Cases', href: route('cases.index'), icon: List, activeCheck: () => route().current('cases.index') || route().current('cases.show') || route().current('cases.edit') || route().current('cases.create') || route().current('cases.trash') || route().current('hearings.*') },
+                        { name: 'All Cases', href: route('cases.index'), icon: List, activeCheck: () => route().current('cases.index') || route().current('cases.by-violation') || route().current('cases.show') || route().current('cases.edit') || route().current('cases.create') || route().current('cases.trash') || route().current('hearings.*') },
                         { name: 'Hearings Calendar', href: route('hearings.calendar'), icon: ClipboardList, activeCheck: () => route().current('hearings.calendar') },
                         ...(currentUser?.role !== 'dean' ? [{ name: 'Trash Bin', href: route('cases.trash'), icon: Trash2, activeCheck: () => route().current('cases.trash') }] : []),
                     ]
@@ -218,6 +242,7 @@ export default function Authenticated({ user, header, children }) {
 
     return (
         <div className="h-screen w-screen overflow-hidden flex bg-slate-50/50 dark:bg-slate-950 font-['Inter',sans-serif]">
+            <AuthLoadingOverlay show={signingOut} message="Signing you out…" />
 
             {/* Mobile overlay */}
             {sidebarOpen && (
@@ -283,15 +308,15 @@ export default function Authenticated({ user, header, children }) {
                         <div className="min-w-0 flex-1">
                             <p className="text-slate-800 dark:text-white text-sm font-extrabold truncate leading-tight">{currentUser?.name}</p>
                             <div className="mt-1">
-                                <Link
-                                    href={route('logout')}
-                                    method="post"
-                                    as="button"
-                                    className="text-slate-400 text-[10px] font-bold uppercase tracking-wide hover:text-blue-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 text-left"
+                                <button
+                                    type="button"
+                                    onClick={handleSignOut}
+                                    disabled={signingOut}
+                                    className="text-slate-400 text-[10px] font-bold uppercase tracking-wide hover:text-blue-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1 text-left disabled:opacity-50"
                                 >
                                     <LogOut className="w-3 h-3" />
                                     Sign Out
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -402,9 +427,9 @@ export default function Authenticated({ user, header, children }) {
                 <main className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 pb-28 lg:pb-10 no-scrollbar">
                     <motion.div
                         key={url}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        transition={{ duration: reduceMotion ? 0.12 : 0.28, ease: [0.22, 1, 0.36, 1] }}
                         className="max-w-7xl mx-auto"
                     >
                         {children}
