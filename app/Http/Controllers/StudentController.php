@@ -170,24 +170,37 @@ class StudentController extends Controller
     }
 
     /**
-     * Bulk promote 1st-3rd year students to the next year level
+     * Bulk promote 1st-3rd year students to the next year level.
+     * Uses query bulk updates (highest year first) so model events/broadcasts
+     * are not fired per student — avoids Inertia hang on large cohorts.
      */
     public function promoteStudents()
     {
         abort_if(auth()->user()->isDean(), 403);
 
-        $students = \App\Models\Student::whereIn('year_level', YearLevel::promotableAliases())->get();
-        $count = $students->count();
+        // Promote highest levels first so newly promoted rows are not advanced twice.
+        $steps = [
+            '3rd Year' => '4th Year',
+            '2nd Year' => '3rd Year',
+            '1st Year' => '2nd Year',
+        ];
+
+        $count = 0;
+        foreach ($steps as $from => $to) {
+            $count += \App\Models\Student::query()
+                ->whereIn('year_level', YearLevel::aliasesFor($from))
+                ->update(['year_level' => $to]);
+        }
 
         if ($count === 0) {
             return redirect()->back()->with('error', 'No students found to promote.');
         }
 
-        foreach ($students as $student) {
-            $nextLevel = YearLevel::next($student->year_level);
-            if ($nextLevel) {
-                $student->update(['year_level' => $nextLevel]);
-            }
+        \App\Support\DashboardCache::bust();
+        try {
+            event(new \App\Events\DashboardUpdated('Students promoted'));
+        } catch (\Exception $e) {
+            Log::warning('Dashboard event dispatch failed after bulk promote', ['error' => $e->getMessage()]);
         }
 
         return redirect()->route('students.index')->with('success', "Successfully promoted {$count} students to the next year level.");
