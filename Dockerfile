@@ -41,5 +41,5 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 EXPOSE 8000
 
-# Migrate on boot, seed if empty, then serve (Render sets PORT)
-CMD ["/bin/sh", "-c", "php artisan migrate --force && php artisan app:seed-if-empty && php artisan queue:work --queue=notifications,default --sleep=3 --tries=4 --backoff=30 --max-time=3600 & php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+# Migrate on boot, seed if empty, index AI knowledge if empty (background), then serve (Render sets PORT)
+CMD ["/bin/sh", "-c", "php artisan migrate --force && php artisan app:seed-if-empty && php artisan queue:work --queue=notifications,default --sleep=3 --tries=4 --backoff=30 --max-time=3600 & (php artisan ai:index-if-empty &) && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

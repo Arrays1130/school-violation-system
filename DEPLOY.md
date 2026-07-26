@@ -138,6 +138,7 @@ No Redis. No paid Worker.
 - Postgres: `basic-256mb` before 30-day free DB expiry.
 - Add Render Redis + Worker; switch `QUEUE_CONNECTION` / `CACHE_STORE` to `redis`.
 
+On boot the container also runs `php artisan ai:index-if-empty` in the background when embeddings are missing (requires `GEMINI_API_KEY`).
 ## Storage on ephemeral hosts
 
 Render free-tier disks are ephemeral. Uploaded case attachments are lost on redeploy unless you use S3:
