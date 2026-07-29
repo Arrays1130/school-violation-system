@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+php artisan config:clear || true
 php artisan migrate --force
 php artisan app:seed-if-empty || true
 

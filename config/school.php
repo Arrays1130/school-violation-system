@@ -62,6 +62,6 @@ return [
     | Google Apps Script (email relay)
     |--------------------------------------------------------------------------
     */
-    'google_apps_script_url' => env('GOOGLE_APPS_SCRIPT_URL'),
+    'google_apps_script_url' => trim((string) env('GOOGLE_APPS_SCRIPT_URL', '')),
 
 ];

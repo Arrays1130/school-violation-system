@@ -40,7 +40,7 @@ class PasswordResetLinkController extends Controller
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors([
-                    'email' => 'Unable to send reset email right now. Please try again in a few minutes.',
+                    'email' => 'Unable to send reset email right now. Check Render Logs for "Google Apps Script" and confirm GOOGLE_APPS_SCRIPT_URL ends with /exec and access is Anyone.',
                 ]);
         }
 
