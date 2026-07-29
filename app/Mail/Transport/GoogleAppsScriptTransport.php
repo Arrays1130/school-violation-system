@@ -9,6 +9,11 @@ use Symfony\Component\Mime\MessageConverter;
 
 class GoogleAppsScriptTransport extends AbstractTransport
 {
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
     protected function doSend(SentMessage $message): void
     {
         $email = MessageConverter::toEmail($message->getOriginalMessage());
@@ -24,7 +29,7 @@ class GoogleAppsScriptTransport extends AbstractTransport
         }
 
         $subject = $email->getSubject() ?? '(no subject)';
-        $body = $email->getHtmlBody() ?? $email->getTextBody() ?? '';
+        $body = $email->getHtmlBody() ?? nl2br(e($email->getTextBody() ?? ''));
 
         foreach ($to as $recipient) {
             if (! GoogleAppsScriptMailer::send($recipient, $subject, $body)) {

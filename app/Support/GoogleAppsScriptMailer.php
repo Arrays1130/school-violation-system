@@ -18,13 +18,28 @@ class GoogleAppsScriptMailer
         }
 
         try {
-            $response = Http::timeout(15)->post($url, [
-                'to' => $to,
-                'subject' => $subject,
-                'body' => $body,
-            ]);
+            // Apps Script web apps often 302 to googleusercontent; follow redirects.
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->withOptions(['allow_redirects' => true])
+                ->asJson()
+                ->post($url, [
+                    'to' => $to,
+                    'subject' => $subject,
+                    'body' => $body,
+                ]);
 
             if ($response->successful()) {
+                $json = $response->json();
+                if (is_array($json) && array_key_exists('ok', $json) && $json['ok'] === false) {
+                    Log::error('Google Apps Script mail rejected payload', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
+
+                    return false;
+                }
+
                 return true;
             }
 

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Support\SchoolMailer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -88,5 +90,33 @@ class User extends Authenticatable
     public function casesCreated()
     {
         return $this->hasMany(StudentCase::class, 'created_by');
+    }
+
+    /**
+     * Send password reset via SchoolMailer (Apps Script on Render free / SMTP locally).
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $email = $this->getEmailForPasswordReset();
+        $url = url(route('password.reset', [
+            'token' => $token,
+            'email' => $email,
+        ], false));
+
+        $html = view('emails.password-reset', [
+            'url' => $url,
+            'expireMinutes' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60),
+        ])->render();
+
+        try {
+            SchoolMailer::send($email, 'Reset Password', $html);
+        } catch (\Throwable $e) {
+            Log::error('Password reset email failed: '.$e->getMessage(), [
+                'user_id' => $this->id,
+                'email' => $email,
+            ]);
+
+            throw $e;
+        }
     }
 }
