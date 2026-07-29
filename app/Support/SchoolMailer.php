@@ -14,13 +14,16 @@ class SchoolMailer
         // Prefer Google Apps Script on hosts that block SMTP (Render free).
         // Same Gmail account — no Resend/SendGrid.
         if (self::usesGoogleAppsScript()) {
-            if (! GoogleAppsScriptMailer::send($to, $subject, $htmlBody)) {
-                throw new \RuntimeException('Google Apps Script mail relay failed.');
+            if (GoogleAppsScriptMailer::send($to, $subject, $htmlBody)) {
+                self::logSentEmail($to, $subject, $htmlBody);
+
+                return;
             }
 
-            self::logSentEmail($to, $subject, $htmlBody);
-
-            return;
+            // Do not fall back to SMTP on Render free (ports blocked; hangs then 500).
+            throw new \RuntimeException(
+                'Google Apps Script mail relay failed. Verify GOOGLE_APPS_SCRIPT_URL is the Web app /exec URL.'
+            );
         }
 
         if (self::usesSmtp()) {
@@ -39,7 +42,7 @@ class SchoolMailer
         }
 
         throw new \RuntimeException(
-            'Email is not configured. Set GOOGLE_APPS_SCRIPT_URL (recommended on Render free) or MAIL_* SMTP variables.'
+            'Email is not configured. Set a working GOOGLE_APPS_SCRIPT_URL (recommended on Render free) or MAIL_* SMTP variables.'
         );
     }
 

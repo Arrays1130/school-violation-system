@@ -41,5 +41,7 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 EXPOSE 8000
 
-# Migrate, then serve ASAP (Render health). Queue/AI index run in background.
-CMD ["/bin/sh", "-c", "php artisan migrate --force && php artisan app:seed-if-empty && php artisan serve --host=0.0.0.0 --port=${PORT:-8000} & SERVE_PID=$!; php artisan queue:work --queue=notifications,default --sleep=3 --tries=4 --backoff=30 --max-time=3600 & (php artisan ai:index-if-empty &); wait $SERVE_PID"]
+RUN chmod +x /var/www/docker/start.sh
+
+# Migrate, serve immediately, then background queue/AI jobs.
+CMD ["/bin/sh", "/var/www/docker/start.sh"]
