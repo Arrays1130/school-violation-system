@@ -85,7 +85,7 @@ Route::get('/health/mail', function () {
             'VioTrack /health/mail test',
             '<p>Health mail probe from Render.</p>'
         );
-        $result['post'] = ['ok' => $ok];
+        $result['post'] = ['ok' => $ok] + \App\Support\GoogleAppsScriptMailer::lastAttempt();
     } catch (\Throwable $e) {
         $result['post'] = ['error' => $e->getMessage()];
     }
