@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +26,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('google_apps_script', function () {
+            return new \App\Mail\Transport\GoogleAppsScriptTransport;
+        });
+
+        // Render free blocks SMTP ports. When the free Apps Script relay URL is set,
+        // route all Laravel mail (password reset, etc.) through it.
+        if (filled(config('school.google_apps_script_url'))
+            && in_array(config('mail.default'), ['smtp', 'log', 'array'], true)
+            && $this->app->environment('production')
+        ) {
+            config(['mail.default' => 'google_apps_script']);
+        }
+
         DB::whenQueryingForLongerThan((int) env('DB_SLOW_QUERY_MS', 500), function ($connection, $event) {
             Log::warning('Slow query detected.', [
                 'connection' => $connection->getName(),

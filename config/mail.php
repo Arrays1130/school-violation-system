@@ -39,17 +39,23 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME', match (env('MAIL_ENCRYPTION')) {
-                'ssl' => 'smtps',
+            // Prefer MAIL_SCHEME (Laravel 11+). Honor legacy MAIL_ENCRYPTION=tls/ssl from Render.
+            'scheme' => env('MAIL_SCHEME') ?: match (strtolower((string) env('MAIL_ENCRYPTION', ''))) {
+                'ssl', 'smtps' => 'smtps',
                 default => null,
-            }),
+            },
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            'timeout' => (int) env('MAIL_TIMEOUT', 15),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
+        // Free Gmail relay via Google Apps Script (HTTPS — works on Render free).
+        'google_apps_script' => [
+            'transport' => 'google_apps_script',
         ],
 
         'ses' => [
@@ -85,8 +91,8 @@ return [
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
+                'google_apps_script',
                 'smtp',
-                'log',
             ],
             'retry_after' => 60,
         ],

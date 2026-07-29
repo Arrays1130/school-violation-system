@@ -537,7 +537,7 @@ class StudentController extends Controller
             }
         }
 
-        // 2. Send Email (SMTP when configured, otherwise Google Apps Script relay)
+        // 2. Send Email (Google Apps Script on Render free, else Laravel SMTP)
         if (in_array('email', $methods)) {
             if ($student->guardian_email) {
                 try {

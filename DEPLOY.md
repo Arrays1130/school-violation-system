@@ -66,9 +66,9 @@ ATTACHMENTS_DISK=local
 # CLOUDINARY_API_KEY=
 # CLOUDINARY_API_SECRET=
 
-# Mail (password reset, notifications)
+# Mail — keep Gmail SMTP for local / paid hosts
 MAIL_MAILER=smtp
-MAIL_HOST=
+MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=
 MAIL_PASSWORD=
@@ -76,7 +76,9 @@ MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=
 MAIL_FROM_NAME="${APP_NAME}"
 
-# Email relay fallback when SMTP is not configured (guardian messages, OTP, reports)
+# REQUIRED on Render free (SMTP ports 25/465/587 are blocked).
+# Free Gmail relay via Google Apps Script — same Gmail, no Resend/SendGrid.
+# Deploy google-apps-script/Code.gs → paste Web app URL here:
 GOOGLE_APPS_SCRIPT_URL=
 
 # FCM push (dean mobile app)

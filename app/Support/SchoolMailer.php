@@ -11,19 +11,8 @@ class SchoolMailer
 {
     public static function send(string $to, string $subject, string $htmlBody): void
     {
-        if (self::usesSmtp()) {
-            Mail::html($htmlBody, function ($message) use ($to, $subject) {
-                $message->to($to)
-                    ->subject($subject)
-                    ->from(
-                        config('mail.from.address'),
-                        config('mail.from.name'),
-                    );
-            });
-
-            return;
-        }
-
+        // Prefer Google Apps Script on hosts that block SMTP (Render free).
+        // Same Gmail account — no Resend/SendGrid.
         if (self::usesGoogleAppsScript()) {
             if (! GoogleAppsScriptMailer::send($to, $subject, $htmlBody)) {
                 throw new \RuntimeException('Google Apps Script mail relay failed.');
@@ -34,27 +23,61 @@ class SchoolMailer
             return;
         }
 
+        if (self::usesSmtp()) {
+            Mail::html($htmlBody, function ($message) use ($to, $subject) {
+                $message->to($to)
+                    ->subject($subject)
+                    ->from(
+                        config('mail.from.address'),
+                        config('mail.from.name'),
+                    );
+            });
+
+            self::logSentEmail($to, $subject, $htmlBody);
+
+            return;
+        }
+
         throw new \RuntimeException(
-            'Email is not configured. Set MAIL_* SMTP variables or GOOGLE_APPS_SCRIPT_URL on the server.'
+            'Email is not configured. Set GOOGLE_APPS_SCRIPT_URL (recommended on Render free) or MAIL_* SMTP variables.'
         );
     }
 
     public static function sendMailable(string $to, Mailable $mailable): void
     {
-        $subject = $mailable->envelope()->subject ?? '(no subject)';
-        self::send($to, $subject, $mailable->render());
+        if (self::usesGoogleAppsScript()) {
+            $subject = $mailable->envelope()->subject ?? '(no subject)';
+            self::send($to, $subject, $mailable->render());
+
+            return;
+        }
+
+        if (self::usesSmtp()) {
+            Mail::to($to)->send($mailable);
+            self::logSentEmail(
+                $to,
+                $mailable->envelope()->subject ?? '(no subject)',
+                $mailable->render()
+            );
+
+            return;
+        }
+
+        throw new \RuntimeException(
+            'Email is not configured. Set GOOGLE_APPS_SCRIPT_URL (recommended on Render free) or MAIL_* SMTP variables.'
+        );
     }
 
     public static function usesSmtp(): bool
     {
         $mailer = config('mail.default');
 
-        if (in_array($mailer, ['log', 'array'], true)) {
+        if (in_array($mailer, ['log', 'array', 'google_apps_script'], true)) {
             return false;
         }
 
-        if ($mailer !== 'smtp') {
-            return true;
+        if ($mailer !== 'smtp' && $mailer !== 'failover') {
+            return filled(config('mail.mailers.smtp.host'));
         }
 
         $host = config('mail.mailers.smtp.host');
@@ -77,7 +100,7 @@ class SchoolMailer
 
     public static function canSend(): bool
     {
-        return self::usesSmtp() || self::usesGoogleAppsScript();
+        return self::usesGoogleAppsScript() || self::usesSmtp();
     }
 
     private static function logSentEmail(string $to, string $subject, string $htmlBody): void
