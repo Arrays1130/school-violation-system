@@ -119,10 +119,11 @@ class GoogleAppsScriptMailer
         }
 
         $json = $raw ? json_decode($raw, true) : null;
-        if (is_array($json) && array_key_exists('ok', $json) && $json['ok'] === false) {
-            Log::error('Google Apps Script mail rejected payload', [
+        if (! is_array($json) || ($json['ok'] ?? false) !== true) {
+            Log::error('Google Apps Script mail invalid response', [
                 'status' => $status,
-                'body' => $raw,
+                'body' => $raw ? mb_substr($raw, 0, 500) : null,
+                'url' => $url,
             ]);
 
             return false;

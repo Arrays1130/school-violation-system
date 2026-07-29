@@ -49,6 +49,56 @@ Route::get('/health', function () {
     }
 })->name('health');
 
+Route::get('/health/mail', function () {
+    $url = trim((string) config('school.google_apps_script_url'));
+
+    $result = [
+        'google_apps_script_url_set' => $url !== '',
+        'google_apps_script_url_suffix' => $url !== '' ? substr($url, -12) : null,
+        'php_curl' => function_exists('curl_init'),
+        'mail_default' => config('mail.default'),
+        'uses_smtp' => \App\Support\SchoolMailer::usesSmtp(),
+        'uses_apps_script' => \App\Support\SchoolMailer::usesGoogleAppsScript(),
+        'get' => null,
+        'post' => null,
+    ];
+
+    if ($url === '') {
+        return response()->json(['status' => 'error', 'error' => 'GOOGLE_APPS_SCRIPT_URL missing', 'result' => $result], 503);
+    }
+
+    try {
+        $get = \Illuminate\Support\Facades\Http::timeout(20)
+            ->withHeaders(['User-Agent' => 'VioTrack-MailRelay/1.0'])
+            ->get($url);
+        $result['get'] = [
+            'status' => $get->status(),
+            'body' => mb_substr($get->body(), 0, 200),
+        ];
+    } catch (\Throwable $e) {
+        $result['get'] = ['error' => $e->getMessage()];
+    }
+
+    try {
+        $ok = \App\Support\GoogleAppsScriptMailer::send(
+            'castillanesjaytzy@gmail.com',
+            'VioTrack /health/mail test',
+            '<p>Health mail probe from Render.</p>'
+        );
+        $result['post'] = ['ok' => $ok];
+    } catch (\Throwable $e) {
+        $result['post'] = ['error' => $e->getMessage()];
+    }
+
+    $healthy = ($result['get']['status'] ?? null) === 200 && ($result['post']['ok'] ?? false) === true;
+
+    return response()->json([
+        'status' => $healthy ? 'ok' : 'error',
+        'result' => $result,
+        'time' => now()->toIso8601String(),
+    ], $healthy ? 200 : 503);
+})->name('health.mail');
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
