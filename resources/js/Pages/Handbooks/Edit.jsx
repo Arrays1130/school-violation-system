@@ -1,14 +1,13 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Edit2, Bookmark, Type, Link as LinkIcon, Save, UploadCloud, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Bookmark, Type, Save, UploadCloud, FileText, Trash2 } from 'lucide-react';
 import Breadcrumbs from '@/Components/Breadcrumbs';
 
 export default function Edit({ auth, handbook }) {
     const { data, setData, post, processing, errors } = useForm({
         title: handbook.title || '',
         content: handbook.content || '',
-        attachment: handbook.attachment || '',
         document: null,
         remove_document: false,
         _method: 'put',
@@ -139,23 +138,6 @@ export default function Edit({ auth, handbook }) {
                                         />
                                     </label>
                                     {errors.document && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.document}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">External Document Link (URL)</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                            <LinkIcon className="w-4.5 h-4.5" />
-                                        </div>
-                                        <input
-                                            type="url"
-                                            value={data.attachment}
-                                            onChange={e => setData('attachment', e.target.value)}
-                                            placeholder="https://example.com/policy.pdf"
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-medium text-gray-950 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder-gray-400"
-                                        />
-                                    </div>
-                                    {errors.attachment && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.attachment}</p>}
                                 </div>
                             </div>
                         </div>

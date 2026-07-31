@@ -50,7 +50,6 @@ class HandbookController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
-            'attachment' => 'nullable|url|max:2048',
             'document' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
@@ -63,7 +62,6 @@ class HandbookController extends Controller
         $payload = [
             'title' => $validated['title'],
             'content' => $validated['content'] ?? null,
-            'attachment' => $validated['attachment'] ?? null,
         ];
 
         if ($request->hasFile('document')) {
@@ -95,7 +93,6 @@ class HandbookController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
-            'attachment' => 'nullable|url|max:2048',
             'document' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'remove_document' => 'nullable|boolean',
         ]);
@@ -113,7 +110,6 @@ class HandbookController extends Controller
         $payload = [
             'title' => $validated['title'],
             'content' => $validated['content'] ?? null,
-            'attachment' => $validated['attachment'] ?? null,
         ];
 
         $oldPath = $handbook->file_path;
