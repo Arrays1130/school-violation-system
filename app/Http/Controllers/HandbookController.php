@@ -2,108 +2,178 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Handbook;
+use App\Services\HandbookDocumentService;
+use App\Support\AttachmentStorage;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class HandbookController extends Controller
 {
-    public function __construct()
-    {
-        $this->authorizeResource(\App\Models\Handbook::class, 'handbook');
+    public function __construct(
+        protected HandbookDocumentService $documents
+    ) {
+        $this->authorizeResource(Handbook::class, 'handbook');
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
-        $query = \App\Models\Handbook::query();
+        $query = Handbook::query();
 
         if ($request->filled('search')) {
             $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'like', "%{$searchTerm}%")
-                  ->orWhere('content', 'like', "%{$searchTerm}%");
+                    ->orWhere('content', 'like', "%{$searchTerm}%");
             });
         }
 
         $handbooks = $query->latest()->paginate(10);
-        
+
         if ($request->wantsJson()) {
             return response()->json($handbooks);
         }
 
         return inertia('Handbooks/Index', [
             'handbooks' => $handbooks,
-            'filters' => ['search' => $request->search]
+            'filters' => ['search' => $request->search],
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return inertia('Handbooks/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
-            'attachment' => 'nullable|string', // Simple string input for now, consistent with plan
+            'attachment' => 'nullable|url|max:2048',
+            'document' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
-        \App\Models\Handbook::create($request->all());
+        if (blank($validated['content'] ?? null) && ! $request->hasFile('document')) {
+            throw ValidationException::withMessages([
+                'content' => 'Add policy content or upload a PDF/document.',
+            ]);
+        }
+
+        $payload = [
+            'title' => $validated['title'],
+            'content' => $validated['content'] ?? null,
+            'attachment' => $validated['attachment'] ?? null,
+        ];
+
+        if ($request->hasFile('document')) {
+            $payload = array_merge($payload, $this->documents->storeUploadedFile($request->file('document')));
+        }
+
+        $handbook = Handbook::create($payload);
+        $this->backfillContentFromPdf($handbook);
 
         return redirect()->route('handbooks.index')->with('success', 'Handbook entry created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(\App\Models\Handbook $handbook)
+    public function show(Handbook $handbook)
     {
         return inertia('Handbooks/Show', [
-            'handbook' => $handbook
+            'handbook' => $handbook,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(\App\Models\Handbook $handbook)
+    public function edit(Handbook $handbook)
     {
         return inertia('Handbooks/Edit', [
-            'handbook' => $handbook
+            'handbook' => $handbook,
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, \App\Models\Handbook $handbook)
+    public function update(Request $request, Handbook $handbook)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
-            'attachment' => 'nullable|string',
+            'attachment' => 'nullable|url|max:2048',
+            'document' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'remove_document' => 'nullable|boolean',
         ]);
 
-        $handbook->update($request->all());
+        $removeDocument = $request->boolean('remove_document');
+        $willHaveFile = $request->hasFile('document')
+            || ($handbook->file_path && ! $removeDocument);
+
+        if (blank($validated['content'] ?? null) && ! $willHaveFile) {
+            throw ValidationException::withMessages([
+                'content' => 'Add policy content or upload a PDF/document.',
+            ]);
+        }
+
+        $payload = [
+            'title' => $validated['title'],
+            'content' => $validated['content'] ?? null,
+            'attachment' => $validated['attachment'] ?? null,
+        ];
+
+        $oldPath = $handbook->file_path;
+
+        if ($request->hasFile('document')) {
+            if ($oldPath) {
+                $this->documents->deleteStoredFile($oldPath);
+            }
+            $payload = array_merge($payload, $this->documents->storeUploadedFile($request->file('document')));
+        } elseif ($removeDocument && $oldPath) {
+            $this->documents->deleteStoredFile($oldPath);
+            $payload['file_path'] = null;
+            $payload['file_name'] = null;
+            $payload['file_size'] = null;
+        }
+
+        $handbook->update($payload);
+        $this->backfillContentFromPdf($handbook->fresh());
 
         return redirect()->route('handbooks.index')->with('success', 'Handbook entry updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(\App\Models\Handbook $handbook)
+    public function destroy(Handbook $handbook)
     {
+        $this->documents->deleteStoredFile($handbook->file_path);
         $handbook->delete();
+
         return redirect()->route('handbooks.index')->with('success', 'Handbook entry deleted successfully.');
+    }
+
+    public function download(Handbook $handbook)
+    {
+        $this->authorize('view', $handbook);
+
+        abort_unless($handbook->file_path, 404);
+
+        if (! AttachmentStorage::disk()->exists($handbook->file_path)) {
+            abort(404, 'Document file not found.');
+        }
+
+        return AttachmentStorage::disk()->download(
+            $handbook->file_path,
+            $handbook->file_name ?: basename($handbook->file_path)
+        );
+    }
+
+    /**
+     * If content is empty but a PDF was uploaded, copy extracted text into content for search/Nexus.
+     */
+    protected function backfillContentFromPdf(?Handbook $handbook): void
+    {
+        if (! $handbook || filled(trim((string) $handbook->content)) || ! $handbook->file_path) {
+            return;
+        }
+
+        $extracted = $this->documents->extractTextFromStoredPdf($handbook);
+        if ($extracted === '') {
+            return;
+        }
+
+        $handbook->update(['content' => $extracted]);
     }
 }

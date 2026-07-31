@@ -62,26 +62,49 @@ export default function Show({ auth, handbook }) {
                         </div>
 
                         {/* Attachment Panel */}
-                        {handbook.attachment && (
+                        {(handbook.has_file || handbook.has_external_link) && (
                             <div className="pt-8 border-t border-gray-100 dark:border-slate-800 space-y-4">
                                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <FileCheck2 className="w-4.5 h-4.5 text-indigo-500 animate-pulse" />
                                     Reference Documents
                                 </h3>
-                                <div className="bg-slate-50/50 dark:bg-slate-800/50 border border-gray-150 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                            <FileText className="w-6.5 h-6.5 text-indigo-600 dark:text-indigo-400" />
+                                <div className="space-y-3">
+                                    {handbook.has_file && (
+                                        <div className="bg-slate-50/50 dark:bg-slate-800/50 border border-gray-150 dark:border-slate-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                    <FileText className="w-6.5 h-6.5 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{handbook.file_name || 'Uploaded Document'}</h4>
+                                                    <p className="text-xs text-slate-400 mt-1 font-medium">
+                                                        {handbook.file_size ? `${Math.max(1, Math.round(handbook.file_size / 1024))} KB` : 'Attached file'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <a href={route('handbooks.download', handbook.id)} className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-600/20 transition-all duration-200 hover:-translate-y-0.5 shrink-0">
+                                                <ExternalLink className="w-4 h-4" />
+                                                Download File
+                                            </a>
                                         </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Policy Document</h4>
-                                            <p className="text-xs text-slate-400 mt-1 font-medium">Portable Document Format (.pdf)</p>
+                                    )}
+                                    {handbook.has_external_link && (
+                                        <div className="bg-slate-50/50 dark:bg-slate-800/50 border border-gray-150 dark:border-slate-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                    <FileText className="w-6.5 h-6.5 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">External Policy Document</h4>
+                                                    <p className="text-xs text-slate-400 mt-1 font-medium truncate max-w-xs">{handbook.attachment}</p>
+                                                </div>
+                                            </div>
+                                            <a href={handbook.attachment} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-600/20 transition-all duration-200 hover:-translate-y-0.5 shrink-0">
+                                                <ExternalLink className="w-4 h-4" />
+                                                Open Link
+                                            </a>
                                         </div>
-                                    </div>
-                                    <a href={handbook.attachment} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-600/20 transition-all duration-200 hover:-translate-y-0.5 shrink-0">
-                                        <ExternalLink className="w-4 h-4" />
-                                        Download PDF
-                                    </a>
+                                    )}
                                 </div>
                             </div>
                         )}

@@ -122,10 +122,10 @@ export default function Index({ auth, handbooks, filters }) {
                                                 <BookOpen className="w-5 h-5" />
                                             </div>
                                             
-                                            {handbook.attachment ? (
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 rounded-xl text-[10px] font-bold border border-emerald-100 uppercase tracking-wide">
+                                            {handbook.has_file || handbook.attachment ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-xl text-[10px] font-bold border border-emerald-100 dark:border-emerald-800 uppercase tracking-wide">
                                                     <FileText className="w-3.5 h-3.5" />
-                                                    PDF Attachment
+                                                    {handbook.has_file ? 'PDF Attached' : 'Has Link'}
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-[10px] font-bold border border-gray-200 dark:border-slate-700 uppercase tracking-wide">

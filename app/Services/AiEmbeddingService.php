@@ -61,7 +61,7 @@ class AiEmbeddingService
             ->where('source_id', $handbook->id)
             ->delete();
 
-        $chunks = $this->chunkText($handbook->title . "\n\n" . ($handbook->content ?? ''));
+        $chunks = $this->chunkText($handbook->title . "\n\n" . app(\App\Services\HandbookDocumentService::class)->indexableText($handbook));
         $indexed = 0;
 
         foreach ($chunks as $index => $chunk) {

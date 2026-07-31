@@ -196,6 +196,7 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::post('/hearings/{hearing}/complete', [HearingController::class, 'markCompleted'])->name('hearings.complete');
 
     // Hand Book
+    Route::get('/handbooks/{handbook}/download', [\App\Http\Controllers\HandbookController::class, 'download'])->name('handbooks.download');
     Route::resource('handbooks', \App\Http\Controllers\HandbookController::class);
 
     // Minutes of Meeting (Unified Document Repository)
