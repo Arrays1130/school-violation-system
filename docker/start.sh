@@ -4,6 +4,7 @@ set -e
 php artisan config:clear || true
 php artisan migrate --force
 php artisan app:seed-if-empty || true
+php artisan handbooks:import || true
 
 # Start web server first so Render stops returning 502/500 during boot.
 php artisan serve --host=0.0.0.0 --port="${PORT:-8000}" &
