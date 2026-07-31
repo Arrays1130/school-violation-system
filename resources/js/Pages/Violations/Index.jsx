@@ -145,7 +145,7 @@ export default function Index({ auth, violations, categories, filters }) {
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-4">
                                                     <div className="flex-shrink-0">
-                                                        <span className="inline-flex items-center justify-center px-3 py-1.5 bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-xs border border-slate-300/50 uppercase tracking-wider shadow-sm">
+                                                        <span className="inline-flex items-center justify-center px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg font-bold text-xs border border-slate-300/50 dark:border-slate-600 uppercase tracking-wider shadow-sm">
                                                             {violation.code}
                                                         </span>
                                                     </div>

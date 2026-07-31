@@ -50,3 +50,34 @@ html.auth-page #app {
     width: 100%;
     min-height: 100dvh;
 }
+
+/* Keep login card and inputs readable over the photo background */
+.auth-screen .auth-card {
+    background-color: #ffffff !important;
+}
+
+.auth-screen input[type="email"],
+.auth-screen input[type="password"],
+.auth-screen input[type="text"],
+.auth-screen input:not([type="checkbox"]):not([type="hidden"]) {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    caret-color: #111827;
+}
+
+.auth-screen input::placeholder {
+    color: #9ca3af !important;
+    -webkit-text-fill-color: #9ca3af !important;
+    opacity: 1;
+}
+
+.auth-screen input:-webkit-autofill,
+.auth-screen input:-webkit-autofill:hover,
+.auth-screen input:-webkit-autofill:focus,
+.auth-screen input:-webkit-autofill:active {
+    -webkit-text-fill-color: #111827 !important;
+    caret-color: #111827;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 99999s ease-in-out 0s;
+}

@@ -25,7 +25,7 @@ export default function DeanLogin({ status }) {
 
             <Head title="Dean Log in" />
 
-            <div className="relative z-10 w-full sm:max-w-md px-8 py-10 bg-white/75 backdrop-blur-md shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/60">
+            <div className="relative z-10 w-full sm:max-w-md px-8 py-10 bg-white shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/80 auth-card">
                 <div className="mb-8 text-center flex flex-col items-center">
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-2 border-white shadow-sm">
                         <img

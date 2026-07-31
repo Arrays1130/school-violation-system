@@ -233,7 +233,7 @@ export default function Index({ auth, violations, summary, departments = [], aca
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    <span className="inline-flex items-center justify-center px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-xs border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
+                                                    <span className="inline-flex items-center justify-center px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg font-bold text-xs border border-slate-200 dark:border-slate-600 uppercase tracking-wider">
                                                         {violation.code}
                                                     </span>
                                                     <div className="min-w-0">

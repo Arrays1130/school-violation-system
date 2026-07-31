@@ -261,10 +261,17 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                         </div>
                                     </div>
                                     <div>
-                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Witnesses</h4>
+                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Submitted By</h4>
                                         <div className="flex items-center gap-2 text-slate-900 dark:text-white text-sm font-medium">
                                             <UserCheck className="w-4 h-4 text-slate-400" />
-                                            {caseRecord.witness || 'No Witness Logged'}
+                                            {caseRecord.creator?.name || 'Unknown staff'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Witness</h4>
+                                        <div className="flex items-center gap-2 text-slate-900 dark:text-white text-sm font-medium">
+                                            <UserCheck className="w-4 h-4 text-slate-400" />
+                                            {caseRecord.witness || 'No witness logged'}
                                         </div>
                                     </div>
                                 </div>
@@ -347,13 +354,13 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                             </div>
                         </div>
 
-                        {/* OSA Interventions */}
+                        {/* OSA Actions */}
                         {caseRecord.status !== 'Closed' && (
                             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                         <ClipboardList className="w-5 h-5 text-indigo-500" />
-                                        OSA Interventions
+                                        OSA Actions
                                     </h3>
                                     <button type="button" onClick={handleRecordOsa} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors">
                                         <Plus className="w-4 h-4" />
@@ -361,24 +368,24 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                     </button>
                                 </div>
                                 {workflow.needs_osa_action && (
-                                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-                                        This is a major offense. Record at least one OSA intervention before endorsing or closing without a hearing.
+                                    <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 mb-4">
+                                        This is a major offense. Record at least one OSA action before endorsing or closing without a hearing.
                                     </p>
                                 )}
                                 {osaActions.length > 0 ? (
                                     <div className="space-y-3">
                                         {osaActions.map((action) => (
-                                            <div key={action.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div key={action.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
                                                 <div className="flex items-center justify-between gap-2 mb-1">
-                                                    <span className="text-sm font-bold text-slate-900">{OSA_LABELS[action.action_type] || action.action_type}</span>
-                                                    <span className="text-xs text-slate-500">{action.user?.name || 'Staff'}</span>
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">{OSA_LABELS[action.action_type] || action.action_type}</span>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400">{action.user?.name || 'Staff'}</span>
                                                 </div>
-                                                <p className="text-sm text-slate-600">{action.description}</p>
+                                                <p className="text-sm text-slate-600 dark:text-slate-300">{action.description}</p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-slate-500">No OSA interventions recorded yet.</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">No OSA actions recorded yet.</p>
                                 )}
                             </div>
                         )}
@@ -559,14 +566,14 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                 open={confirmAction === 'osa'}
                 onClose={() => setConfirmAction(null)}
                 onConfirm={runConfirmAction}
-                title="Record OSA Intervention"
+                title="Record OSA Action"
                 description="Log an action taken by the Office of Student Affairs for this case."
                 confirmLabel="Save Action"
             >
                 <div className="space-y-4">
                     <div>
                         <label htmlFor="osa-type" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                            Intervention Type
+                            Action Type
                         </label>
                         <select
                             id="osa-type"
@@ -588,7 +595,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                             value={osaDescription}
                             onChange={(e) => { setOsaDescription(e.target.value); setOsaError(''); }}
                             rows={4}
-                            placeholder="Describe the intervention..."
+                            placeholder="Describe the OSA action..."
                             className="form-input"
                         />
                         {osaError && <p className="text-rose-500 text-xs mt-1.5 font-semibold">{osaError}</p>}

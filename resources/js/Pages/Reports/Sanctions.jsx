@@ -49,11 +49,19 @@ export default function Sanctions({
     };
 
     const statCards = [
-        { label: 'Total Sanctions', value: totalSanctions, icon: Gavel, color: 'indigo' },
-        { label: 'Sanction Served', value: sanctionsServed, icon: CheckCircle2, color: 'emerald' },
-        { label: 'Pending Sanction', value: sanctionsPending, icon: Clock4, color: 'amber' },
-        { label: 'Compliance Rate', value: `${complianceRate}%`, icon: Percent, color: 'blue' },
+        { label: 'Total Sanctions', value: totalSanctions, icon: Gavel, color: 'indigo', filter: '' },
+        { label: 'Sanction Served', value: sanctionsServed, icon: CheckCircle2, color: 'emerald', filter: 'served' },
+        { label: 'Pending Sanction', value: sanctionsPending, icon: Clock4, color: 'amber', filter: 'pending' },
+        { label: 'Compliance Rate', value: `${complianceRate}%`, icon: Percent, color: 'blue', filter: null },
     ];
+
+    const openStatFilter = (filter) => {
+        if (filter === null) return;
+        setData('sanction_status', filter);
+        requestAnimationFrame(() => {
+            document.getElementById('sanctions-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    };
 
     const pal = {
         indigo: { bg: 'bg-indigo-50 dark:bg-indigo-900/20/80', icon: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-100', num: 'text-indigo-700', shadow: 'shadow-indigo-500/10' },
@@ -104,8 +112,18 @@ export default function Sanctions({
                         {statCards.map((card, idx) => {
                             const p = pal[card.color];
                             const Icon = card.icon;
+                            const clickable = card.filter !== null;
+                            const active = clickable && data.sanction_status === card.filter;
+                            const Comp = clickable ? 'button' : 'div';
                             return (
-                                <div key={idx} className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border ${p.border} rounded-3xl p-6 shadow-md ${p.shadow} hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}>
+                                <Comp
+                                    key={idx}
+                                    type={clickable ? 'button' : undefined}
+                                    onClick={clickable ? () => openStatFilter(card.filter) : undefined}
+                                    className={`text-left bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border ${active ? 'border-emerald-400 ring-2 ring-emerald-400/30' : p.border} rounded-3xl p-6 shadow-md ${p.shadow} hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group ${clickable ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500' : ''}`}
+                                    title={clickable ? `View ${card.label.toLowerCase()}` : undefined}
+                                    aria-label={clickable ? `Filter by ${card.label}` : undefined}
+                                >
                                     <div className={`absolute -right-6 -bottom-6 w-24 h-24 rounded-full ${p.bg} opacity-50 group-hover:scale-150 transition-transform duration-500`}></div>
                                     <div className="relative z-10">
                                         <div className={`w-12 h-12 rounded-2xl ${p.bg} flex items-center justify-center mb-4 ring-1 ring-white/50 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300`}>
@@ -113,8 +131,13 @@ export default function Sanctions({
                                         </div>
                                         <div className={`text-3xl font-black ${p.num} tabular-nums tracking-tight`}>{card.value}</div>
                                         <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-2">{card.label}</div>
+                                        {clickable && (
+                                            <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                Click to view list
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                </Comp>
                             );
                         })}
                     </MotionItem>
@@ -214,7 +237,7 @@ export default function Sanctions({
                     </MotionItem>
 
                     {/* ─── Table ─── */}
-                    <MotionItem className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-3xl shadow-sm overflow-hidden">
+                    <MotionItem id="sanctions-table" className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-3xl shadow-sm overflow-hidden scroll-mt-6">
                         <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100">
@@ -284,9 +307,9 @@ export default function Sanctions({
 
                                                 {/* Offense Level */}
                                                 <td className="px-8 py-5">
-                                                    <div className="inline-flex items-baseline gap-1 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                    <div className="inline-flex items-baseline gap-1 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-600">
                                                         <span className="text-sm font-black text-slate-900 dark:text-white">{lvl}</span>
-                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">{sfx}</span>
+                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-300 uppercase">{sfx}</span>
                                                     </div>
                                                 </td>
 

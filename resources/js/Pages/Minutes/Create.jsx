@@ -22,15 +22,15 @@ export default function Create({ auth, cases }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 dark:text-slate-200 leading-tight">Record Minutes</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800 dark:text-slate-200 leading-tight">New Minutes</h2>}
         >
-            <Head title="Record Minutes" />
+            <Head title="New Minutes" />
 
             <div className="max-w-3xl mx-auto space-y-8 py-8 px-4 sm:px-6 lg:px-8">
                 <Breadcrumbs items={[
                     { label: 'Dashboard', href: route('dashboard') },
                     { label: 'Minutes & Documents', href: route('meeting-minutes.index') },
-                    { label: 'Record Minutes' },
+                    { label: 'New Minutes' },
                 ]} />
                 {/* Modern Header */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 px-6 py-5 shadow-xl shadow-indigo-900/10 border border-indigo-900/20">
@@ -44,10 +44,10 @@ export default function Create({ auth, cases }) {
                         <div>
                             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 dark:bg-slate-900/10 border border-white/10 text-white/80 text-[10px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
                                 <FolderPlus className="w-3.5 h-3.5 text-indigo-400" />
-                                Record Minutes
+                                Minutes of Meeting
                             </div>
                             <h2 className="text-2xl font-bold text-white tracking-tight">Create Official Record</h2>
-                            <p className="text-indigo-100/70 text-xs mt-1">Record new violation hearing proceedings and verdicts.</p>
+                            <p className="text-indigo-100/70 text-xs mt-1">Document violation hearing proceedings and verdicts.</p>
                         </div>
                     </div>
                 </div>

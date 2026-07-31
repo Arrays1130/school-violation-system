@@ -669,8 +669,8 @@ class AiService
         usort($violations, fn ($a, $b) => $b['score'] <=> $a['score']);
 
         return [
-            'handbooks' => array_slice($handbooks, 0, 3),
-            'violations' => array_slice($violations, 0, 3),
+            'handbooks' => array_slice($handbooks, 0, 8),
+            'violations' => array_slice($violations, 0, 5),
             'search_mode' => 'hybrid',
             'student_query' => $this->isStudentLookupQuery($message) || $this->hasPageStudentContext(),
         ];
@@ -759,7 +759,7 @@ class AiService
             });
         }
 
-        return array_slice($scored, 0, 3);
+        return array_slice($scored, 0, 8);
     }
 
     private function searchViolations(string $message, array $expandedKeywords): array
@@ -1372,11 +1372,17 @@ class AiService
             $handbookContext = 'No specific handbook sections found for this query.';
         } else {
             $contextData = array_map(function ($item) {
-                $body = $item['snippet'] ?? $this->createSmartSnippet(
-                    $item['handbook']->content,
-                    $item['matches'] ?? [],
-                    600
-                );
+                $fullContent = trim((string) ($item['handbook']->content ?? ''));
+                // Prefer full handbook body so Nexus can answer beyond a single matched page/snippet.
+                if ($fullContent !== '' && mb_strlen($fullContent) <= 12000) {
+                    $body = $fullContent;
+                } else {
+                    $body = $item['snippet'] ?? $this->createSmartSnippet(
+                        $fullContent,
+                        $item['matches'] ?? [],
+                        4000
+                    );
+                }
 
                 return '📌 ' . $item['handbook']->title . "\n" . $body;
             }, $relevantHandbooks);

@@ -112,11 +112,12 @@ export default function Edit({ auth, caseRecord }) {
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Witness (Optional)</label>
                                     <input 
                                         type="text" 
-                                        placeholder="Name of witness"
+                                        placeholder="Person who witnessed the incident"
                                         className="w-full rounded-xl border-slate-200 dark:border-slate-700 focus:border-rose-500 focus:ring-rose-500/20 bg-slate-50 dark:bg-slate-800"
                                         value={data.witness}
                                         onChange={e => setData('witness', e.target.value)}
                                     />
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Who saw the incident — not the staff who filed this report.</p>
                                 </div>
                             </div>
 

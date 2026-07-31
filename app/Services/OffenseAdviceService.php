@@ -144,9 +144,9 @@ class OffenseAdviceService
 
         if ($violation->severity === 'Minor' && ($escalation['triggers_escalation_now'] ?? false)) {
             $nextSteps[] = 'System will also generate Major offense SYS-001 due to reaching 3 minor offenses.';
-            $nextSteps[] = 'Review the escalated major case for OSA intervention / hearing.';
+            $nextSteps[] = 'Review the escalated major case for OSA action / hearing.';
         } elseif ($violation->severity === 'Major') {
-            $nextSteps[] = 'Document at least one OSA intervention before endorsing or closing without a hearing.';
+            $nextSteps[] = 'Document at least one OSA action before endorsing or closing without a hearing.';
             $nextSteps[] = 'Consider scheduling a hearing if required by severity.';
         } else {
             $nextSteps[] = $escalation['note'];
@@ -189,7 +189,7 @@ class OffenseAdviceService
         } elseif ($status === 'Pending') {
             if ($case->isMajorOffense()) {
                 if (! $case->canEndorseToGrievance()) {
-                    $nextSteps[] = 'Record at least one OSA intervention (counseling, warning, parent conference, etc.).';
+                    $nextSteps[] = 'Record at least one OSA action (counseling, warning, parent conference, etc.).';
                 }
                 if ($case->canEndorse()) {
                     $nextSteps[] = 'Endorse to Grievance Committee when ready, or schedule a hearing.';
@@ -266,8 +266,8 @@ class OffenseAdviceService
 
         if ($openMajor->isNotEmpty()) {
             $level = 'HIGH';
-            $reasons[] = 'Open Major case(s) need intervention or hearing tracking.';
-            $nextSteps[] = 'Review open major cases: record OSA interventions, endorse or schedule hearing.';
+            $reasons[] = 'Open Major case(s) need OSA action or hearing tracking.';
+            $nextSteps[] = 'Review open major cases: record OSA actions, endorse or schedule hearing.';
         }
 
         if ($escalation['triggers_escalation_now'] ?? false) {

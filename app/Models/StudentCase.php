@@ -219,7 +219,7 @@ class StudentCase extends Model
         }
 
         if ($this->isMajorOffense() && ! $this->canEndorseToGrievance()) {
-            return 'Document at least one OSA intervention before endorsing a major offense.';
+            return 'Document at least one OSA action before endorsing a major offense.';
         }
 
         return null;
@@ -237,7 +237,7 @@ class StudentCase extends Model
         }
 
         if ($this->isMajorOffense() && ! $this->canEndorseToGrievance() && ! in_array($this->status, ['Hearing', 'Hearing Scheduled'], true)) {
-            return 'Major offenses require at least one OSA intervention before closing without a hearing.';
+            return 'Major offenses require at least one OSA action before closing without a hearing.';
         }
 
         return null;

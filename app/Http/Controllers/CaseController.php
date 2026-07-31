@@ -449,7 +449,7 @@ class CaseController extends Controller
     {
         $this->authorize('view', $case);
 
-        $case->load(['student', 'violation', 'hearings', 'actions.user']);
+        $case->load(['student', 'violation', 'hearings', 'creator', 'actions.user']);
 
         return inertia('Cases/Print', [
             'case' => $case,

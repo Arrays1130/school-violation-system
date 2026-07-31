@@ -247,7 +247,7 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::get('/reports/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/csv', [ReportController::class, 'csv'])->name('reports.csv');
 
-    // Case Actions (OSA interventions)
+    // Case Actions (OSA actions)
     Route::post('/cases/{case}/actions', [CaseActionController::class, 'store'])->name('cases.actions.store');
     Route::post('/cases/{case}/endorse', [CaseActionController::class, 'endorse'])->name('cases.endorse');
 

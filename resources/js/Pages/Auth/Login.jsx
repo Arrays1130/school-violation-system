@@ -30,7 +30,7 @@ export default function Login({ status, canResetPassword }) {
             <Head title="Log in" />
 
             <motion.div
-                className="relative z-10 w-full sm:max-w-md px-8 py-10 bg-white/75 backdrop-blur-md shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/60"
+                className="auth-card relative z-10 w-full sm:max-w-md px-8 py-10 bg-white shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/80"
                 initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: reduceMotion ? 0.15 : 0.4, ease: [0.22, 1, 0.36, 1] }}

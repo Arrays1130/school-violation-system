@@ -136,7 +136,7 @@ export default function Print({ auth, case: caseRecord }) {
                         <p>Official Student Violation Record</p>
                     </div>
 
-                    <div className="case-print-title">Violation Incident Report</div>
+                    <div className="case-print-title">Case Report</div>
 
                     <div className="case-print-meta">
                         <div><strong>Case Ref No:</strong> #{padId(caseRecord.id)}</div>
@@ -188,9 +188,13 @@ export default function Print({ auth, case: caseRecord }) {
                                 <th>Offense Level:</th>
                                 <td colSpan={3}>{caseRecord.offense_level}</td>
                             </tr>
+                            <tr>
+                                <th>Submitted By:</th>
+                                <td colSpan={3}>{caseRecord.creator?.name || '—'}</td>
+                            </tr>
                             {caseRecord.witness && (
                                 <tr>
-                                    <th>Witness(es):</th>
+                                    <th>Witness:</th>
                                     <td colSpan={3}>{caseRecord.witness}</td>
                                 </tr>
                             )}
@@ -209,7 +213,7 @@ export default function Print({ auth, case: caseRecord }) {
                         </tbody>
                     </table>
 
-                    <div className="case-print-section-title">III. Sanctions & Interventions</div>
+                    <div className="case-print-section-title">III. Sanctions &amp; OSA Actions</div>
                     <table className="case-print-table">
                         <tbody>
                             <tr>
@@ -224,7 +228,7 @@ export default function Print({ auth, case: caseRecord }) {
                             </tr>
                             <tr>
                                 <th colSpan={2} style={{ textAlign: 'center', borderBottom: '1px solid #000' }}>
-                                    Actions Taken / Interventions
+                                    Actions Taken / OSA Actions
                                 </th>
                             </tr>
                             <tr>

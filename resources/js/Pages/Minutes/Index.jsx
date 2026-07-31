@@ -140,7 +140,7 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                             </button>
                             <Link href={route('meeting-minutes.create')} className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 border border-white/10 rounded-xl text-[13px] font-bold text-white hover:bg-white/20 shadow-sm backdrop-blur-md transition-all duration-200">
                                 <Plus className="w-4 h-4" />
-                                <span>Record Minutes</span>
+                                <span>New Minutes</span>
                             </Link>
                         </div>
                     </div>
