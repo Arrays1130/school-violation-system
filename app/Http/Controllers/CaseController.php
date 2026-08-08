@@ -79,6 +79,7 @@ class CaseController extends Controller
         $this->authorize('viewAny', \App\Models\StudentCase::class);
 
         $query = \App\Models\StudentCase::with(['student', 'violation'])
+            ->withCount('attachments')
             ->where('violation_id', $violation->id)
             ->forUser($request->user())
             ->latest('occurred_at');

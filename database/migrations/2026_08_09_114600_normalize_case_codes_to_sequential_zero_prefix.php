@@ -1,17 +1,20 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Normalize all case codes to sequential 000-1, 000-2, ... by creation order.
+     * Safe to re-run intent: always rewrite codes regardless of prior CASE-* format.
+     */
     public function up(): void
     {
-        Schema::table('cases', function (Blueprint $table) {
-            $table->string('case_code', 32)->nullable()->unique()->after('id');
-        });
+        if (! Schema::hasColumn('cases', 'case_code')) {
+            return;
+        }
 
         $cases = DB::table('cases')->orderBy('id')->get(['id']);
         $seq = 1;
@@ -28,9 +31,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('cases', function (Blueprint $table) {
-            $table->dropUnique(['case_code']);
-            $table->dropColumn('case_code');
-        });
+        // Irreversible normalization — leave codes as-is.
     }
 };

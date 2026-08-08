@@ -125,7 +125,7 @@ export default function Index({ auth, violations, summary, departments = [], aca
                             </div>
                             <h1 className="text-3xl font-bold text-white tracking-tight">Violation Cases</h1>
                             <p className="text-indigo-100/70 text-sm mt-2 max-w-xl leading-relaxed">
-                                Browse by violation type, then open a rule to see the students involved.
+                                Browse by violation type code (e.g. V-101). Open a type to see each student case and its unique case code.
                             </p>
                         </div>
 
@@ -158,7 +158,7 @@ export default function Index({ auth, violations, summary, departments = [], aca
                         search={search}
                         onSearchChange={setSearch}
                         onClear={handleClear}
-                        placeholder="Search by violation name or code..."
+                        placeholder="Search by violation type code or name..."
                         filtersClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 [&>*]:min-w-0"
                     >
                         <div className="min-w-0">
@@ -214,7 +214,7 @@ export default function Index({ auth, violations, summary, departments = [], aca
                         <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left">
                             <thead className="bg-slate-50/80 dark:bg-slate-800/80">
                                 <tr>
-                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Violation</th>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Violation Code</th>
                                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Category</th>
                                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Severity</th>
                                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Students</th>
@@ -241,7 +241,7 @@ export default function Index({ auth, violations, summary, departments = [], aca
                                                             {violation.title}
                                                         </p>
                                                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                            Click to view students
+                                                            Violation type · Click to view student case codes
                                                         </p>
                                                     </div>
                                                 </div>

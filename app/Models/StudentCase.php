@@ -59,11 +59,13 @@ class StudentCase extends Model
 
     /**
      * Human-readable unique case reference, e.g. 000-1, 000-2.
-     * Sequence follows creation order (first case = 000-1).
+     * Sequence follows creation order (earliest case = 000-1).
      */
     public static function makeCaseCode(int $id, $createdAt = null): string
     {
-        return sprintf('000-%d', $id);
+        $seq = static::withTrashed()->where('id', '<=', $id)->count();
+
+        return sprintf('000-%d', max(1, $seq));
     }
 
     public function getDisplayCodeAttribute(): string

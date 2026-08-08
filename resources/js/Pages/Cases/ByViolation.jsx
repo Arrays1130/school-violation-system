@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
-    ArrowLeft, Eye, Edit, Users, FolderOpen,
+    ArrowLeft, Eye, Edit, Users, FolderOpen, Paperclip,
 } from 'lucide-react';
 import EmptyState from '@/Components/EmptyState';
 import Pagination from '@/Components/Pagination';
@@ -122,7 +122,7 @@ export default function ByViolation({
                                 </div>
                                 <h1 className="text-2xl font-extrabold text-white tracking-tight">{violation.title}</h1>
                                 <p className="text-indigo-100/70 text-sm mt-1.5">
-                                    {violation.category || 'Uncategorized'} · {violation.severity} · {cases.total} student{cases.total === 1 ? '' : 's'}
+                                    Violation type · {violation.category || 'Uncategorized'} · {violation.severity} · {cases.total} student case{cases.total === 1 ? '' : 's'} (each with its own case code)
                                 </p>
                             </div>
                         </div>
@@ -199,9 +199,21 @@ export default function ByViolation({
                                             className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors duration-150 group block md:table-row border-b border-slate-100 dark:border-slate-800 md:border-none p-4 md:p-0"
                                         >
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-xs font-bold tracking-wide border border-sky-100 dark:border-sky-800">
-                                                    {item.case_code || `000-${item.id}`}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-xs font-bold tracking-wide border border-sky-100 dark:border-sky-800">
+                                                        {item.case_code || `000-${item.id}`}
+                                                    </span>
+                                                    {(item.attachments_count ?? 0) > 0 && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 text-slate-400 dark:text-slate-500"
+                                                            title={`${item.attachments_count} evidence file${item.attachments_count === 1 ? '' : 's'}`}
+                                                            aria-label={`${item.attachments_count} evidence file${item.attachments_count === 1 ? '' : 's'}`}
+                                                        >
+                                                            <Paperclip className="w-3.5 h-3.5" />
+                                                            <span className="text-[10px] font-bold tabular-nums">{item.attachments_count}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
                                                 <div className="flex flex-col gap-1.5">

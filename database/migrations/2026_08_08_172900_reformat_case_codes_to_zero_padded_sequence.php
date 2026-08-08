@@ -16,13 +16,15 @@ return new class extends Migration
         }
 
         $cases = DB::table('cases')->orderBy('id')->get(['id']);
+        $seq = 1;
 
         foreach ($cases as $case) {
             DB::table('cases')
                 ->where('id', $case->id)
                 ->update([
-                    'case_code' => sprintf('000-%d', $case->id),
+                    'case_code' => sprintf('000-%d', $seq),
                 ]);
+            $seq++;
         }
     }
 
