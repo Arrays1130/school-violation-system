@@ -200,7 +200,7 @@ export default function ByViolation({
                                         >
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
                                                 <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-xs font-bold tracking-wide border border-sky-100 dark:border-sky-800">
-                                                    {item.case_code || `CASE-${String(item.id).padStart(5, '0')}`}
+                                                    {item.case_code || `000-${item.id}`}
                                                 </span>
                                             </td>
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">

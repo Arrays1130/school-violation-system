@@ -157,7 +157,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                             <div>
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-400/20 border border-sky-300/30 text-sky-100 text-[11px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
                                     <FolderOpen className="w-3.5 h-3.5" />
-                                    {caseRecord.case_code || `CASE-${String(caseRecord.id).padStart(5, '0')}`}
+                                    {caseRecord.case_code || `000-${caseRecord.id}`}
                                 </div>
                                 <h2 className="text-3xl font-bold text-white tracking-tight">
                                     {caseRecord.violation?.title || 'Violation Case'}

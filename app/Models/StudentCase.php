@@ -58,15 +58,12 @@ class StudentCase extends Model
     }
 
     /**
-     * Human-readable unique case reference, e.g. CASE-2026-00042.
+     * Human-readable unique case reference, e.g. 000-1, 000-2.
+     * Sequence follows creation order (first case = 000-1).
      */
     public static function makeCaseCode(int $id, $createdAt = null): string
     {
-        $year = $createdAt
-            ? \Illuminate\Support\Carbon::parse($createdAt)->format('Y')
-            : now()->format('Y');
-
-        return sprintf('CASE-%s-%05d', $year, $id);
+        return sprintf('000-%d', $id);
     }
 
     public function getDisplayCodeAttribute(): string

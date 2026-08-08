@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import BrandText from '@/Components/BrandText';
 
 export default function PrintMom({ hearing }) {
-    const caseCode = hearing.case?.case_code || `CASE-${String(hearing.case?.id || 0).padStart(5, '0')}`;
+    const caseCode = hearing.case?.case_code || `000-${hearing.case?.id || 0}`;
     const participants = hearing.participants || [];
 
     return (

@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import BrandText from '@/Components/BrandText';
 
 export default function Print({ auth, case: caseRecord }) {
-    const caseCode = caseRecord.case_code || `CASE-${String(caseRecord.id).padStart(5, '0')}`;
+    const caseCode = caseRecord.case_code || `000-${caseRecord.id}`;
 
     return (
         <PrintLayout title={`Violation Record - ${caseRecord.student?.full_name}`}>

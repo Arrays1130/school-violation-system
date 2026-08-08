@@ -511,7 +511,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                 title: "Case Code",
                 content: (_case?['case_code']?.toString().isNotEmpty == true)
                     ? _case!['case_code'].toString()
-                    : "CASE-${widget.caseId.toString().padLeft(5, '0')}",
+                    : "000-${widget.caseId}",
                 icon: Icons.tag_rounded,
                 color: AppTheme.accentCyan,
               ),

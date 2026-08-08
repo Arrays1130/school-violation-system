@@ -13,17 +13,13 @@ return new class extends Migration
             $table->string('case_code', 32)->nullable()->unique()->after('id');
         });
 
-        $cases = DB::table('cases')->orderBy('id')->get(['id', 'created_at']);
+        $cases = DB::table('cases')->orderBy('id')->get(['id']);
 
         foreach ($cases as $case) {
-            $year = $case->created_at
-                ? date('Y', strtotime($case->created_at))
-                : date('Y');
-
             DB::table('cases')
                 ->where('id', $case->id)
                 ->update([
-                    'case_code' => sprintf('CASE-%s-%05d', $year, $case->id),
+                    'case_code' => sprintf('000-%d', $case->id),
                 ]);
         }
     }

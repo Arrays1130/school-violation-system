@@ -998,7 +998,7 @@ class CasesScreenState extends State<CasesScreen> {
     final rawCaseCode = caseMap['case_code']?.toString();
     final caseId = (rawCaseCode != null && rawCaseCode.isNotEmpty)
         ? rawCaseCode
-        : 'CASE-${(caseMap['id'] ?? 0).toString().padLeft(5, '0')}';
+        : '000-${caseMap['id'] ?? 0}';
 
     return Semantics(
       button: true,
