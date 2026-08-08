@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minutes of Meeting - Case #{{ $hearing->case->id }}</title>
+    <title>Minutes of Meeting - {{ $hearing->case->case_code ?? 'Case #'.$hearing->case->id }}</title>
     <style>
         @page { size: letter; margin: 1in; } /* Standard US Letter margins */
         body { 
@@ -77,7 +77,7 @@
         <table class="meta-table">
             <tr>
                 <td class="label">Case Number:</td>
-                <td>#{{ str_pad($hearing->case->id, 4, '0', STR_PAD_LEFT) }}</td>
+                <td>{{ $hearing->case->case_code ?? '#'.str_pad($hearing->case->id, 4, '0', STR_PAD_LEFT) }}</td>
             </tr>
             <tr>
                 <td class="label">Date:</td>

@@ -224,7 +224,7 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                                                             <div className="flex flex-col">
                                                                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 capitalize">{record.case.student?.full_name || record.case.student?.first_name + ' ' + record.case.student?.last_name || 'N/A'}</span>
                                                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mt-1">
-                                                                    Case #{record.case.id}
+                                                                    {record.case.case_code || `Case #${record.case.id}`}
                                                                 </span>
                                                             </div>
                                                         ) : (
@@ -319,7 +319,7 @@ export default function Index({ auth, records, totalFiles, pdfFiles, totalSizeMB
                                                         <span className="flex items-center gap-2 text-slate-800 dark:text-slate-200 min-w-0">
                                                             <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
                                                             <span className="truncate">{selected.student?.full_name || `${selected.student?.first_name} ${selected.student?.last_name}`}</span>
-                                                            <span className="text-xs text-indigo-500 font-bold shrink-0">Case #{selected.id}</span>
+                                                            <span className="text-xs text-indigo-500 font-bold shrink-0">{selected.case_code || `Case #${selected.id}`}</span>
                                                             {selected.violation?.title && (
                                                                 <span className="text-xs text-slate-400 font-medium shrink-0 hidden sm:inline">· {selected.violation.title}</span>
                                                             )}

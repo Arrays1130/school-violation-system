@@ -35,7 +35,7 @@ export default function Edit({ auth, hearing }) {
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-slate-200 leading-tight">Edit Hearing Details</h2>}
         >
-            <Head title={`Edit Hearing - Case #${hearing.case.id}`} />
+            <Head title={`Edit Hearing - ${hearing.case.case_code || `Case #${hearing.case.id}`}`} />
 
             <PageMotion className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
@@ -65,7 +65,7 @@ export default function Edit({ auth, hearing }) {
                             <h2 className="text-2xl font-bold text-white tracking-tight">Edit Hearing Details</h2>
                             <div className="flex items-center gap-3 mt-1.5">
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 text-[10px] font-bold uppercase tracking-wider">
-                                    Case #{String(hearing.case.id).padStart(4, '0')}
+                                    {hearing.case.case_code || `Case #${String(hearing.case.id).padStart(4, '0')}`}
                                 </span>
                                 <span className="text-indigo-100/70 text-xs font-medium">{hearing.case.violation?.title}</span>
                             </div>

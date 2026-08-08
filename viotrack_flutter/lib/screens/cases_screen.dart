@@ -23,6 +23,7 @@ class CasesScreen extends StatefulWidget {
 class CasesScreenState extends State<CasesScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   List<dynamic> _allViolations = [];
   List<dynamic> _filteredViolations = [];
   bool _isLoading = true;
@@ -107,13 +108,24 @@ class CasesScreenState extends State<CasesScreen> {
     _debounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  void applyExternalFilters({String? search, String? status}) {
+  void applyExternalFilters({
+    String? search,
+    String? status,
+    bool focusSearch = false,
+  }) {
     if (search != null) _searchController.text = search;
     if (status != null) _selectedStatus = status;
     _applyFilters();
+    if (focusSearch) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _searchFocusNode.requestFocus();
+      });
+    }
   }
 
   void refreshFromPoller() {
@@ -154,15 +166,10 @@ class CasesScreenState extends State<CasesScreen> {
           _isLoading = false;
           _fetchError = _allViolations.isEmpty;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().replaceAll('Exception: ', ''),
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppUi.showSnack(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          kind: SnackKind.error,
         );
       }
     }
@@ -327,9 +334,11 @@ class CasesScreenState extends State<CasesScreen> {
 
   Widget _buildHeader() {
     return AppUi.gradientHeader(
-      greeting: '${_filteredViolations.length} cases',
+      greeting: 'Case records',
       title: 'Cases',
-      subtitle: 'Search, filter, and open any case record.',
+      subtitle: _hasActiveFilters()
+          ? 'Showing ${_filteredViolations.length} of ${_allViolations.length}'
+          : '${_filteredViolations.length} cases · search, filter, and open any record',
       badge: AppUi.iconCircle(
         icon: Icons.inventory_2_outlined,
         color: AppTheme.primaryNavy,
@@ -356,81 +365,92 @@ class CasesScreenState extends State<CasesScreen> {
           ),
         ],
       ),
-      bottom: Wrap(
-        spacing: 10,
-        runSpacing: 8,
-        children: [
-          AppUi.brandPill(
-            label: '${_filteredViolations.length} records found',
-            leading: Icon(
-              Icons.inventory_2_outlined,
-              size: 14,
-              color: Colors.white.withValues(alpha: 0.92),
-            ),
-          ),
-          if (_hasActiveFilters())
-            AppUi.brandPill(
-              label:
-                  'Showing ${_filteredViolations.length} of ${_allViolations.length}',
-              leading: Icon(
-                Icons.filter_list_rounded,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.92),
-              ),
-            ),
-        ],
-      ),
     );
   }
 
   Widget _buildQuickStatusOverview() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildQuickStatusCard(
-              label: 'All cases',
-              count: _statusCount(),
-              icon: Icons.folder_open_rounded,
-              status: 'All',
-              color: AppTheme.primaryNavy,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildQuickStatusCard(
+                  label: 'All cases',
+                  count: _statusCount(),
+                  icon: Icons.folder_open_rounded,
+                  status: 'All',
+                  color: AppTheme.primaryNavy,
+                ),
+                const SizedBox(width: 10),
+                _buildQuickStatusCard(
+                  label: 'Pending',
+                  count: _statusCount('Pending'),
+                  icon: Icons.schedule_rounded,
+                  status: 'Pending',
+                  color: AppTheme.accentAmber,
+                ),
+                const SizedBox(width: 10),
+                _buildQuickStatusCard(
+                  label: 'Scheduled',
+                  count: _statusCount('Hearing Scheduled'),
+                  icon: Icons.gavel_rounded,
+                  status: 'Hearing Scheduled',
+                  color: AppTheme.accentCyan,
+                ),
+                const SizedBox(width: 10),
+                _buildQuickStatusCard(
+                  label: 'In hearing',
+                  count: _statusCount('Hearing'),
+                  icon: Icons.balance_rounded,
+                  status: 'Hearing',
+                  color: AppTheme.primaryIndigo,
+                ),
+                const SizedBox(width: 10),
+                _buildQuickStatusCard(
+                  label: 'Closed',
+                  count: _statusCount('Closed'),
+                  icon: Icons.check_circle_outline_rounded,
+                  status: 'Closed',
+                  color: AppTheme.accentEmerald,
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            _buildQuickStatusCard(
-              label: 'Pending',
-              count: _statusCount('Pending'),
-              icon: Icons.schedule_rounded,
-              status: 'Pending',
-              color: AppTheme.accentAmber,
-            ),
-            const SizedBox(width: 10),
-            _buildQuickStatusCard(
-              label: 'Hearings',
-              count: _statusCount('Hearings'),
-              icon: Icons.gavel_rounded,
-              status: 'Hearing Scheduled',
-              color: AppTheme.accentCyan,
-            ),
-            const SizedBox(width: 10),
-            _buildQuickStatusCard(
-              label: 'Hearing',
-              count: _statusCount('Hearing'),
-              icon: Icons.balance_rounded,
-              status: 'Hearing',
-              color: AppTheme.primaryIndigo,
-            ),
-            const SizedBox(width: 10),
-            _buildQuickStatusCard(
-              label: 'Closed',
-              count: _statusCount('Closed'),
-              icon: Icons.check_circle_outline_rounded,
-              status: 'Closed',
-              color: AppTheme.accentEmerald,
+          ),
+          if (_hasActiveFilters()) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  _clearAllFilters();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.accentRose,
+                  backgroundColor: AppTheme.accentRose.withValues(alpha: 0.08),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                  ),
+                ),
+                icon: const Icon(Icons.filter_alt_off_rounded, size: 16),
+                label: Text(
+                  'Clear filters',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -691,6 +711,7 @@ class CasesScreenState extends State<CasesScreen> {
         ),
         child: TextField(
           controller: _searchController,
+          focusNode: _searchFocusNode,
           onChanged: (_) {
             if (_debounce?.isActive ?? false) _debounce!.cancel();
             _debounce = Timer(
@@ -974,9 +995,16 @@ class CasesScreenState extends State<CasesScreen> {
     final severityColor = _getSeverityColor(severity);
     final studentName = caseMap['student']?['full_name'] ?? 'Unknown Student';
     final violationTitle = caseMap['violation']?['title'] ?? 'N/A';
-    final caseId = "#${(caseMap['id'] ?? 0).toString().padLeft(4, '0')}";
+    final rawCaseCode = caseMap['case_code']?.toString();
+    final caseId = (rawCaseCode != null && rawCaseCode.isNotEmpty)
+        ? rawCaseCode
+        : 'CASE-${(caseMap['id'] ?? 0).toString().padLeft(5, '0')}';
 
-    return RepaintBoundary(
+    return Semantics(
+      button: true,
+      label:
+          'Case $caseId, $studentName, $violationTitle, $severity, ${CaseStatus.displayLabel(CaseStatus.resolve(caseMap))}',
+      child: RepaintBoundary(
       child: VtPressable(
       child: Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1120,6 +1148,7 @@ class CasesScreenState extends State<CasesScreen> {
         ),
         ),
       ),
+    ),
     ),
     ),
     );

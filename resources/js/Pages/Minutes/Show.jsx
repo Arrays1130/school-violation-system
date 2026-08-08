@@ -83,7 +83,7 @@ export default function Show({ auth, meetingMinute }) {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <span className="px-3.5 py-1.5 bg-indigo-600/10 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-150">
-                                        Case #{meetingMinute.case.id}
+                                        {meetingMinute.case.case_code || `Case #${meetingMinute.case.id}`}
                                     </span>
                                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono">{meetingMinute.case.student?.student_id}</span>
                                 </div>

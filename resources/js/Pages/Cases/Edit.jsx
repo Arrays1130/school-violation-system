@@ -57,7 +57,7 @@ export default function Edit({ auth, caseRecord }) {
                     <Breadcrumbs className="mb-6" items={[
                         { label: 'Dashboard', href: route('dashboard') },
                         { label: 'Violation Cases', href: route('cases.index') },
-                        { label: `Case #${caseRecord.id}`, href: route('cases.show', caseRecord.id) },
+                        { label: caseRecord.case_code || `Case #${caseRecord.id}`, href: route('cases.show', caseRecord.id) },
                         { label: 'Edit' },
                     ]} />
                     </MotionItem>
@@ -71,7 +71,7 @@ export default function Edit({ auth, caseRecord }) {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
-                                    Edit Case #{caseRecord.id}
+                                    Edit {caseRecord.case_code || `Case #${caseRecord.id}`}
                                 </h1>
                                 <p className="text-rose-200/70 text-sm mt-1">Update incident details. Status changes via hearings and case actions.</p>
                             </div>

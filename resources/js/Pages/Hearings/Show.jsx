@@ -48,7 +48,7 @@ export default function Show({ auth, hearing }) {
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-slate-200 leading-tight">Hearing Details</h2>}
         >
-            <Head title={`Hearing - Case #${hearing.case.id}`} />
+            <Head title={`Hearing - ${hearing.case.case_code || `Case #${hearing.case.id}`}`} />
 
             <ConfirmDialog
                 open={showStartConfirm}
@@ -91,7 +91,7 @@ export default function Show({ auth, hearing }) {
                         items={[
                             { label: 'Dashboard', href: route('dashboard') },
                             { label: 'All Cases', href: route('cases.index') },
-                            { label: `Case #${hearing.case.id}`, href: route('cases.show', hearing.case.id) },
+                            { label: hearing.case.case_code || `Case #${hearing.case.id}`, href: route('cases.show', hearing.case.id) },
                             { label: 'Hearing' },
                         ]}
                     />

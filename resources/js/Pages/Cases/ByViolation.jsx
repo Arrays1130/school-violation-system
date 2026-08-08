@@ -135,7 +135,7 @@ export default function ByViolation({
                         search={search}
                         onSearchChange={setSearch}
                         onClear={handleClear}
-                        placeholder="Search by student name..."
+                        placeholder="Search by case code or student name..."
                         filtersClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 [&>*]:min-w-0"
                     >
                         <div className="min-w-0">
@@ -183,6 +183,7 @@ export default function ByViolation({
                         <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-left block md:table">
                             <thead className="bg-slate-50/80 dark:bg-slate-800/80 hidden md:table-header-group">
                                 <tr>
+                                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Case Code</th>
                                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Date / Status</th>
                                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Student</th>
                                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sanction</th>
@@ -197,6 +198,11 @@ export default function ByViolation({
                                             key={item.id}
                                             className="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors duration-150 group block md:table-row border-b border-slate-100 dark:border-slate-800 md:border-none p-4 md:p-0"
                                         >
+                                            <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-xs font-bold tracking-wide border border-sky-100 dark:border-sky-800">
+                                                    {item.case_code || `CASE-${String(item.id).padStart(5, '0')}`}
+                                                </span>
+                                            </td>
                                             <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap block md:table-cell">
                                                 <div className="flex flex-col gap-1.5">
                                                     <span className="text-sm font-bold text-slate-900 dark:text-white">
@@ -249,7 +255,7 @@ export default function ByViolation({
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4">
+                                        <td colSpan="5">
                                             <EmptyState
                                                 icon={FolderOpen}
                                                 title="No students found."

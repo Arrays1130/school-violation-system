@@ -34,7 +34,7 @@ export default function Create({ auth, studentCase }) {
                     <Breadcrumbs items={[
                         { label: 'Dashboard', href: route('dashboard') },
                         { label: 'Violation Cases', href: route('cases.index') },
-                        { label: `Case #${studentCase.id}`, href: route('cases.show', studentCase.id) },
+                        { label: studentCase.case_code || `Case #${studentCase.id}`, href: route('cases.show', studentCase.id) },
                         { label: 'Schedule Hearing' },
                     ]} />
                 </MotionItem>
@@ -56,7 +56,7 @@ export default function Create({ auth, studentCase }) {
                             <h2 className="text-2xl font-bold text-white tracking-tight">Schedule Hearing</h2>
                             <div className="flex items-center gap-3 mt-1.5">
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 text-[10px] font-bold uppercase tracking-wider">
-                                    Case #{String(studentCase.id).padStart(4, '0')}
+                                    {studentCase.case_code || `Case #${String(studentCase.id).padStart(4, '0')}`}
                                 </span>
                                 <span className="text-indigo-100/70 text-xs font-medium">{studentCase.violation?.title}</span>
                             </div>

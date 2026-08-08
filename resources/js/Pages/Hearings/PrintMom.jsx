@@ -5,11 +5,11 @@ import dayjs from 'dayjs';
 import BrandText from '@/Components/BrandText';
 
 export default function PrintMom({ hearing }) {
-    const padCaseId = (id) => String(id).padStart(4, '0');
+    const caseCode = hearing.case?.case_code || `CASE-${String(hearing.case?.id || 0).padStart(5, '0')}`;
     const participants = hearing.participants || [];
 
     return (
-        <PrintLayout title={`Minutes of Meeting - Case #${hearing.case?.id}`}>
+        <PrintLayout title={`Minutes of Meeting - ${caseCode}`}>
             <style>{`
                 .mom-body {
                     font-family: 'Times New Roman', Times, serif;
@@ -105,7 +105,7 @@ export default function PrintMom({ hearing }) {
                         <tbody>
                             <tr>
                                 <td className="label">Case Number:</td>
-                                <td>#{padCaseId(hearing.case?.id)}</td>
+                                <td>{caseCode}</td>
                             </tr>
                             <tr>
                                 <td className="label">Date:</td>

@@ -450,7 +450,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                         ) : (
                                             cases.map((caseItem) => (
                                                 <option key={caseItem.id} value={caseItem.id}>
-                                                    #{String(caseItem.id).padStart(4, '0')} · {caseItem.violation?.title || 'Violation'} · {formatDate(caseItem.occurred_at)} · {caseItem.status}
+                                                    {caseItem.case_code || `#${String(caseItem.id).padStart(4, '0')}`} · {caseItem.violation?.title || 'Violation'} · {formatDate(caseItem.occurred_at)} · {caseItem.status}
                                                 </option>
                                             ))
                                         )}

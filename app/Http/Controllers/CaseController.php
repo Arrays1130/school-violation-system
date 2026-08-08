@@ -111,11 +111,12 @@ class CaseController extends Controller
         if ($includeSearch && $request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->whereHas('student', function ($sq) use ($search) {
-                    $sq->where('full_name', 'LIKE', "%{$search}%")
-                        ->orWhere('email', 'LIKE', "%{$search}%")
-                        ->orWhere('section', 'LIKE', "%{$search}%");
-                });
+                $q->where('case_code', 'LIKE', "%{$search}%")
+                    ->orWhereHas('student', function ($sq) use ($search) {
+                        $sq->where('full_name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%")
+                            ->orWhere('section', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -172,27 +173,88 @@ class CaseController extends Controller
     public function store(\App\Http\Requests\StoreCaseRequest $request)
     {
         $data = $request->validated();
-        
-        // Role-Based Validation
-        $violation = \App\Models\Violation::find($data['violation_id']);
-        
-        // Removed restriction: Admins can now record Major offenses as well.
+        $studentIds = $data['student_ids'];
+        unset($data['student_ids'], $data['student_id']);
 
-        $data['created_by'] = auth()->id();
-        $data['status'] = 'Pending';
-
-        // 1. Calculate Offense Level + catalog sanction
+        $violation = \App\Models\Violation::findOrFail($data['violation_id']);
         $advice = app(\App\Services\OffenseAdviceService::class);
-        $offenseLevel = $advice->offenseLevelFor((int) $data['student_id'], (int) $data['violation_id']);
-        $data['offense_level'] = $offenseLevel;
-        $data['sanction'] = $advice->sanctionFor($violation, $offenseLevel);
 
-        $case = \App\Models\StudentCase::createForStaff($data, auth()->id());
+        $createdCases = [];
+        $escalatedCases = [];
 
-        // Dispatch Real-time Event (Queued)
+        foreach ($studentIds as $studentId) {
+            $result = $this->recordCaseForStudent(
+                (int) $studentId,
+                $violation,
+                $advice,
+                $data,
+                (int) auth()->id()
+            );
+
+            $createdCases[] = $result['case'];
+            if ($result['escalated']) {
+                $escalatedCases[] = $result['escalated'];
+            }
+        }
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
+
+        $count = count($createdCases);
+        $firstCase = $createdCases[0];
+
+        if (count($escalatedCases) > 0) {
+            $message = $count === 1
+                ? 'Violation recorded successfully. The system automatically generated a Major Offense due to repeated minor offenses.'
+                : "{$count} violation cases recorded. ".count($escalatedCases).' student(s) were auto-escalated to a Major Offense.';
+
+            if ($count === 1) {
+                return redirect()->route('cases.show', $escalatedCases[0])->with('warning', $message);
+            }
+
+            return redirect()->route('cases.by-violation', $violation)->with('warning', $message);
+        }
+
+        $success = $count === 1
+            ? 'Violation recorded successfully.'
+            : "{$count} violation cases recorded successfully — each student has their own case code.";
+
+        if ($count === 1) {
+            if (request()->header('X-Inertia')) {
+                return \Inertia\Inertia::location(route('cases.show', $firstCase));
+            }
+
+            return redirect()->route('cases.show', $firstCase)->with('success', $success);
+        }
+
+        return redirect()->route('cases.by-violation', $violation)->with('success', $success);
+    }
+
+    /**
+     * Create one case for a student (with notifications + minor escalation).
+     *
+     * @return array{case: \App\Models\StudentCase, escalated: ?\App\Models\StudentCase}
+     */
+    private function recordCaseForStudent(
+        int $studentId,
+        \App\Models\Violation $violation,
+        \App\Services\OffenseAdviceService $advice,
+        array $sharedData,
+        int $createdBy
+    ): array {
+        $offenseLevel = $advice->offenseLevelFor($studentId, (int) $violation->id);
+
+        $case = \App\Models\StudentCase::createForStaff([
+            ...$sharedData,
+            'student_id' => $studentId,
+            'violation_id' => $violation->id,
+            'offense_level' => $offenseLevel,
+            'sanction' => $advice->sanctionFor($violation, $offenseLevel),
+        ], $createdBy);
+
+        $case->load('student');
+
         event(new \App\Events\ViolationRecorded($case));
 
-        // Dispatch Reverb & Database Notifications (Queued)
         $deptShortcut = $case->student->department_shortcut;
         $notifiableUsers = \App\Models\User::where('role', 'super_admin')
             ->orWhere(function ($query) use ($deptShortcut) {
@@ -201,11 +263,15 @@ class CaseController extends Controller
                         ->where('department', $deptShortcut);
                 }
             })->get();
-        \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($case));
 
-        // Trigger N8n Webhook Asynchronously (Queued)
+        \Illuminate\Support\Facades\Notification::send(
+            $notifiableUsers,
+            new \App\Notifications\NewViolationCaseNotification($case)
+        );
+
         \App\Jobs\TriggerN8nWebhook::dispatch('violation_recorded', [
             'case_id' => $case->id,
+            'case_code' => $case->case_code,
             'student_db_id' => $case->student->id,
             'student_name' => $case->student->full_name,
             'student_email' => $case->student->email,
@@ -214,21 +280,20 @@ class CaseController extends Controller
             'department' => $case->student->department,
             'violation_title' => $violation->title,
             'violation_severity' => $violation->severity,
-            'sanction' => $data['sanction'],
+            'sanction' => $case->sanction,
         ]);
 
-        // Phased: Minor → student + dept dean; Major → also guardian
         \App\Support\StakeholderNotifier::notifyViolationRecorded($case);
 
-        // --- AUTOMATED ESCALATION LOGIC ---
+        $escalatedCase = null;
+
         if ($violation->severity === 'Minor') {
-            $escalationForecast = $advice->minorEscalationForecast((int) $data['student_id']);
+            $escalationForecast = $advice->minorEscalationForecast($studentId);
 
             if ($escalationForecast['triggers_escalation_now']) {
                 $totalMinors = $escalationForecast['total_minors'];
                 $escalationLevel = (int) $escalationForecast['escalation_level'];
 
-                // Get or update the System Generated Major Violation
                 $escalationViolation = \App\Models\Violation::updateOrCreate(
                     ['code' => 'SYS-001'],
                     [
@@ -242,27 +307,26 @@ class CaseController extends Controller
                     ]
                 );
 
-                $escalationSanction = $advice->sanctionFor($escalationViolation, $escalationLevel);
-
-                // Create the Major Case
                 $escalatedCase = \App\Models\StudentCase::createForStaff([
-                    'student_id' => $data['student_id'],
+                    'student_id' => $studentId,
                     'violation_id' => $escalationViolation->id,
                     'description' => "System automatically generated this Major offense because the student reached {$totalMinors} minor offenses.",
                     'occurred_at' => now(),
                     'offense_level' => $escalationLevel,
-                    'sanction' => $escalationSanction,
-                ], auth()->id() ?? 1);
+                    'sanction' => $advice->sanctionFor($escalationViolation, $escalationLevel),
+                ], $createdBy ?: 1);
 
-                // Dispatch Real-time Event for Escalated Case
+                $escalatedCase->load(['student', 'violation']);
+
                 event(new \App\Events\ViolationRecorded($escalatedCase));
+                \Illuminate\Support\Facades\Notification::send(
+                    $notifiableUsers,
+                    new \App\Notifications\NewViolationCaseNotification($escalatedCase)
+                );
 
-                // Dispatch Reverb & Database Notifications for Escalated Case
-                \Illuminate\Support\Facades\Notification::send($notifiableUsers, new \App\Notifications\NewViolationCaseNotification($escalatedCase));
-
-                // Trigger N8n Webhook for Escalated Case Asynchronously
                 \App\Jobs\TriggerN8nWebhook::dispatch('violation_recorded', [
                     'case_id' => $escalatedCase->id,
+                    'case_code' => $escalatedCase->case_code,
                     'student_db_id' => $escalatedCase->student->id,
                     'student_name' => $escalatedCase->student->full_name,
                     'student_email' => $escalatedCase->student->email,
@@ -275,27 +339,11 @@ class CaseController extends Controller
                     'is_escalation' => true,
                 ]);
 
-                // Escalated Major → student + guardian + dept dean
                 \App\Support\StakeholderNotifier::notifyViolationRecorded($escalatedCase);
-
-                \App\Support\QueueHelper::triggerBackgroundWorker();
-
-                // Redirect to the new escalated case with a special message
-                return redirect()->route('cases.show', $escalatedCase)
-                    ->with('warning', "Violation recorded successfully. The system automatically generated a Major Offense due to reaching {$totalMinors} minor offenses.");
             }
         }
-        // --- END ESCALATION LOGIC ---
 
-        session()->flash('success', 'Violation recorded successfully.');
-
-        \App\Support\QueueHelper::triggerBackgroundWorker();
-
-        if (request()->header('X-Inertia')) {
-            return \Inertia\Inertia::location(route('cases.show', $case));
-        }
-
-        return redirect()->route('cases.show', $case);
+        return ['case' => $case, 'escalated' => $escalatedCase];
     }
 
     public function show(\App\Models\StudentCase $case)

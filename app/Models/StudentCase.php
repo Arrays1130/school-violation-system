@@ -57,9 +57,32 @@ class StudentCase extends Model
         $this->forceFill(['endorsed_at' => now()])->save();
     }
 
+    /**
+     * Human-readable unique case reference, e.g. CASE-2026-00042.
+     */
+    public static function makeCaseCode(int $id, $createdAt = null): string
+    {
+        $year = $createdAt
+            ? \Illuminate\Support\Carbon::parse($createdAt)->format('Y')
+            : now()->format('Y');
+
+        return sprintf('CASE-%s-%05d', $year, $id);
+    }
+
+    public function getDisplayCodeAttribute(): string
+    {
+        return $this->case_code ?: static::makeCaseCode((int) $this->id, $this->created_at);
+    }
+
     protected static function booted()
     {
         static::created(function ($case) {
+            if (empty($case->case_code)) {
+                $case->forceFill([
+                    'case_code' => static::makeCaseCode((int) $case->id, $case->created_at),
+                ])->saveQuietly();
+            }
+
             static::clearDashboardCache($case);
             try {
                 event(new \App\Events\DashboardUpdated('New case recorded'));

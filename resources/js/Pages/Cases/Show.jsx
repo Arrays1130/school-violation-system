@@ -130,7 +130,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-slate-200 leading-tight">Case Details</h2>}
         >
-            <Head title={`Case #${String(caseRecord.id).padStart(4, '0')} - Details`} />
+            <Head title={`${caseRecord.case_code || `Case #${String(caseRecord.id).padStart(4, '0')}`} - Details`} />
 
             <PageMotion>
 
@@ -139,7 +139,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                     items={[
                         { label: 'Dashboard', href: route('dashboard') },
                         { label: 'All Cases', href: route('cases.index') },
-                        { label: `Case #${String(caseRecord.id).padStart(4, '0')}` },
+                        { label: caseRecord.case_code || `Case #${String(caseRecord.id).padStart(4, '0')}` },
                     ]}
                 />
                 </MotionItem>
@@ -155,11 +155,13 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                 <ArrowLeft className="w-5.5 h-5.5" />
                             </Link>
                             <div>
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-slate-900/10 border border-white/10 text-white/80 text-[11px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-400/20 border border-sky-300/30 text-sky-100 text-[11px] font-bold uppercase tracking-widest mb-2 backdrop-blur-md">
                                     <FolderOpen className="w-3.5 h-3.5" />
-                                    Violation Record
+                                    {caseRecord.case_code || `CASE-${String(caseRecord.id).padStart(5, '0')}`}
                                 </div>
-                                <h2 className="text-3xl font-bold text-white tracking-tight">Violation Case #{String(caseRecord.id).padStart(4, '0')}</h2>
+                                <h2 className="text-3xl font-bold text-white tracking-tight">
+                                    {caseRecord.violation?.title || 'Violation Case'}
+                                </h2>
                                 <p className="text-indigo-100/70 text-sm mt-1">Student Respondent: <span className="text-white font-medium">{caseRecord.student?.full_name}</span></p>
                             </div>
                         </div>

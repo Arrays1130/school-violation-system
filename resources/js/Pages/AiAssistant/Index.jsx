@@ -554,7 +554,11 @@ export default function AiAssistant({
                 {(pageContext?.student?.name || pageContext?.case?.student_name) && (
                     <div className="px-4 py-2 border-b border-purple-100 dark:border-purple-900/40 bg-purple-50/80 dark:bg-purple-900/20 text-sm text-purple-800 dark:text-purple-200">
                         Context: <span className="font-semibold">{pageContext.student?.name || pageContext.case?.student_name}</span>
-                        {pageContext.case?.id ? ` · Case #${String(pageContext.case.id).padStart(4, '0')}` : ''}
+                        {pageContext.case?.case_code
+                            ? ` · ${pageContext.case.case_code}`
+                            : pageContext.case?.id
+                                ? ` · Case #${String(pageContext.case.id).padStart(4, '0')}`
+                                : ''}
                     </div>
                 )}
 

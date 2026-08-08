@@ -76,25 +76,18 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     try {
       await _apiService.acknowledgeCase(widget.caseId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Case acknowledged.', style: GoogleFonts.inter()),
-          backgroundColor: AppTheme.accentEmerald,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppUi.showSnack(
+        context,
+        'Case acknowledged.',
+        kind: SnackKind.success,
       );
       await _fetchDetails(force: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Could not acknowledge case.',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppUi.showSnack(
+        context,
+        'Could not acknowledge case.',
+        kind: SnackKind.error,
       );
     } finally {
       if (mounted) setState(() => _acknowledging = false);
@@ -158,6 +151,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     final status = CaseStatus.normalize(_case?['status']?.toString());
     final endorsed = CaseStatus.isEndorsed(Map<String, dynamic>.from(_case!));
     final statusColor = CaseStatus.colorFor(status, endorsed: endorsed);
+    final showAcknowledge = endorsed && status != 'Closed';
+    final bottomPad = showAcknowledge ? 140.0 : 40.0;
 
     return RefreshIndicator(
       onRefresh: () => _fetchDetails(force: true),
@@ -331,7 +326,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 32, 20, 100),
+                  padding: EdgeInsets.fromLTRB(20, 32, 20, bottomPad),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -513,8 +508,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             Expanded(
               flex: 1,
               child: _buildBentoCard(
-                title: "Case ID",
-                content: "#${widget.caseId.toString().padLeft(4, '0')}",
+                title: "Case Code",
+                content: (_case?['case_code']?.toString().isNotEmpty == true)
+                    ? _case!['case_code'].toString()
+                    : "CASE-${widget.caseId.toString().padLeft(5, '0')}",
                 icon: Icons.tag_rounded,
                 color: AppTheme.accentCyan,
               ),
