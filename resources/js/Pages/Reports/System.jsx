@@ -11,6 +11,7 @@ import {
     PieChart as RechartsPieChart, Pie, Cell, Legend
 } from 'recharts';
 import PageMotion, { MotionItem } from '@/Components/PageMotion';
+import EmptyState from '@/Components/EmptyState';
 
 export default function System({ 
     total, pending, hearing, endorsed, closed, 
@@ -132,6 +133,14 @@ export default function System({
                             </div>
                         </div>
                         <div className="flex-1 w-full relative">
+                            {total === 0 ? (
+                                <EmptyState
+                                    icon={TrendingUp}
+                                    title="No case trend yet"
+                                    message="Recorded violations will appear here as monthly minor and major counts."
+                                    className="py-10"
+                                />
+                            ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -142,6 +151,7 @@ export default function System({
                                     <Line type="monotone" dataKey="Major" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
                                 </LineChart>
                             </ResponsiveContainer>
+                            )}
                         </div>
                     </div>
 
@@ -184,7 +194,12 @@ export default function System({
                                     </div>
                                 </div>
                             ) : (
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No cases yet</p>
+                                <EmptyState
+                                    icon={PieChart}
+                                    title="No status data"
+                                    message="Case status distribution will show here once cases are recorded."
+                                    className="py-8"
+                                />
                             )}
                         </div>
                     </div>
@@ -202,9 +217,12 @@ export default function System({
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-4">
                             {byDepartment.length === 0 ? (
-                                <div className="h-full flex items-center justify-center">
-                                    <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">No data available</p>
-                                </div>
+                                <EmptyState
+                                    icon={Building2}
+                                    title="No department data"
+                                    message="Department case volume will appear after violations are recorded."
+                                    className="py-10"
+                                />
                             ) : (
                                 <div className="space-y-6">
                                     {byDepartment.map((row, idx) => {

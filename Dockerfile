@@ -36,6 +36,7 @@ ENV COMPOSER_PROCESS_TIMEOUT=600
 RUN composer config --global github-protocols https \
     && composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
 
+ENV VITE_APP_NAME=VioTrack
 RUN npm install && npm run build
 
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache

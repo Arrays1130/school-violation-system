@@ -149,6 +149,21 @@ Render free-tier disks are ephemeral. Uploaded case attachments are lost on rede
 2. Set `ATTACHMENTS_DISK=s3` and AWS credentials
 3. Redeploy
 
+## Pre-demo checklist
+
+Complete these before a thesis defense or public demo:
+
+| Check | Where | Ready when |
+|-------|--------|------------|
+| **App name / titles** | Render env `APP_NAME=VioTrack` (also in `render.yaml`) | Browser tab says `Welcome - VioTrack`, not `Laravel` |
+| **Landing page** | `https://…/` | Shows Admin, Dean Portal, and Dean App buttons |
+| **Mail on Render** | `GOOGLE_APPS_SCRIPT_URL` | Password reset and case emails send (SMTP ports are blocked) |
+| **Attachments** | `ATTACHMENTS_DISK=cloudinary` (or S3) + credentials | Files survive redeploy; local disk is wiped |
+| **Dean push** | Firebase `google-services.json` + `FCM_SERVER_KEY` | Alerts arrive when the Dean app is closed |
+| **Postgres expiry** | Render dashboard → Database | Free DB upgraded **before** the 30-day limit |
+| **Cold start** | First visit after idle | Landing copy mentions a short wake-up delay |
+| **Health** | `GET /health` | `"status":"ok"` and database/cache/queue true |
+
 ## Post-deploy verification
 
 ```bash

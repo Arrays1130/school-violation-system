@@ -34,6 +34,7 @@ class AuthenticatedSessionController extends Controller
     {
         return Inertia::render('Auth/DeanLogin', [
             'status' => session('status'),
+            'canResetPassword' => Route::has('password.request'),
         ]);
     }
 

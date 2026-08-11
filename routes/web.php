@@ -17,6 +17,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ViolationController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/health', function () {
     $checks = [
@@ -100,8 +101,19 @@ Route::get('/health/mail', function () {
 })->name('health.mail');
 
 Route::get('/', function () {
-    return redirect()->route('login');
-});
+    if (auth()->check()) {
+        $user = auth()->user();
+
+        return redirect()->to(
+            $user->isDean() ? route('dean.dashboard') : route('dashboard')
+        );
+    }
+
+    return Inertia::render('Welcome', [
+        'studentRegistrationEnabled' => (bool) config('school.student_registration_enabled'),
+        'canResetPassword' => Route::has('password.request'),
+    ]);
+})->name('home');
 
 // Public student self-registration (OTP via institutional email; disabled by default)
 Route::prefix('student')->name('student.')->middleware(\App\Http\Middleware\EnsureStudentRegistrationEnabled::class)->group(function () {

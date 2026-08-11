@@ -207,7 +207,15 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const _LoginBackground(),
           SafeArea(
-            child: _showPasswordForm ? _buildPasswordView() : _buildHomeView(),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: _showPasswordForm
+                    ? _buildPasswordView()
+                    : _buildHomeView(),
+              ),
+            ),
           ),
         ],
       ),
@@ -217,31 +225,36 @@ class _LoginScreenState extends State<LoginScreen> {
   // ─── GCash-style home: logo + account pill + dual login card ───
 
   Widget _buildHomeView() {
-    return Column(
-      children: [
-        const SizedBox(height: 28),
-        _buildLogo(),
-        const SizedBox(height: 28),
-        if (_savedEmail != null && _savedEmail!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: _buildAccountPill(),
-          ),
-        const Spacer(flex: 2),
-        if (_isLoading)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 24),
-            child: CircularProgressIndicator(color: Colors.white),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: _buildDualLoginCard(),
-          ),
-        const Spacer(flex: 3),
-        _buildFooter(),
-        const SizedBox(height: 16),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 720;
+        return Column(
+          children: [
+            SizedBox(height: compact ? 16 : 28),
+            _buildLogo(),
+            SizedBox(height: compact ? 16 : 28),
+            if (_savedEmail != null && _savedEmail!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: _buildAccountPill(),
+              ),
+            const Spacer(flex: 2),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 24),
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: _buildDualLoginCard(),
+              ),
+            const Spacer(flex: 3),
+            _buildFooter(),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
     );
   }
 

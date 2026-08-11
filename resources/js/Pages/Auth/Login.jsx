@@ -27,7 +27,7 @@ export default function Login({ status, canResetPassword }) {
         <div className="auth-screen flex min-h-[100dvh] w-full flex-col items-center justify-center px-4 py-8">
             <AuthBackground />
 
-            <Head title="Log in" />
+            <Head title="Staff Login" />
 
             <motion.div
                 className="auth-card relative z-10 w-full sm:max-w-md px-8 py-10 bg-white shadow-2xl overflow-hidden sm:rounded-[2rem] border border-white/80"
@@ -102,6 +102,7 @@ export default function Login({ status, canResetPassword }) {
                                 type="button"
                                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
                                 onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
                             >
                                 {showPassword ? (
                                     <EyeOff className="h-5 w-5 text-gray-700 stroke-[2.25] hover:text-blue-700 transition-colors" />
@@ -145,6 +146,22 @@ export default function Login({ status, canResetPassword }) {
                             {processing ? "Signing In..." : "Sign In"}
                         </button>
                     </div>
+
+                    <p className="mt-6 text-center text-sm text-gray-600">
+                        Dean?{' '}
+                        <Link href={route('dean.login')} className="font-semibold text-blue-700 hover:text-blue-800">
+                            Open Dean Portal
+                        </Link>
+                        {' · '}
+                        <a href="/dean-app/" className="font-semibold text-blue-700 hover:text-blue-800">
+                            Dean App
+                        </a>
+                    </p>
+                    <p className="mt-2 text-center text-sm text-gray-500">
+                        <Link href={route('home')} className="hover:text-gray-700">
+                            Back to home
+                        </Link>
+                    </p>
                 </form>
             </motion.div>
 

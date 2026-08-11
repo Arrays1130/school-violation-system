@@ -22,7 +22,7 @@
         <meta name="apple-mobile-web-app-title" content="VioTrack">
         <link rel="apple-touch-icon" href="/brand_logo.png">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ config('app.name', 'VioTrack') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

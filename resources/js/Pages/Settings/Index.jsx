@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router } from '@inertiajs/react';
 import { Sliders, AlertTriangle, Archive, Building2 } from 'lucide-react';
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import PageHero from '@/Components/PageHero';
 import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
 export default function Index({
@@ -46,13 +47,12 @@ export default function Index({
 
             <PageMotion className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 <MotionItem>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                        <Sliders className="w-6 h-6 text-indigo-600" />
-                        System Settings
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-                        Manage global system configurations and defaults.
-                    </p>
+                    <PageHero
+                        badge="Configuration"
+                        badgeIcon={Sliders}
+                        title="System Settings"
+                        description="Manage school name, academic year, and end-of-year case archiving."
+                    />
                 </MotionItem>
 
                 <MotionItem className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">

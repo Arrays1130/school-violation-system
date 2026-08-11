@@ -12,7 +12,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { handleFlashMessages } from '@/lib/sweetAlert';
 import { syncCsrfMeta } from '@/lib/aiAssistant';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'VioTrack';
 
 router.on('success', (event) => {
     syncCsrfMeta(event.detail.page.props.csrf_token);
