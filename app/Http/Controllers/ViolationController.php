@@ -106,38 +106,28 @@ class ViolationController extends Controller
             'violation_id' => 'required|exists:violations,id',
         ]);
 
-        $violationId = $request->violation_id;
-        $violation   = \App\Models\Violation::findOrFail($violationId);
+        $violation = \App\Models\Violation::findOrFail($request->violation_id);
+        $advice = app(\App\Services\OffenseAdviceService::class);
 
-        // Default to first-offense when no student context (e.g. before student is selected)
-        $suggestedSanction    = $violation->first_offense;
-        $currentOffenseLevel  = 1;
-        $offenseCount         = 0;
+        $offenseCount = 0;
+        $currentOffenseLevel = 1;
+        $suggestedSanction = $advice->sanctionFor($violation, 1);
 
         if ($request->filled('student_id')) {
-            $studentId    = $request->student_id;
-            $offenseCount = \App\Models\StudentCase::where('student_id', $studentId)
-                ->where('violation_id', $violationId)
-                ->where('status', '!=', 'Dismissed')
-                ->count();
-
-            $currentOffenseLevel = $offenseCount + 1;
-
-            $suggestedSanction = match(true) {
-                $currentOffenseLevel === 1 => $violation->first_offense,
-                $currentOffenseLevel === 2 => $violation->second_offense,
-                default                    => $violation->third_offense,
-            };
+            $studentId = (int) $request->student_id;
+            $offenseCount = $advice->priorSameViolationCount($studentId, (int) $violation->id);
+            $currentOffenseLevel = $advice->offenseLevelFor($studentId, (int) $violation->id);
+            $suggestedSanction = $advice->sanctionFor($violation, $currentOffenseLevel);
         }
 
         return response()->json([
-            // Keys expected by the create form Alpine.js
-            'sanction'              => $suggestedSanction ?? 'Manual Review Required',
+            'sanction'              => $suggestedSanction,
             'severity'              => $violation->severity,
-            // Extra context keys
             'offense_count'         => $offenseCount,
+            'offense_level'         => $currentOffenseLevel,
             'current_offense_level' => $currentOffenseLevel,
-            'suggested_sanction'    => $suggestedSanction ?? 'Manual Review Required',
+            'suggested_sanction'    => $suggestedSanction,
+            'auto_endorse'          => $violation->severity === 'Major',
         ]);
     }
 }

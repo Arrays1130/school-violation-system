@@ -205,8 +205,8 @@ class CaseController extends Controller
 
         if (count($escalatedCases) > 0) {
             $message = $count === 1
-                ? 'Violation recorded successfully. The system automatically generated a Major Offense due to repeated minor offenses.'
-                : "{$count} violation cases recorded. ".count($escalatedCases).' student(s) were auto-escalated to a Major Offense.';
+                ? 'Violation recorded successfully. The system automatically generated a Major Offense and endorsed it to the Grievance Committee.'
+                : "{$count} violation cases recorded. ".count($escalatedCases).' student(s) were auto-escalated and endorsed to the Grievance Committee.';
 
             if ($count === 1) {
                 return redirect()->route('cases.show', $escalatedCases[0])->with('warning', $message);
@@ -215,9 +215,13 @@ class CaseController extends Controller
             return redirect()->route('cases.by-violation', $violation)->with('warning', $message);
         }
 
+        $majorCount = collect($createdCases)->filter(fn ($c) => $c->isMajorOffense())->count();
         $success = $count === 1
-            ? 'Violation recorded successfully.'
-            : "{$count} violation cases recorded successfully — each student has their own case code.";
+            ? ($majorCount === 1
+                ? 'Major offense recorded and automatically endorsed to the Grievance Committee.'
+                : 'Violation recorded successfully.')
+            : "{$count} violation cases recorded successfully — each student has their own case code."
+                .($majorCount > 0 ? " {$majorCount} major case(s) were auto-endorsed." : '');
 
         if ($count === 1) {
             if (request()->header('X-Inertia')) {
@@ -252,7 +256,14 @@ class CaseController extends Controller
             'sanction' => $advice->sanctionFor($violation, $offenseLevel),
         ], $createdBy);
 
-        $case->load('student');
+        $case->load(['student', 'violation']);
+
+        if ($case->isMajorOffense()) {
+            $case->endorseToGrievance(
+                $createdBy,
+                'Automatically endorsed to the Grievance Committee — major offense.'
+            );
+        }
 
         event(new \App\Events\ViolationRecorded($case));
 
@@ -318,6 +329,10 @@ class CaseController extends Controller
                 ], $createdBy ?: 1);
 
                 $escalatedCase->load(['student', 'violation']);
+                $escalatedCase->endorseToGrievance(
+                    $createdBy ?: 1,
+                    'Automatically endorsed to the Grievance Committee — major offense (3-minor escalation).'
+                );
 
                 event(new \App\Events\ViolationRecorded($escalatedCase));
                 \Illuminate\Support\Facades\Notification::send(

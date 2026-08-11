@@ -355,8 +355,22 @@ export default function Create({ auth, student, violations, students }) {
                                         <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 shadow-sm flex items-start gap-3">
                                             <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
                                             <div>
-                                                <p className="text-xs font-bold text-rose-800 uppercase tracking-wider mb-1">Expected Sanction (Offense #{sanctionInfo.offense_level})</p>
+                                                <p className="text-xs font-bold text-rose-800 uppercase tracking-wider mb-1">Expected Sanction (Offense #{sanctionInfo.offense_level || sanctionInfo.current_offense_level})</p>
                                                 <p className="text-rose-900 font-medium text-sm">{sanctionInfo.sanction}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(selectedViolation?.severity === 'Major' || sanctionInfo?.auto_endorse) && (
+                                        <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-start gap-3">
+                                            <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-1">
+                                                    Auto-endorsed to Grievance
+                                                </p>
+                                                <p className="text-amber-900 dark:text-amber-200 font-medium text-sm">
+                                                    Major offenses are endorsed to the Grievance Committee as soon as the case is recorded — even on the first offense.
+                                                </p>
                                             </div>
                                         </div>
                                     )}

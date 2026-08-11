@@ -371,7 +371,7 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                 </div>
                                 {workflow.needs_osa_action && (
                                     <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 mb-4">
-                                        This is a major offense. Record at least one OSA action before endorsing or closing without a hearing.
+                                        This is a major offense. Record at least one OSA action before closing without a hearing.
                                     </p>
                                 )}
                                 {osaActions.length > 0 ? (

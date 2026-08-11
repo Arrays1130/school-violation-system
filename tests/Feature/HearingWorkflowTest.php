@@ -49,4 +49,26 @@ class HearingWorkflowTest extends TestCase
         $this->assertSame('Closed', $case->status);
         $this->assertSame('Written apology and community service', $case->sanction);
     }
+
+    public function test_deleting_hearing_reverts_case_to_pending(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $case = StudentCase::factory()->create([
+            'status' => 'Hearing Scheduled',
+        ]);
+        $hearing = Hearing::create([
+            'case_id' => $case->id,
+            'venue' => 'OSA Office',
+            'scheduled_at' => now()->addDay(),
+            'participants' => ['Student', 'Dean'],
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('hearings.destroy', $hearing))
+            ->assertRedirect();
+
+        $case->refresh();
+        $this->assertSame('Pending', $case->status);
+        $this->assertSoftDeleted('hearings', ['id' => $hearing->id]);
+    }
 }

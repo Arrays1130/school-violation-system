@@ -144,10 +144,10 @@ class OffenseAdviceService
 
         if ($violation->severity === 'Minor' && ($escalation['triggers_escalation_now'] ?? false)) {
             $nextSteps[] = 'System will also generate Major offense SYS-001 due to reaching 3 minor offenses.';
-            $nextSteps[] = 'Review the escalated major case for OSA action / hearing.';
+            $nextSteps[] = 'The escalated major case is auto-endorsed to the Grievance Committee.';
         } elseif ($violation->severity === 'Major') {
-            $nextSteps[] = 'Document at least one OSA action before endorsing or closing without a hearing.';
-            $nextSteps[] = 'Consider scheduling a hearing if required by severity.';
+            $nextSteps[] = 'This major offense will be endorsed to the Grievance Committee immediately.';
+            $nextSteps[] = 'Schedule a hearing if required by policy.';
         } else {
             $nextSteps[] = $escalation['note'];
         }
@@ -188,15 +188,10 @@ class OffenseAdviceService
             $nextSteps[] = 'Case is already closed. Review history if preparing reports or appeals.';
         } elseif ($status === 'Pending') {
             if ($case->isMajorOffense()) {
-                if (! $case->canEndorseToGrievance()) {
-                    $nextSteps[] = 'Record at least one OSA action (counseling, warning, parent conference, etc.).';
-                }
-                if ($case->canEndorse()) {
-                    $nextSteps[] = 'Endorse to Grievance Committee when ready, or schedule a hearing.';
-                } elseif ($reason = $case->endorseBlockReason()) {
-                    $nextSteps[] = "Endorse blocked: {$reason}";
-                }
-                $nextSteps[] = 'Schedule a hearing for this major/critical case if policy requires it.';
+                $nextSteps[] = $case->endorsed_at
+                    ? 'Major offense is already endorsed to the Grievance Committee.'
+                    : 'Endorse this major offense to the Grievance Committee, or schedule a hearing.';
+                $nextSteps[] = 'Schedule a hearing for this major case if policy requires it.';
             } else {
                 $nextSteps[] = 'Apply/confirm sanction, notify student/guardian, and close when sanctions are resolved — or schedule a hearing if contested.';
             }
@@ -266,8 +261,8 @@ class OffenseAdviceService
 
         if ($openMajor->isNotEmpty()) {
             $level = 'HIGH';
-            $reasons[] = 'Open Major case(s) need OSA action or hearing tracking.';
-            $nextSteps[] = 'Review open major cases: record OSA actions, endorse or schedule hearing.';
+            $reasons[] = 'Open Major case(s) need hearing tracking (already endorsed to Grievance).';
+            $nextSteps[] = 'Review open major cases and schedule a hearing if required.';
         }
 
         if ($escalation['triggers_escalation_now'] ?? false) {

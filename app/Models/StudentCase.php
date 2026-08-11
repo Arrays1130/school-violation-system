@@ -58,6 +58,29 @@ class StudentCase extends Model
     }
 
     /**
+     * Endorse to the Grievance Committee (idempotent).
+     * Major offenses are auto-endorsed on create — even a single major case.
+     */
+    public function endorseToGrievance(?int $userId = null, ?string $description = null): bool
+    {
+        if ($this->endorsed_at) {
+            return false;
+        }
+
+        CaseAction::create([
+            'case_id' => $this->id,
+            'user_id' => $userId ?? $this->created_by ?? auth()->id(),
+            'action_type' => 'endorsement',
+            'description' => $description ?? 'Automatically endorsed to the Grievance Committee (major offense).',
+            'endorsed_to_grievance' => true,
+        ]);
+
+        $this->markEndorsed();
+
+        return true;
+    }
+
+    /**
      * Human-readable unique case reference, e.g. 000-1, 000-2.
      * Sequence follows creation order (earliest case = 000-1).
      */
@@ -240,8 +263,8 @@ class StudentCase extends Model
             return 'This case has already been endorsed to the Grievance Committee.';
         }
 
-        if ($this->isMajorOffense() && ! $this->canEndorseToGrievance()) {
-            return 'Document at least one OSA action before endorsing a major offense.';
+        if ($this->status === 'Closed') {
+            return 'Closed cases cannot be endorsed.';
         }
 
         return null;

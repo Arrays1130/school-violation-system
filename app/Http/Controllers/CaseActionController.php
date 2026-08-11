@@ -33,15 +33,11 @@ class CaseActionController extends Controller
 
     /**
      * Endorse a case to the Grievance Committee.
-     * For major offenses, requires at least 1 prior OSA action.
+     * Major offenses are auto-endorsed on create; this remains for manual/minor cases.
      */
     public function endorse(Request $request, StudentCase $case)
     {
         $this->authorize('endorse', $case);
-
-        if ($case->endorsed_at) {
-            return back()->with('error', 'This case has already been endorsed to the Grievance Committee.');
-        }
 
         if ($reason = $case->endorseBlockReason()) {
             return back()->with('error', $reason);
@@ -51,18 +47,10 @@ class CaseActionController extends Controller
             'description' => 'nullable|string|max:2000',
         ]);
 
-        // Create the endorsement action
-        CaseAction::create([
-            'case_id'                => $case->id,
-            'user_id'                => auth()->id(),
-            'action_type'            => 'endorsement',
-            'description'            => $request->description ?? 'Case officially endorsed to the Grievance Committee.',
-            'endorsed_to_grievance'  => true,
-        ]);
-
-        // Note: Status no longer changes to "Endorsed to Grievance". 
-        // It remains Pending (or current status) until a hearing is scheduled.
-        $case->markEndorsed();
+        $case->endorseToGrievance(
+            auth()->id(),
+            $request->description ?: 'Case officially endorsed to the Grievance Committee.'
+        );
 
         return back()->with('success', 'Case has been officially endorsed to the Grievance Committee.');
     }

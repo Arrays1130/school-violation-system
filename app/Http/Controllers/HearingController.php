@@ -123,8 +123,19 @@ class HearingController extends Controller
 
     public function destroy(Hearing $hearing)
     {
-        $studentId = $hearing->case->student_id;
+        $case = $hearing->case;
+        $studentId = $case->student_id;
         $hearing->delete();
+
+        if ($case->status !== 'Closed') {
+            $hasOtherHearings = $case->hearings()->exists();
+
+            if (! $hasOtherHearings && in_array($case->status, ['Hearing Scheduled', 'Hearing'], true)) {
+                $case->transitionStatus('Pending');
+            } elseif ($hasOtherHearings && $case->status === 'Hearing') {
+                $case->transitionStatus('Hearing Scheduled');
+            }
+        }
 
         try {
             event(new DashboardUpdated('Hearing deleted'));

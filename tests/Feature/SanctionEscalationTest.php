@@ -33,8 +33,8 @@ class SanctionEscalationTest extends TestCase
 
         $student->refresh();
         $this->assertGreaterThan($beforeCount, $student->cases()->count());
-        $this->assertTrue(
-            $student->cases()->whereHas('violation', fn ($q) => $q->where('severity', 'Major'))->exists()
-        );
+        $major = $student->cases()->whereHas('violation', fn ($q) => $q->where('severity', 'Major'))->first();
+        $this->assertNotNull($major);
+        $this->assertNotNull($major->endorsed_at);
     }
 }

@@ -53,19 +53,65 @@ class CaseQuickActionsTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Hearings/Create'));
     }
 
-    public function test_major_offense_endorse_blocked_without_osa_action(): void
+    public function test_major_offense_is_auto_endorsed_on_create(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin']);
-        $case = StudentCase::factory()->create([
-            'violation_id' => \App\Models\Violation::factory()->major(),
+        $student = \App\Models\Student::factory()->create();
+        $violation = \App\Models\Violation::factory()->major()->create();
+
+        $this->actingAs($admin)
+            ->post(route('cases.store'), [
+                'student_id' => $student->id,
+                'violation_id' => $violation->id,
+                'description' => 'Single major offense',
+                'occurred_at' => now()->toDateTimeString(),
+            ])
+            ->assertRedirect();
+
+        $case = StudentCase::query()
+            ->where('student_id', $student->id)
+            ->where('violation_id', $violation->id)
+            ->first();
+
+        $this->assertNotNull($case);
+        $this->assertNotNull($case->endorsed_at);
+        $this->assertTrue(
+            $case->actions()->where('endorsed_to_grievance', true)->exists()
+        );
+    }
+
+    public function test_sanction_info_uses_recurring_rule_and_auto_endorse_flag(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $student = \App\Models\Student::factory()->create();
+        $violation = \App\Models\Violation::factory()->create([
+            'first_offense' => 'Verbal warning',
+            'second_offense' => 'Written warning',
+            'third_offense' => 'Parent conference',
+        ]);
+
+        StudentCase::factory()->count(3)->create([
+            'student_id' => $student->id,
+            'violation_id' => $violation->id,
         ]);
 
         $this->actingAs($admin)
-            ->post(route('cases.endorse', $case))
-            ->assertRedirect()
-            ->assertSessionHas('error');
+            ->get(route('api.get-sanction-info', [
+                'student_id' => $student->id,
+                'violation_id' => $violation->id,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('offense_level', 4)
+            ->assertJsonPath('sanction', \App\Services\OffenseAdviceService::RECURRING_SANCTION)
+            ->assertJsonPath('auto_endorse', false);
 
-        $case->refresh();
-        $this->assertNull($case->endorsed_at);
+        $major = \App\Models\Violation::factory()->major()->create();
+        $this->actingAs($admin)
+            ->get(route('api.get-sanction-info', [
+                'student_id' => $student->id,
+                'violation_id' => $major->id,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('auto_endorse', true);
     }
 }

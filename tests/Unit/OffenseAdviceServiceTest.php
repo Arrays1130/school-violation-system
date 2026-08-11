@@ -117,10 +117,10 @@ class OffenseAdviceServiceTest extends TestCase
         $advice = $this->advice->adviseCase($case->fresh(['student', 'violation']));
 
         $this->assertSame('Refer to Student Affairs', $advice['recommended_sanction']);
-        $this->assertFalse($advice['can_endorse']);
+        $this->assertTrue($advice['can_endorse']);
         $this->assertNotEmpty($advice['next_steps']);
         $this->assertTrue(
-            collect($advice['next_steps'])->contains(fn ($step) => str_contains(strtolower($step), 'osa'))
+            collect($advice['next_steps'])->contains(fn ($step) => str_contains(strtolower($step), 'endorse'))
         );
     }
 }
