@@ -147,17 +147,7 @@ export default function Login({ status, canResetPassword }) {
                         </button>
                     </div>
 
-                    <p className="mt-6 text-center text-sm text-gray-600">
-                        Dean?{' '}
-                        <Link href={route('dean.login')} className="font-semibold text-blue-700 hover:text-blue-800">
-                            Open Dean Portal
-                        </Link>
-                        {' · '}
-                        <a href="/dean-app/" className="font-semibold text-blue-700 hover:text-blue-800">
-                            Dean App
-                        </a>
-                    </p>
-                    <p className="mt-2 text-center text-sm text-gray-500">
+                    <p className="mt-6 text-center text-sm text-gray-500">
                         <Link href={route('home')} className="hover:text-gray-700">
                             Back to home
                         </Link>

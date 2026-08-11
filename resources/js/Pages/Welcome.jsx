@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { GraduationCap, Shield, Smartphone, Clock } from 'lucide-react';
+import { Shield, Clock } from 'lucide-react';
 import AuthBackground, { asset } from '@/Components/AuthBackground';
 import BrandText from '@/Components/BrandText';
 
@@ -46,20 +46,6 @@ export default function Welcome({ studentRegistrationEnabled = false }) {
                         <Shield className="w-4 h-4" aria-hidden="true" />
                         Admin / DSAS Login
                     </Link>
-                    <Link
-                        href={route('dean.login')}
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
-                    >
-                        <GraduationCap className="w-4 h-4" aria-hidden="true" />
-                        Dean Portal
-                    </Link>
-                    <a
-                        href="/dean-app/"
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
-                    >
-                        <Smartphone className="w-4 h-4" aria-hidden="true" />
-                        Open Dean App
-                    </a>
                     {studentRegistrationEnabled && (
                         <a
                             href={route('student.register.form')}
