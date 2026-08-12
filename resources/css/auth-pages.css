@@ -53,7 +53,12 @@ html.auth-page #app {
 
 /* Keep login card and inputs readable over the photo background */
 .auth-screen .auth-card {
-    background-color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.auth-bg-scrim {
+    position: absolute;
+    inset: 0;
 }
 
 .auth-screen input[type="email"],

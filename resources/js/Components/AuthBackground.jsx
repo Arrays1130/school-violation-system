@@ -37,7 +37,18 @@ export default function AuthBackground() {
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
             }}
-        />
+        >
+            {/* Soft vignette keeps the campus photo present while focusing the form */}
+            <div
+                className="auth-bg-scrim"
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background:
+                        'radial-gradient(ellipse 75% 65% at 50% 42%, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.35) 70%, rgba(15, 23, 42, 0.55) 100%), linear-gradient(180deg, rgba(15, 23, 42, 0.18) 0%, transparent 28%, transparent 62%, rgba(15, 23, 42, 0.45) 100%)',
+                }}
+            />
+        </div>
     );
 }
 
