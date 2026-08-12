@@ -17,7 +17,6 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ViolationController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/health', function () {
     $checks = [
@@ -109,10 +108,7 @@ Route::get('/', function () {
         );
     }
 
-    return Inertia::render('Welcome', [
-        'studentRegistrationEnabled' => (bool) config('school.student_registration_enabled'),
-        'canResetPassword' => Route::has('password.request'),
-    ]);
+    return redirect()->route('login');
 })->name('home');
 
 // Public student self-registration (OTP via institutional email; disabled by default)

@@ -146,12 +146,6 @@ export default function Login({ status, canResetPassword }) {
                             {processing ? "Signing In..." : "Sign In"}
                         </button>
                     </div>
-
-                    <p className="mt-6 text-center text-sm text-gray-500">
-                        <Link href={route('home')} className="hover:text-gray-700">
-                            Back to home
-                        </Link>
-                    </p>
                 </form>
             </motion.div>
 
