@@ -14,6 +14,8 @@ import dayjs from 'dayjs';
 
 export default function Trash({ auth, cases }) {
     const [confirmAction, setConfirmAction] = useState(null);
+    const [emptyingTrash, setEmptyingTrash] = useState(false);
+    const canEmptyTrash = auth.user?.role === 'super_admin';
 
     const handleRestore = (id) => {
         setConfirmAction({ type: 'restore', id });
@@ -23,14 +25,27 @@ export default function Trash({ auth, cases }) {
         setConfirmAction({ type: 'delete', id });
     };
 
+    const handleEmptyTrash = () => {
+        setConfirmAction({ type: 'empty-trash' });
+    };
+
     const handleConfirm = () => {
         if (!confirmAction) return;
         if (confirmAction.type === 'restore') {
             router.post(route('cases.restore', confirmAction.id));
+            setConfirmAction(null);
+        } else if (confirmAction.type === 'empty-trash') {
+            setEmptyingTrash(true);
+            router.delete(route('cases.empty-trash'), {
+                onFinish: () => {
+                    setEmptyingTrash(false);
+                    setConfirmAction(null);
+                },
+            });
         } else {
             router.delete(route('cases.force-delete', confirmAction.id));
+            setConfirmAction(null);
         }
-        setConfirmAction(null);
     };
 
     const dialogProps = confirmAction?.type === 'restore'
@@ -40,12 +55,19 @@ export default function Trash({ auth, cases }) {
             confirmLabel: 'Yes, Restore Record',
             destructive: false,
         }
-        : {
-            title: 'Permanently Delete Record?',
-            description: 'This cannot be undone. The violation record will be erased forever.',
-            confirmLabel: 'Yes, Delete Permanently',
-            destructive: true,
-        };
+        : confirmAction?.type === 'empty-trash'
+            ? {
+                title: 'Empty trash permanently?',
+                description: 'This cannot be undone. Every case in the Trash Bin will be erased forever.',
+                confirmLabel: 'Yes, empty trash',
+                destructive: true,
+            }
+            : {
+                title: 'Permanently Delete Record?',
+                description: 'This cannot be undone. The violation record will be erased forever.',
+                confirmLabel: 'Yes, Delete Permanently',
+                destructive: true,
+            };
 
     const truncate = (text, len = 50) => {
         if (!text) return '';
@@ -58,8 +80,9 @@ export default function Trash({ auth, cases }) {
 
             <ConfirmDialog
                 open={!!confirmAction}
-                onClose={() => setConfirmAction(null)}
+                onClose={() => !emptyingTrash && setConfirmAction(null)}
                 onConfirm={handleConfirm}
+                processing={emptyingTrash}
                 {...dialogProps}
             />
 
@@ -90,6 +113,16 @@ export default function Trash({ auth, cases }) {
                                 Recover deleted cases or permanently remove them from the system.
                             </p>
                         </div>
+                        {canEmptyTrash && cases.data.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleEmptyTrash}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white text-white hover:text-rose-700 border border-white/20 rounded-xl text-sm font-bold transition-all"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Empty trash
+                            </button>
+                        )}
                     </div>
                 </MotionItem>
 

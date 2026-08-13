@@ -3,11 +3,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
-    FolderOpen, Plus, Users, ShieldQuestion,
+    FolderOpen, Plus, Users, ShieldQuestion, Trash2,
 } from 'lucide-react';
 import EmptyState from '@/Components/EmptyState';
 import Pagination from '@/Components/Pagination';
 import FilterBar from '@/Components/FilterBar';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import useInertiaLoading from '@/hooks/useInertiaLoading';
 
 export default function Index({ auth, violations, summary, departments = [], academicYears = [], filters }) {
@@ -19,7 +20,10 @@ export default function Index({ auth, violations, summary, departments = [], aca
     const [academicYear, setAcademicYear] = useState(filters?.academic_year || '');
     const [dateFrom, setDateFrom] = useState(filters?.date_from || '');
     const [dateTo, setDateTo] = useState(filters?.date_to || '');
+    const [confirmEmptyAll, setConfirmEmptyAll] = useState(false);
+    const [emptying, setEmptying] = useState(false);
     const searchInputRef = useRef(null);
+    const canEmptyAll = ['admin', 'super_admin'].includes(auth.user?.role);
 
     const filterParams = { search, status, severity, department, academic_year: academicYear, date_from: dateFrom, date_to: dateTo };
 
@@ -69,6 +73,16 @@ export default function Index({ auth, violations, summary, departments = [], aca
         router.get(route('cases.index'));
     };
 
+    const handleEmptyAll = () => {
+        setEmptying(true);
+        router.delete(route('cases.empty-all'), {
+            onFinish: () => {
+                setEmptying(false);
+                setConfirmEmptyAll(false);
+            },
+        });
+    };
+
     const getSeverityBadge = (severityValue) => {
         switch (severityValue) {
             case 'Minor':
@@ -107,6 +121,17 @@ export default function Index({ auth, violations, summary, departments = [], aca
         >
             <Head title="Violation Cases" />
 
+            <ConfirmDialog
+                open={confirmEmptyAll}
+                onClose={() => !emptying && setConfirmEmptyAll(false)}
+                onConfirm={handleEmptyAll}
+                title="Move all student cases to trash?"
+                description={`This will soft-delete all ${summary?.total ?? 0} active student case(s). You can restore them later from the Trash Bin.`}
+                confirmLabel="Yes, move all to trash"
+                destructive
+                processing={emptying}
+            />
+
             <motion.div
                 className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
                 variants={containerVariants}
@@ -129,7 +154,17 @@ export default function Index({ auth, violations, summary, departments = [], aca
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                            {canEmptyAll && (summary?.total ?? 0) > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmEmptyAll(true)}
+                                    className="px-5 py-2.5 bg-white/10 hover:bg-rose-500/90 border border-white/20 hover:border-rose-400 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete all cases
+                                </button>
+                            )}
                             <Link href={route('cases.create')} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5">
                                 <Plus className="w-4 h-4" />
                                 Record Violation

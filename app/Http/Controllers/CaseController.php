@@ -474,6 +474,58 @@ class CaseController extends Controller
     }
 
     /**
+     * Soft-delete every active student case (move all to Trash Bin).
+     */
+    public function emptyAll(\Illuminate\Http\Request $request)
+    {
+        abort_if($request->user()->isDean(), 403);
+        abort_unless($request->user()->isAdmin() || $request->user()->isSuperAdmin(), 403);
+
+        $count = 0;
+        \App\Models\StudentCase::query()->orderBy('id')->chunkById(100, function ($cases) use (&$count) {
+            foreach ($cases as $case) {
+                $case->delete();
+                $count++;
+            }
+        });
+
+        \App\Support\DashboardCache::bust();
+        \App\Support\MobileCache::bust();
+
+        return redirect()
+            ->route('cases.index')
+            ->with('success', $count === 0
+                ? 'No active student cases to remove.'
+                : "Moved {$count} student case(s) to trash.");
+    }
+
+    /**
+     * Permanently delete every case currently in the Trash Bin.
+     */
+    public function emptyTrash(\Illuminate\Http\Request $request)
+    {
+        abort_if($request->user()->isDean(), 403);
+        abort_unless($request->user()->isSuperAdmin(), 403);
+
+        $count = 0;
+        \App\Models\StudentCase::onlyTrashed()->orderBy('id')->chunkById(100, function ($cases) use (&$count) {
+            foreach ($cases as $case) {
+                $case->forceDelete();
+                $count++;
+            }
+        });
+
+        \App\Support\DashboardCache::bust();
+        \App\Support\MobileCache::bust();
+
+        return redirect()
+            ->route('cases.trash')
+            ->with('success', $count === 0
+                ? 'Trash is already empty.'
+                : "Permanently deleted {$count} student case(s).");
+    }
+
+    /**
      * Mark a case as Closed.
      */
     public function close(\App\Models\StudentCase $case)
