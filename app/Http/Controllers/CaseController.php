@@ -72,25 +72,30 @@ class CaseController extends Controller
     }
 
     /**
-     * Students / cases for a single violation type.
+     * Day-case list for a single violation type (no student names).
      */
     public function byViolation(\Illuminate\Http\Request $request, \App\Models\Violation $violation)
     {
         $this->authorize('viewAny', \App\Models\StudentCase::class);
 
-        $query = \App\Models\StudentCase::with(['student', 'violation'])
-            ->withCount('attachments')
-            ->where('violation_id', $violation->id)
-            ->forUser($request->user())
-            ->latest('occurred_at');
+        $dayGroups = $this->buildDayGroupsForViolation($request, $violation);
 
-        $this->applyCaseListFilters($query, $request, includeSearch: true);
-
-        $cases = $query->paginate(15)->appends($request->all());
+        $page = max(1, (int) $request->get('page', 1));
+        $perPage = 15;
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $dayGroups->forPage($page, $perPage)->values(),
+            $dayGroups->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         return inertia('Cases/ByViolation', [
             'violation' => $violation,
-            'cases' => $cases,
+            'dayGroups' => $paginator,
             'departments' => \App\Models\Student::selectRaw('TRIM(department) as department')
                 ->whereNotNull('department')
                 ->distinct()
@@ -102,6 +107,85 @@ class CaseController extends Controller
                 ->pluck('academic_year'),
             'filters' => $request->only(['search', 'status', 'severity', 'department', 'academic_year', 'date_from', 'date_to']),
         ]);
+    }
+
+    /**
+     * Students involved on one day-case for a violation type.
+     */
+    public function byViolationDay(\Illuminate\Http\Request $request, \App\Models\Violation $violation, string $date)
+    {
+        $this->authorize('viewAny', \App\Models\StudentCase::class);
+
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            abort(404);
+        }
+
+        $dayGroups = $this->buildDayGroupsForViolation($request, $violation);
+        $dayGroup = $dayGroups->firstWhere('date', $date);
+
+        if (! $dayGroup) {
+            abort(404);
+        }
+
+        $query = \App\Models\StudentCase::with([
+                'student',
+                'violation',
+                'attachments:id,case_id,file_name,file_type,file_size,label',
+            ])
+            ->where('violation_id', $violation->id)
+            ->forUser($request->user())
+            ->whereDate('occurred_at', $date)
+            ->latest('occurred_at');
+
+        $this->applyCaseListFilters($query, $request, includeSearch: true);
+
+        $cases = $query->paginate(15)->appends($request->all());
+
+        return inertia('Cases/ByViolationDay', [
+            'violation' => $violation,
+            'dayGroup' => $dayGroup,
+            'cases' => $cases,
+            'filters' => $request->only(['search', 'status', 'severity', 'department', 'academic_year', 'date_from', 'date_to']),
+        ]);
+    }
+
+    /**
+     * Distinct occurrence dates for a violation → display sequence 000-1, 000-2, …
+     *
+     * @return \Illuminate\Support\Collection<int, array{date: string, student_count: int, sequence: int, sequence_label: string, display_label: string}>
+     */
+    private function buildDayGroupsForViolation(\Illuminate\Http\Request $request, \App\Models\Violation $violation): \Illuminate\Support\Collection
+    {
+        $query = \App\Models\StudentCase::query()
+            ->where('violation_id', $violation->id)
+            ->forUser($request->user())
+            ->whereNotNull('occurred_at');
+
+        $this->applyCaseListFilters($query, $request, includeSearch: true);
+
+        $dayExpr = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite'
+            ? "date(occurred_at)"
+            : 'DATE(occurred_at)';
+
+        $rows = $query
+            ->selectRaw("{$dayExpr} as day, COUNT(*) as student_count")
+            ->groupBy(\Illuminate\Support\Facades\DB::raw($dayExpr))
+            ->orderBy('day')
+            ->get();
+
+        return $rows->values()->map(function ($row, $index) use ($violation) {
+            $sequence = $index + 1;
+            $label = sprintf('000-%d', $sequence);
+            $date = \Illuminate\Support\Carbon::parse($row->day)->toDateString();
+
+            return [
+                'date' => $date,
+                'student_count' => (int) $row->student_count,
+                'sequence' => $sequence,
+                'sequence_label' => $label,
+                'display_label' => trim($violation->title).' '.$label,
+            ];
+        });
     }
 
     /**

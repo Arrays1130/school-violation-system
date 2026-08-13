@@ -94,6 +94,23 @@ class AuthorizationTest extends TestCase
         $this->actingAs($dean)
             ->get(route('cases.by-violation', $violation))
             ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cases/ByViolation')
+                ->has('dayGroups.data', 1)
+                ->where('dayGroups.data.0.student_count', 1)
+                ->where('dayGroups.data.0.sequence_label', '000-1')
+            );
+
+        $day = now()->toDateString();
+
+        $this->actingAs($dean)
+            ->get(route('cases.by-violation.day', ['violation' => $violation, 'date' => $day]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cases/ByViolationDay')
+                ->has('cases.data', 1)
+                ->where('cases.data.0.student.id', $cceStudent->id)
+            )
             ->assertSee($cceStudent->full_name)
             ->assertDontSee($ccjeStudent->full_name);
     }

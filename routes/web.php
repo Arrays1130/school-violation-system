@@ -186,6 +186,9 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::get('/cases/trash', [CaseController::class, 'trash'])->name('cases.trash');
     Route::delete('/cases/empty-all', [CaseController::class, 'emptyAll'])->name('cases.empty-all');
     Route::delete('/cases/empty-trash', [CaseController::class, 'emptyTrash'])->name('cases.empty-trash');
+    Route::get('/cases/by-violation/{violation}/day/{date}', [CaseController::class, 'byViolationDay'])
+        ->where('date', '\d{4}-\d{2}-\d{2}')
+        ->name('cases.by-violation.day');
     Route::get('/cases/by-violation/{violation}', [CaseController::class, 'byViolation'])->name('cases.by-violation');
     Route::post('/cases/{id}/restore', [CaseController::class, 'restore'])->name('cases.restore');
     Route::delete('/cases/{id}/force-delete', [CaseController::class, 'forceDelete'])->name('cases.force-delete');
