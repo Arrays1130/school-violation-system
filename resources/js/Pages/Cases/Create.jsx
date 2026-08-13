@@ -8,7 +8,7 @@ import {
 import Breadcrumbs from '@/Components/Breadcrumbs';
 import PageMotion, { MotionItem } from '@/Components/PageMotion';
 
-export default function Create({ auth, student, violations, students }) {
+export default function Create({ auth, student, violations, students, preselectedViolationId = null }) {
     const initialStudentIds = student?.id ? [student.id] : [];
     const [step, setStep] = useState(student ? 2 : 1);
     const [searchQuery, setSearchQuery] = useState('');
@@ -19,7 +19,7 @@ export default function Create({ auth, student, violations, students }) {
 
     const { data, setData, post, processing, errors } = useForm({
         student_ids: initialStudentIds,
-        violation_id: '',
+        violation_id: preselectedViolationId ? String(preselectedViolationId) : '',
         description: '',
         witness: '',
         occurred_at: new Date().toISOString().slice(0, 16),

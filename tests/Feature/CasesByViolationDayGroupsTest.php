@@ -25,16 +25,20 @@ class CasesByViolationDayGroupsTest extends TestCase
             'student_id' => $studentA->id,
             'violation_id' => $violation->id,
             'occurred_at' => '2026-08-01 10:00:00',
+            'status' => 'Pending',
         ]);
         StudentCase::factory()->create([
             'student_id' => $studentB->id,
             'violation_id' => $violation->id,
             'occurred_at' => '2026-08-01 14:00:00',
+            'status' => 'Closed',
+            'closed_at' => now(),
         ]);
         StudentCase::factory()->create([
             'student_id' => $studentC->id,
             'violation_id' => $violation->id,
             'occurred_at' => '2026-08-02 09:00:00',
+            'status' => 'Pending',
         ]);
 
         $this->actingAs($admin)
@@ -43,13 +47,18 @@ class CasesByViolationDayGroupsTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Cases/ByViolation')
                 ->has('dayGroups.data', 2)
-                ->where('dayGroups.data.0.date', '2026-08-01')
-                ->where('dayGroups.data.0.sequence_label', '000-1')
-                ->where('dayGroups.data.0.display_label', 'Bullying 000-1')
-                ->where('dayGroups.data.0.student_count', 2)
-                ->where('dayGroups.data.1.date', '2026-08-02')
-                ->where('dayGroups.data.1.sequence_label', '000-2')
-                ->where('dayGroups.data.1.student_count', 1)
+                // Newest day first in the list; sequence labels stay chronological.
+                ->where('dayGroups.data.0.date', '2026-08-02')
+                ->where('dayGroups.data.0.sequence_label', '000-2')
+                ->where('dayGroups.data.0.display_label', 'Bullying 000-2')
+                ->where('dayGroups.data.0.student_count', 1)
+                ->where('dayGroups.data.0.status_counts.pending', 1)
+                ->where('dayGroups.data.0.status_counts.closed', 0)
+                ->where('dayGroups.data.1.date', '2026-08-01')
+                ->where('dayGroups.data.1.sequence_label', '000-1')
+                ->where('dayGroups.data.1.student_count', 2)
+                ->where('dayGroups.data.1.status_counts.pending', 1)
+                ->where('dayGroups.data.1.status_counts.closed', 1)
             )
             ->assertDontSee('ALICE DAY ONE')
             ->assertDontSee('CARA DAY TWO');

@@ -78,13 +78,15 @@ class CaseController extends Controller
     {
         $this->authorize('viewAny', \App\Models\StudentCase::class);
 
-        $dayGroups = $this->buildDayGroupsForViolation($request, $violation);
+        // Sequences stay oldest→newest; list displays newest first.
+        $dayGroupsAsc = $this->buildDayGroupsForViolation($request, $violation);
+        $dayGroupsDesc = $dayGroupsAsc->sortByDesc('date')->values();
 
         $page = max(1, (int) $request->get('page', 1));
         $perPage = 15;
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
-            $dayGroups->forPage($page, $perPage)->values(),
-            $dayGroups->count(),
+            $dayGroupsDesc->forPage($page, $perPage)->values(),
+            $dayGroupsDesc->count(),
             $perPage,
             $page,
             [
@@ -151,8 +153,9 @@ class CaseController extends Controller
 
     /**
      * Distinct occurrence dates for a violation → display sequence 000-1, 000-2, …
+     * Returned oldest→newest so sequence labels stay stable; callers may reverse for display.
      *
-     * @return \Illuminate\Support\Collection<int, array{date: string, student_count: int, sequence: int, sequence_label: string, display_label: string}>
+     * @return \Illuminate\Support\Collection<int, array{date: string, student_count: int, sequence: int, sequence_label: string, display_label: string, status_counts: array{pending: int, hearing: int, closed: int, endorsed: int}}>
      */
     private function buildDayGroupsForViolation(\Illuminate\Http\Request $request, \App\Models\Violation $violation): \Illuminate\Support\Collection
     {
@@ -163,27 +166,29 @@ class CaseController extends Controller
 
         $this->applyCaseListFilters($query, $request, includeSearch: true);
 
-        $dayExpr = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite'
-            ? "date(occurred_at)"
-            : 'DATE(occurred_at)';
+        $cases = $query->get(['id', 'occurred_at', 'status', 'endorsed_at']);
 
-        $rows = $query
-            ->selectRaw("{$dayExpr} as day, COUNT(*) as student_count")
-            ->groupBy(\Illuminate\Support\Facades\DB::raw($dayExpr))
-            ->orderBy('day')
-            ->get();
+        $grouped = $cases
+            ->groupBy(fn (\App\Models\StudentCase $case) => $case->occurred_at->toDateString())
+            ->sortKeys();
 
-        return $rows->values()->map(function ($row, $index) use ($violation) {
+        return $grouped->values()->map(function ($dayCases, $index) use ($violation) {
             $sequence = $index + 1;
             $label = sprintf('000-%d', $sequence);
-            $date = \Illuminate\Support\Carbon::parse($row->day)->toDateString();
+            $date = $dayCases->first()->occurred_at->toDateString();
 
             return [
                 'date' => $date,
-                'student_count' => (int) $row->student_count,
+                'student_count' => $dayCases->count(),
                 'sequence' => $sequence,
                 'sequence_label' => $label,
                 'display_label' => trim($violation->title).' '.$label,
+                'status_counts' => [
+                    'pending' => $dayCases->where('status', 'Pending')->count(),
+                    'hearing' => $dayCases->where('status', 'Hearing Scheduled')->count(),
+                    'closed' => $dayCases->where('status', 'Closed')->count(),
+                    'endorsed' => $dayCases->filter(fn ($c) => $c->endorsed_at !== null)->count(),
+                ],
             ];
         });
     }
@@ -251,7 +256,8 @@ class CaseController extends Controller
         return inertia('Cases/Create', [
             'student' => $student,
             'violations' => $violations,
-            'students' => $students
+            'students' => $students,
+            'preselectedViolationId' => request('violation_id'),
         ]);
     }
 
