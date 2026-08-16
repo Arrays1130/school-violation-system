@@ -221,13 +221,6 @@ export default function Login({ status, canResetPassword }) {
                             )}
                         </button>
                     </motion.div>
-
-                    <motion.p className="mt-6 text-center text-sm text-slate-600" {...itemMotion}>
-                        Dean access?{" "}
-                        <Link href={route("dean.login")} className="font-semibold text-blue-700 hover:text-blue-800">
-                            Open Dean portal
-                        </Link>
-                    </motion.p>
                 </motion.form>
             </motion.div>
 
