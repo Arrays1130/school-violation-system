@@ -147,10 +147,11 @@ class AiServiceLogicTest extends TestCase
         $method = new ReflectionMethod(AiService::class, 'sanitizeAssistantReply');
         $method->setAccessible(true);
 
-        $dirty = "Policy answer here.\nI will now use the get_student_cases function.\n```python\nprint(test)\n```\nFinal answer.";
+        $dirty = "Policy **V-101** here.\nI will now use the get_student_cases function.\n```python\nprint(test)\n```\nCite `V-101`.\nFinal answer.";
         $clean = $method->invoke($service, $dirty);
 
-        $this->assertStringContainsString('Policy answer here.', $clean);
+        $this->assertStringContainsString('Policy **V-101** here.', $clean);
+        $this->assertStringContainsString('Cite `V-101`.', $clean);
         $this->assertStringContainsString('Final answer.', $clean);
         $this->assertStringNotContainsString('get_student_cases', $clean);
         $this->assertStringNotContainsString('print(test)', $clean);

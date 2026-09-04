@@ -14,20 +14,38 @@ const SESSION_PREFIX = 'nexus_ai_chat_';
 
 function renderMarkdown(text) {
     if (!text) return '';
-    const safe = escapeHtml(text);
-    return safe
-        .replace(/```([\s\S]*?)```/g, '<pre class="ai-pre"><code>$1</code></pre>')
-        .replace(/`([^`]+)`/g, '<code class="ai-code">$1</code>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/^### (.*$)/gm, '<h3 class="ai-h3">$1</h3>')
-        .replace(/^## (.*$)/gm, '<h2 class="ai-h2">$1</h2>')
-        .replace(/^# (.*$)/gm, '<h1 class="ai-h1">$1</h1>')
-        .replace(/^\s*[-•]\s+(.+)/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/s, '<ul class="ai-ul">$1</ul>')
-        .replace(/^\d+\.\s+(.+)/gm, '<li>$1</li>')
-        .replace(/^---$/gm, '<hr class="ai-hr"/>')
-        .replace(/\n/g, '<br/>');
+    let html = escapeHtml(text);
+
+    html = html.replace(/```([\s\S]*?)```/g, '<pre class="ai-pre"><code>$1</code></pre>');
+    html = html.replace(/`([^`]+)`/g, '<code class="ai-code">$1</code>');
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/^### (.*$)/gm, '<h3 class="ai-h3">$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2 class="ai-h2">$1</h2>');
+    html = html.replace(/^# (.*$)/gm, '<h1 class="ai-h1">$1</h1>');
+    html = html.replace(/^---$/gm, '<hr class="ai-hr"/>');
+
+    html = html.replace(/(?:^|\n)((?:\s*[-•]\s+.+(?:\n|$))+)/g, (_, block) => {
+        const items = block.trim().split('\n').map((line) => {
+            const item = line.replace(/^\s*[-•]\s+/, '').trim();
+            return `<li>${item}</li>`;
+        }).join('');
+        return `\n<ul class="ai-ul">${items}</ul>\n`;
+    });
+
+    html = html.replace(/(?:^|\n)((?:\s*\d+\.\s+.+(?:\n|$))+)/g, (_, block) => {
+        const items = block.trim().split('\n').map((line) => {
+            const item = line.replace(/^\s*\d+\.\s+/, '').trim();
+            return `<li>${item}</li>`;
+        }).join('');
+        return `\n<ol class="ai-ol">${items}</ol>\n`;
+    });
+
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/\n/g, '<br/>');
+    html = html.replace(/<br\/>\s*(<(?:ul|ol|h[123]|pre|hr))/g, '$1');
+    html = html.replace(/(<\/(?:ul|ol|h[123]|pre)>)\s*<br\/>/g, '$1');
+
+    return html;
 }
 
 function normalizeSource(source) {
@@ -99,7 +117,7 @@ function MessageBlock({ msg, onRegenerate, onFeedback }) {
     return (
         <div className="w-full flex justify-center px-4 py-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group">
             <div className="max-w-3xl w-full flex gap-4">
-                <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center mt-1 ${isError ? 'bg-rose-100 text-rose-600' : 'bg-indigo-600 text-white'}`}>
+                <div className={`w-8 h-8 rounded-2xl shrink-0 flex items-center justify-center mt-1 ${isError ? 'bg-rose-100 text-rose-600' : 'bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 text-white shadow-md shadow-indigo-500/30'}`}>
                     {isError ? <AlertCircle className="w-5 h-5" /> : <Sparkles className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 overflow-hidden min-w-0">
@@ -109,7 +127,7 @@ function MessageBlock({ msg, onRegenerate, onFeedback }) {
                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                                 : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                         }`}>
-                            {msg.mode === 'gemini' ? 'Gemini AI + RAG' : 'Handbook search'}
+                            {msg.mode === 'gemini' ? 'Live intelligence' : 'Handbook search'}
                         </span>
                     )}
                     <div className="text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 min-w-0">
@@ -241,18 +259,18 @@ function MessageBlock({ msg, onRegenerate, onFeedback }) {
 function getSuggestedPrompts(role, department) {
     if (role === 'dean') {
         return [
-            { label: 'My department cases', q: `Show violation statistics for ${department || 'my'} department.` },
-            { label: 'Top repeat offenders', q: 'Who are the top violators in my department?' },
-            { label: 'Hearing process', q: 'What is the violation hearing process step by step?' },
-            { label: 'Uniform policy', q: 'What is the policy on school uniforms and grooming?' },
+            { label: 'College pulse', q: `Give a sharp briefing of open cases and repeat offenders in ${department || 'my'} department.` },
+            { label: 'Who is high risk', q: 'Who are the top violators in my department and what should we do next with each?' },
+            { label: 'Hearing, simplified', q: 'Walk me through the hearing process as if I have a case this week — exact steps, in order.' },
+            { label: 'Uniform call', q: 'If a student is out of uniform, what is the policy and the first three actions OSA should take?' },
         ];
     }
 
     return [
-        { label: 'Major offenses', q: 'What are the major offenses and their sanctions?' },
-        { label: 'Hearing process', q: 'What is the violation hearing process step by step?' },
-        { label: 'System overview', q: 'Give me an overview of open cases and top violators.' },
-        { label: 'Uniform policy', q: 'What is the policy on school uniforms?' },
+        { label: 'Major offenses', q: 'Explain major offenses like a briefing for OSA: codes, first action, and when to escalate.' },
+        { label: 'Hearing playbook', q: 'Give the hearing process as a numbered playbook staff can follow today.' },
+        { label: 'Live caseload', q: 'Brief me on open cases and top violators — what needs attention first?' },
+        { label: 'Uniform & grooming', q: 'What is the uniform and grooming policy, and the catalog sanction path for a first offense?' },
     ];
 }
 
@@ -520,22 +538,26 @@ export default function AiAssistant({
 
             <div className="flex flex-col h-[calc(100vh-4.1rem)] lg:h-[calc(100vh-4.1rem)] bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans">
                 <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h1 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                            Nexus AI
-                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wide ${
-                                activeMode === 'gemini'
-                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                            }`}>
-                                {modeLabel}
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                            <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-semibold tracking-tight leading-none">Nexus</h1>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">OSA intelligence copilot</p>
+                        </div>
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wide ${
+                            activeMode === 'gemini'
+                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                        }`}>
+                            {modeLabel}
+                        </span>
+                        {vectorSearchReady && (
+                            <span className="px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wide bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                                Live knowledge
                             </span>
-                            {vectorSearchReady && (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wide bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
-                                    Vector RAG
-                                </span>
-                            )}
-                        </h1>
+                        )}
                     </div>
                     <div className="flex items-center gap-1">
                         {messages.length > 0 && (
@@ -565,12 +587,15 @@ export default function AiAssistant({
                 <div ref={chatRef} className="flex-1 overflow-y-auto scroll-smooth ai-scrollbar min-h-0">
                     {isEmpty ? (
                         <div className="h-full flex flex-col items-center justify-center px-4 py-8 fade-in">
-                            <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-6">
-                                <Sparkles className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                            <div className="relative mb-7">
+                                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-500/30 via-indigo-500/20 to-cyan-400/30 blur-2xl" />
+                                <div className="relative w-16 h-16 rounded-3xl bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-xl shadow-indigo-500/25">
+                                    <Sparkles className="w-8 h-8 text-white" />
+                                </div>
                             </div>
-                            <h2 className="text-2xl font-semibold mb-2 text-center">How can I help you today?</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md">
-                                Ask about handbook policies, violation procedures, or student records at {schoolName}.
+                            <h2 className="text-2xl sm:text-3xl font-semibold mb-2 text-center tracking-tight">Ask Nexus anything about OSA.</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed">
+                                Briefings, sanctions, hearings, and student records at {schoolName} — answered like a sharp advisor, not a chatbot.
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                                 {suggestedPrompts.map((item, idx) => (
@@ -578,10 +603,10 @@ export default function AiAssistant({
                                         key={idx}
                                         type="button"
                                         onClick={() => sendMessage(item.q)}
-                                        className="text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-[14px] text-slate-600 dark:text-slate-300 transition-colors"
+                                        className="text-left px-4 py-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-800/40 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/40 text-[14px] text-slate-600 dark:text-slate-300 transition-all shadow-sm"
                                     >
-                                        <span className="block font-medium mb-1 text-slate-800 dark:text-slate-200">{item.label}</span>
-                                        <span className="text-slate-400 dark:text-slate-500 text-[13px] line-clamp-2">{item.q}</span>
+                                        <span className="block font-semibold mb-1 text-slate-800 dark:text-slate-100">{item.label}</span>
+                                        <span className="text-slate-400 dark:text-slate-500 text-[13px] line-clamp-2 leading-snug">{item.q}</span>
                                     </button>
                                 ))}
                             </div>
@@ -603,7 +628,7 @@ export default function AiAssistant({
                             {isTyping && (
                                 <div className="w-full flex justify-center px-4 py-4">
                                     <div className="max-w-3xl w-full flex gap-4">
-                                        <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center mt-1 bg-indigo-600 text-white">
+                                        <div className="w-8 h-8 rounded-2xl shrink-0 flex items-center justify-center mt-1 bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 text-white shadow-md shadow-indigo-500/30">
                                             <Sparkles className="w-4 h-4" />
                                         </div>
                                         <TypingDots />
@@ -618,7 +643,7 @@ export default function AiAssistant({
                     <div className="max-w-3xl mx-auto w-full">
                         <form
                             onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
-                            className="relative flex items-end bg-slate-100 dark:bg-slate-800 rounded-[24px] overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/30 transition-shadow border border-slate-200 dark:border-slate-700"
+                            className="relative flex items-end bg-slate-50 dark:bg-slate-800/80 rounded-[24px] overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/40 focus-within:border-indigo-300 dark:focus-within:border-indigo-500 transition-shadow border border-slate-200 dark:border-slate-700 shadow-sm"
                         >
                             {'SpeechRecognition' in window || 'webkitSpeechRecognition' in window ? (
                                 <button
@@ -644,7 +669,7 @@ export default function AiAssistant({
                                 disabled={isTyping}
                                 rows={1}
                                 className="flex-1 py-3.5 px-2 bg-transparent border-none focus:ring-0 resize-none text-[15px] max-h-[200px] outline-none ai-scrollbar text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-                                placeholder="Message Nexus AI..."
+                                placeholder="Ask Nexus — a student, a code, or what to do next…"
                                 style={{ minHeight: '52px' }}
                             />
 
@@ -652,7 +677,7 @@ export default function AiAssistant({
                                 <button
                                     type="submit"
                                     disabled={!input.trim() || isTyping}
-                                    className="p-2 bg-indigo-600 text-white rounded-full disabled:opacity-30 hover:bg-indigo-700 transition-colors"
+                                    className="p-2 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-full disabled:opacity-30 hover:brightness-110 transition-all shadow-md shadow-indigo-500/20"
                                     aria-label="Send message"
                                 >
                                     {isTyping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -660,9 +685,7 @@ export default function AiAssistant({
                             </div>
                         </form>
                         <p className="text-center text-[11px] text-slate-500 dark:text-slate-400 mt-3 font-medium">
-                            Responses use {providerMode === 'gemini'
-                                ? (vectorSearchReady ? 'Gemini AI with vector + handbook + violation RAG' : 'Gemini AI with handbook + violation RAG')
-                                : 'handbook and violation search only'}. Always verify critical decisions with official records.
+                            Nexus cites handbook, catalog, and live records. Confirm high-stakes sanctions with OSA before acting.
                         </p>
                     </div>
                 </div>
@@ -675,14 +698,18 @@ export default function AiAssistant({
                 .dark .ai-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.15); }
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
                 .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-                .ai-message-body h1.ai-h1, .ai-message-body h2.ai-h2, .ai-message-body h3.ai-h3 { font-weight: 700; margin: 1.2em 0 0.5em; }
-                .ai-message-body h3.ai-h3 { color: #4f46e5; }
-                .dark .ai-message-body h3.ai-h3 { color: #818cf8; }
-                .ai-message-body ul.ai-ul { padding-left: 1.5em; margin: 0.5em 0 1em; list-style-type: disc; }
-                .ai-message-body pre.ai-pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 0.85em; overflow-x: auto; margin: 0.8em 0; }
+                .ai-message-body h1.ai-h1, .ai-message-body h2.ai-h2, .ai-message-body h3.ai-h3 { font-weight: 700; margin: 1.1em 0 0.45em; letter-spacing: -0.02em; }
+                .ai-message-body h3.ai-h3 { color: #4f46e5; font-size: 0.95rem; }
+                .dark .ai-message-body h3.ai-h3 { color: #a5b4fc; }
+                .ai-message-body ul.ai-ul { padding-left: 1.25em; margin: 0.45em 0 0.9em; list-style-type: disc; }
+                .ai-message-body ol.ai-ol { padding-left: 1.25em; margin: 0.45em 0 0.9em; list-style-type: decimal; }
+                .ai-message-body li { margin: 0.2em 0; }
+                .ai-message-body strong { color: #0f172a; }
+                .dark .ai-message-body strong { color: #f8fafc; }
+                .ai-message-body pre.ai-pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 0.85em; overflow-x: auto; margin: 0.8em 0; }
                 .dark .ai-message-body pre.ai-pre { background: #0f172a; border-color: #334155; color: #f8fafc; }
-                .ai-message-body code.ai-code { background: #f1f5f9; color: #ec4899; border-radius: 4px; padding: 2px 4px; font-size: 0.85em; }
-                .dark .ai-message-body code.ai-code { background: #334155; color: #f472b6; }
+                .ai-message-body code.ai-code { background: #eef2ff; color: #4338ca; border-radius: 6px; padding: 1px 6px; font-size: 0.84em; font-weight: 600; }
+                .dark .ai-message-body code.ai-code { background: #312e81; color: #c7d2fe; }
             `}</style>
         </AuthenticatedLayout>
     );

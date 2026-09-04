@@ -84,11 +84,11 @@ class AiAssistantContext
     if (! empty($context['case']['student_name'])) {
       $caseId = str_pad((string) ($context['case']['id'] ?? ''), 4, '0', STR_PAD_LEFT);
 
-      return "Summarize case #{$caseId} for {$context['case']['student_name']} and suggest next steps.";
+      return "Brief case #{$caseId} for {$context['case']['student_name']}: status, recommended sanction, and the next OSA step.";
     }
 
     if (! empty($context['student']['name'])) {
-      return "Show the violation case record for {$context['student']['name']}.";
+      return "Pull the live case record for {$context['student']['name']} and tell me what to do next.";
     }
 
     return null;

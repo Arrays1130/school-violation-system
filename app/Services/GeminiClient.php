@@ -12,7 +12,7 @@ class GeminiClient
         return [
             [
                 'name' => 'search_students',
-                'description' => 'Find students by partial name or ID within the user scope.',
+                'description' => 'Find matching students by partial name or numeric ID. Use this before answering any question about a named student.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -26,7 +26,7 @@ class GeminiClient
             ],
             [
                 'name' => 'get_student_cases',
-                'description' => 'Get full violation case history for a student.',
+                'description' => 'Return the full live violation case history for one student: codes, dates, status, sanctions, and offense level.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -40,7 +40,7 @@ class GeminiClient
             ],
             [
                 'name' => 'analyze_student_incident',
-                'description' => 'Risk analysis and recommendation for a student using offense levels, severity, and minor-escalation rules.',
+                'description' => 'Compute risk, offense level, catalog sanction, and the concrete OSA next step for a student. Use when asked what to do, what penalty applies, or whether to escalate.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -75,7 +75,7 @@ class GeminiClient
             ],
             [
                 'name' => 'get_system_stats',
-                'description' => 'System-wide case totals, open cases, and top violators.',
+                'description' => 'Live case totals, open/pending counts, and top repeat violators. Use for dashboards, "how many", and overview questions.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -89,7 +89,7 @@ class GeminiClient
             ],
             [
                 'name' => 'get_all_violations',
-                'description' => 'List all configured violation rules with codes, severity, and 1st/2nd/3rd offense sanctions.',
+                'description' => 'Return the full violation catalog with codes, severity, and 1st/2nd/3rd offense sanctions. Use for lists of offenses or “what counts as major”.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -119,8 +119,9 @@ class GeminiClient
             'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
             'contents' => $contents,
             'generationConfig' => [
-                'temperature' => (float) config('ai.temperature', 0.5),
-                'maxOutputTokens' => (int) config('ai.max_tokens', 1024),
+                'temperature' => (float) config('ai.temperature', 0.4),
+                'maxOutputTokens' => (int) config('ai.max_tokens', 4096),
+                'topP' => 0.85,
             ],
         ];
 
@@ -164,8 +165,9 @@ class GeminiClient
             'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
             'contents' => $contents,
             'generationConfig' => [
-                'temperature' => (float) config('ai.temperature', 0.5),
-                'maxOutputTokens' => (int) config('ai.max_tokens', 1024),
+                'temperature' => (float) config('ai.temperature', 0.4),
+                'maxOutputTokens' => (int) config('ai.max_tokens', 4096),
+                'topP' => 0.85,
             ],
         ];
 
