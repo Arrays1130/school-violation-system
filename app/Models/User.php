@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\DepartmentResolver;
 use App\Support\SchoolMailer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -53,6 +55,26 @@ class User extends Authenticatable
     public function isDean(): bool
     {
         return $this->role === 'dean';
+    }
+
+    /**
+     * Deans assigned to a college, matching shortcut, long name, or alias.
+     */
+    public function scopeDeansForDepartment(Builder $query, ?string $department): Builder
+    {
+        $keys = DepartmentResolver::equivalentKeys($department);
+
+        $query->where('role', 'dean');
+
+        if ($keys === []) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->where(function (Builder $inner) use ($keys) {
+            foreach ($keys as $key) {
+                $inner->orWhereRaw('UPPER(TRIM(department)) = ?', [strtoupper(trim((string) $key))]);
+            }
+        });
     }
 
     /**

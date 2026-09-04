@@ -103,9 +103,7 @@ class StakeholderNotifier
     public static function notifyDepartmentDeansOfViolation(StudentCase $case): void
     {
         try {
-            $deans = User::where('role', 'dean')
-                ->where('department', $case->student->department_shortcut)
-                ->get();
+            $deans = User::query()->deansForDepartment($case->student->department_shortcut)->get();
 
             foreach ($deans as $dean) {
                 $dean->notify(new DeanViolationNotification($case));
@@ -198,9 +196,7 @@ class StakeholderNotifier
         $student = $hearing->case->student;
 
         try {
-            $deans = User::where('role', 'dean')
-                ->where('department', $student->department_shortcut)
-                ->get();
+            $deans = User::query()->deansForDepartment($student->department_shortcut)->get();
 
             foreach ($deans as $dean) {
                 $dean->notify(new DeanHearingNotification($hearing));
@@ -308,9 +304,7 @@ class StakeholderNotifier
         ], 'guardian');
 
         try {
-            $deans = User::where('role', 'dean')
-                ->where('department', $student->department_shortcut)
-                ->get();
+            $deans = User::query()->deansForDepartment($student->department_shortcut)->get();
 
             foreach ($deans as $dean) {
                 $dean->notify(new DeanCaseClosedNotification($case));

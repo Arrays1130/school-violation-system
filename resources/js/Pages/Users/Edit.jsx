@@ -1,11 +1,11 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, User, Save, Shield, Key, Mail, Edit3, Phone } from 'lucide-react';
+import { ArrowLeft, User, Save, Shield, Key, Mail, Edit3, Phone, Building2 } from 'lucide-react';
 import InputError from '@/Components/InputError';
 import Breadcrumbs from '@/Components/Breadcrumbs';
 
-export default function Edit({ auth, userRecord }) {
+export default function Edit({ auth, userRecord, departments = [] }) {
     const { data, setData, put, processing, errors } = useForm({
         name: userRecord.name || '',
         email: userRecord.email || '',
@@ -15,6 +15,14 @@ export default function Edit({ auth, userRecord }) {
         role: userRecord.role || 'dean',
         department: userRecord.department || '',
     });
+
+    const setRole = (role) => {
+        setData({
+            ...data,
+            role,
+            department: role === 'dean' ? data.department : '',
+        });
+    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -135,7 +143,7 @@ export default function Edit({ auth, userRecord }) {
                                                 </div>
                                                 <select 
                                                     value={data.role}
-                                                    onChange={e => setData('role', e.target.value)}
+                                                    onChange={e => setRole(e.target.value)}
                                                     className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
                                                 >
                                                     <option value="super_admin">Super Admin</option>
@@ -149,13 +157,23 @@ export default function Edit({ auth, userRecord }) {
                                         {data.role === 'dean' && (
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Department (For Deans)</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={data.department}
-                                                    onChange={e => setData('department', e.target.value)}
-                                                    placeholder="e.g. CITE"
-                                                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                                />
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                                        <Building2 className="w-4 h-4" />
+                                                    </div>
+                                                    <select
+                                                        value={data.department}
+                                                        onChange={e => setData('department', e.target.value)}
+                                                        required
+                                                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
+                                                    >
+                                                        <option value="">Select department...</option>
+                                                        {departments.map((dept) => (
+                                                            <option key={dept.value} value={dept.value}>{dept.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <p className="mt-1.5 text-[11px] text-slate-400">This dean only sees students and cases in the selected college.</p>
                                                 <InputError message={errors.department} className="mt-2" />
                                             </div>
                                         )}

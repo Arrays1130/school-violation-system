@@ -358,13 +358,16 @@ class CaseController extends Controller
         event(new \App\Events\ViolationRecorded($case));
 
         $deptShortcut = $case->student->department_shortcut;
-        $notifiableUsers = \App\Models\User::where('role', 'super_admin')
-            ->orWhere(function ($query) use ($deptShortcut) {
+        $notifiableUsers = \App\Models\User::query()
+            ->where(function ($query) use ($deptShortcut) {
+                $query->where('role', 'super_admin');
                 if ($deptShortcut) {
-                    $query->where('role', 'dean')
-                        ->where('department', $deptShortcut);
+                    $query->orWhere(function ($inner) use ($deptShortcut) {
+                        $inner->deansForDepartment($deptShortcut);
+                    });
                 }
-            })->get();
+            })
+            ->get();
 
         \Illuminate\Support\Facades\Notification::send(
             $notifiableUsers,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\DepartmentResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -44,7 +45,9 @@ class UserController extends Controller
      */
     public function create()
     {
-        return inertia('Users/Create');
+        return inertia('Users/Create', [
+            'departments' => DepartmentResolver::options(),
+        ]);
     }
 
     /**
@@ -68,7 +71,13 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        return inertia('Users/Edit', ['userRecord' => $user]);
+        $record = $user->only(['id', 'name', 'email', 'phone', 'role', 'department']);
+        $record['department'] = DepartmentResolver::toShortcut($user->department) ?? ($user->department ?? '');
+
+        return inertia('Users/Edit', [
+            'userRecord' => $record,
+            'departments' => DepartmentResolver::options(),
+        ]);
     }
 
     /**
