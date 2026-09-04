@@ -36,6 +36,8 @@ function formatDeletedAt(dateStr) {
 
 export default function Trash({ auth, students }) {
     const [confirmAction, setConfirmAction] = useState(null);
+    const [emptyingTrash, setEmptyingTrash] = useState(false);
+    const canEmptyTrash = auth.user?.role === 'super_admin';
 
     const handleRestore = (id) => {
         setConfirmAction({ type: 'restore', id });
@@ -45,14 +47,27 @@ export default function Trash({ auth, students }) {
         setConfirmAction({ type: 'delete', id });
     };
 
+    const handleEmptyTrash = () => {
+        setConfirmAction({ type: 'empty-trash' });
+    };
+
     const handleConfirm = () => {
         if (!confirmAction) return;
         if (confirmAction.type === 'restore') {
             router.post(route('students.restore', confirmAction.id));
+            setConfirmAction(null);
+        } else if (confirmAction.type === 'empty-trash') {
+            setEmptyingTrash(true);
+            router.delete(route('students.empty-trash'), {
+                onFinish: () => {
+                    setEmptyingTrash(false);
+                    setConfirmAction(null);
+                },
+            });
         } else {
             router.delete(route('students.force-delete', confirmAction.id));
+            setConfirmAction(null);
         }
-        setConfirmAction(null);
     };
 
     const dialogProps = confirmAction?.type === 'restore'
@@ -62,12 +77,19 @@ export default function Trash({ auth, students }) {
             confirmLabel: 'Yes, Restore Student',
             destructive: false,
         }
-        : {
-            title: 'Permanently Delete Student?',
-            description: 'This cannot be undone. The student and all records will be erased forever.',
-            confirmLabel: 'Yes, Delete Permanently',
-            destructive: true,
-        };
+        : confirmAction?.type === 'empty-trash'
+            ? {
+                title: 'Empty trash permanently?',
+                description: 'This cannot be undone. Every student in the Trash Bin will be erased forever, including their cases.',
+                confirmLabel: 'Yes, empty trash',
+                destructive: true,
+            }
+            : {
+                title: 'Permanently Delete Student?',
+                description: 'This cannot be undone. The student and all records will be erased forever.',
+                confirmLabel: 'Yes, Delete Permanently',
+                destructive: true,
+            };
 
     return (
         <AuthenticatedLayout
@@ -78,8 +100,9 @@ export default function Trash({ auth, students }) {
 
             <ConfirmDialog
                 open={!!confirmAction}
-                onClose={() => setConfirmAction(null)}
+                onClose={() => !emptyingTrash && setConfirmAction(null)}
                 onConfirm={handleConfirm}
+                processing={emptyingTrash}
                 {...dialogProps}
             />
 
@@ -97,7 +120,8 @@ export default function Trash({ auth, students }) {
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Trash2 className="w-20 h-20 text-white" />
                     </div>
-                    <div className="relative z-10">
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
                         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider mb-2">
                             <Archive className="w-3 h-3" />
                             Recovery Zone
@@ -106,6 +130,17 @@ export default function Trash({ auth, students }) {
                         <p className="text-red-100 text-xs sm:text-sm font-medium max-w-xl">
                             Recover deleted students or permanently remove them from the system.
                         </p>
+                        </div>
+                        {canEmptyTrash && students.data?.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleEmptyTrash}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white text-white hover:text-rose-700 border border-white/20 rounded-xl text-sm font-bold transition-all"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Empty trash
+                            </button>
+                        )}
                     </div>
                 </MotionItem>
 

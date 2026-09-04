@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Student;
+use App\Models\User;
 use App\Models\Violation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,12 @@ class SeedIfEmpty extends Command
     {
         if (Student::withTrashed()->exists()) {
             $this->info('Students already exist — skipping demo seed.');
+
+            return self::SUCCESS;
+        }
+
+        if (User::query()->exists()) {
+            $this->info('Staff accounts exist and students are empty — skipping demo seed.');
 
             return self::SUCCESS;
         }

@@ -64,6 +64,9 @@ export default function Index({ auth, students, departments, summary, filterAcad
     const [graduateYear, setGraduateYear] = useState('');
     const [graduateError, setGraduateError] = useState('');
     const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
+    const [confirmEmptyAll, setConfirmEmptyAll] = useState(false);
+    const [emptying, setEmptying] = useState(false);
+    const canEmptyAll = ['admin', 'super_admin'].includes(auth.user?.role);
 
     const handleDelete = (id) => setDeleteStudentId(id);
 
@@ -101,6 +104,16 @@ export default function Index({ auth, students, departments, summary, filterAcad
     const confirmPromote = () => {
         router.post(route('students.promote'));
         setShowPromoteConfirm(false);
+    };
+
+    const handleEmptyAll = () => {
+        setEmptying(true);
+        router.delete(route('students.empty-all'), {
+            onFinish: () => {
+                setEmptying(false);
+                setConfirmEmptyAll(false);
+            },
+        });
     };
 
     const containerVariants = {
@@ -164,6 +177,17 @@ export default function Index({ auth, students, departments, summary, filterAcad
                 confirmLabel="Yes, Promote"
             />
 
+            <ConfirmDialog
+                open={confirmEmptyAll}
+                onClose={() => !emptying && setConfirmEmptyAll(false)}
+                onConfirm={handleEmptyAll}
+                title="Move all students to trash?"
+                description={`This will soft-delete all ${summary?.total ?? 0} active student(s). You can restore them later from the Trash Bin.`}
+                confirmLabel="Yes, move all to trash"
+                destructive
+                processing={emptying}
+            />
+
             <motion.div 
                 className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
                 variants={containerVariants}
@@ -201,6 +225,18 @@ export default function Index({ auth, students, departments, summary, filterAcad
                             
                             {/* Standard Actions */}
                             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                {canEmptyAll && (summary?.total ?? 0) > 0 && (
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => setConfirmEmptyAll(true)}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="px-4 sm:px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/90 border border-rose-400/30 hover:border-rose-400 text-rose-100 hover:text-white rounded-xl text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+                                    >
+                                        <Trash2 className="w-4 h-4 shrink-0" />
+                                        Delete all students
+                                    </motion.button>
+                                )}
                                 <motion.a whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} href={route('students.import_form')} className="px-4 sm:px-5 py-2.5 bg-white/10 dark:bg-slate-900/10 border border-white/20 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-white/20 transition-all backdrop-blur-md inline-flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
                                     <UploadCloud className="w-4 h-4 shrink-0" />
                                     Import Data

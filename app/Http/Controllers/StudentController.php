@@ -178,19 +178,7 @@ class StudentController extends Controller
     {
         abort_if(auth()->user()->isDean(), 403);
 
-        // Promote highest levels first so newly promoted rows are not advanced twice.
-        $steps = [
-            '3rd Year' => '4th Year',
-            '2nd Year' => '3rd Year',
-            '1st Year' => '2nd Year',
-        ];
-
-        $count = 0;
-        foreach ($steps as $from => $to) {
-            $count += \App\Models\Student::query()
-                ->whereIn('year_level', YearLevel::aliasesFor($from))
-                ->update(['year_level' => $to]);
-        }
+        $count = \App\Support\StudentPromotion::promoteYearLevels();
 
         if ($count === 0) {
             return redirect()->back()->with('error', 'No students found to promote.');
@@ -279,6 +267,66 @@ class StudentController extends Controller
         $student->forceDelete();
 
         return redirect()->route('students.trash')->with('success', 'Student has been permanently deleted.');
+    }
+
+    /**
+     * Soft-delete every active student (move all to Trash Bin).
+     */
+    public function emptyAll(\Illuminate\Http\Request $request)
+    {
+        abort_if($request->user()->isDean(), 403);
+        abort_unless($request->user()->isAdmin() || $request->user()->isSuperAdmin(), 403);
+
+        $count = \App\Models\Student::query()->count();
+        if ($count > 0) {
+            \App\Models\Student::query()->update(['deleted_at' => now()]);
+            \App\Support\DashboardCache::bust();
+            \App\Support\MobileCache::bust();
+        }
+
+        return redirect()
+            ->route('students.index')
+            ->with('success', $count === 0
+                ? 'No active students to remove.'
+                : "Moved {$count} student(s) to trash.");
+    }
+
+    /**
+     * Permanently delete every student currently in the Trash Bin.
+     * Related cases/hearings are removed by the students FK cascade.
+     */
+    public function emptyTrash(\Illuminate\Http\Request $request)
+    {
+        abort_if($request->user()->isDean(), 403);
+        abort_unless($request->user()->isSuperAdmin(), 403);
+
+        $ids = \App\Models\Student::onlyTrashed()->pluck('id');
+        $count = $ids->count();
+
+        if ($count > 0) {
+            $ids->chunk(500)->each(function ($chunk) {
+                $idList = $chunk->all();
+                \Illuminate\Support\Facades\DB::table('notifications')
+                    ->where('notifiable_type', \App\Models\Student::class)
+                    ->whereIn('notifiable_id', $idList)
+                    ->delete();
+                if (\Illuminate\Support\Facades\Schema::hasTable('personal_access_tokens')) {
+                    \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+                        ->where('tokenable_type', \App\Models\Student::class)
+                        ->whereIn('tokenable_id', $idList)
+                        ->delete();
+                }
+                \Illuminate\Support\Facades\DB::table('students')->whereIn('id', $idList)->delete();
+            });
+            \App\Support\DashboardCache::bust();
+            \App\Support\MobileCache::bust();
+        }
+
+        return redirect()
+            ->route('students.trash')
+            ->with('success', $count === 0
+                ? 'Trash is already empty.'
+                : "Permanently deleted {$count} student(s). Related cases were removed.");
     }
 
     /**

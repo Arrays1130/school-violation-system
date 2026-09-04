@@ -169,6 +169,8 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::post('/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote');
     Route::post('/students/graduate-fourth-years', [StudentController::class, 'graduateFourthYears'])->name('students.graduate_fourth_years');
     Route::get('/students/trash', [StudentController::class, 'trash'])->name('students.trash');
+    Route::delete('/students/empty-all', [StudentController::class, 'emptyAll'])->name('students.empty-all');
+    Route::delete('/students/empty-trash', [StudentController::class, 'emptyTrash'])->name('students.empty-trash');
     Route::post('/students/{id}/restore', [StudentController::class, 'restore'])->name('students.restore');
     Route::delete('/students/{id}/force-delete', [StudentController::class, 'forceDelete'])->name('students.force-delete');
     Route::get('/students/import', [StudentController::class, 'importForm'])->name('students.import_form');
