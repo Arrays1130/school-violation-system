@@ -170,31 +170,6 @@ class StudentController extends Controller
     }
 
     /**
-     * Bulk promote 1st-3rd year students to the next year level.
-     * Uses query bulk updates (highest year first) so model events/broadcasts
-     * are not fired per student — avoids Inertia hang on large cohorts.
-     */
-    public function promoteStudents()
-    {
-        abort_if(auth()->user()->isDean(), 403);
-
-        $count = \App\Support\StudentPromotion::promoteYearLevels();
-
-        if ($count === 0) {
-            return redirect()->back()->with('error', 'No students found to promote.');
-        }
-
-        \App\Support\DashboardCache::bust();
-        try {
-            event(new \App\Events\DashboardUpdated('Students promoted'));
-        } catch (\Exception $e) {
-            Log::warning('Dashboard event dispatch failed after bulk promote', ['error' => $e->getMessage()]);
-        }
-
-        return redirect()->route('students.index')->with('success', "Successfully promoted {$count} students to the next year level.");
-    }
-
-    /**
      * Bulk graduate and archive 4th-year students.
      * Single UPDATE (soft-delete + graduated year) — no per-row model events.
      */

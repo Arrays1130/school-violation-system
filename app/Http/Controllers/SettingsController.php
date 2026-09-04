@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\DashboardCache;
 use App\Support\SchoolSettings;
+use App\Support\StudentPromotion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SettingsController extends Controller
 {
@@ -43,10 +46,36 @@ class SettingsController extends Controller
             'school_name' => 'required|string|max:255',
         ]);
 
-        SchoolSettings::set('current_academic_year', $validated['current_academic_year']);
+        $previousYear = (string) SchoolSettings::get('current_academic_year', '');
+        $newYear = $validated['current_academic_year'];
+        $yearChanged = $previousYear !== $newYear;
+
+        SchoolSettings::set('current_academic_year', $newYear);
         SchoolSettings::set('school_name', $validated['school_name']);
 
-        return redirect()->back()->with('success', 'System settings updated successfully.');
+        if (! $yearChanged) {
+            return redirect()->back()->with('success', 'System settings updated successfully.');
+        }
+
+        $promoted = StudentPromotion::promoteYearLevels();
+        StudentPromotion::rollForwardAcademicYear($newYear);
+
+        DashboardCache::bust();
+        try {
+            event(new \App\Events\DashboardUpdated('Academic year changed; students promoted'));
+        } catch (\Exception $e) {
+            Log::warning('Dashboard event dispatch failed after academic year change', ['error' => $e->getMessage()]);
+        }
+
+        $message = "System settings updated. Academic year is now {$newYear}.";
+        if ($promoted > 0) {
+            $message .= " Promoted {$promoted} student".($promoted === 1 ? '' : 's').' to the next year level.';
+        } else {
+            $message .= ' No 1st–3rd year students were available to promote.';
+        }
+        $message .= ' All active students were updated to the new academic year.';
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function archiveClosedCases(Request $request)

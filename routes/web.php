@@ -166,7 +166,6 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
     Route::post('/students/{student}/generate-guardian-message', [StudentController::class, 'generateGuardianMessage'])
         ->middleware('throttle:20,1')
         ->name('students.generateGuardianMessage');
-    Route::post('/students/promote', [StudentController::class, 'promoteStudents'])->name('students.promote');
     Route::post('/students/graduate-fourth-years', [StudentController::class, 'graduateFourthYears'])->name('students.graduate_fourth_years');
     Route::get('/students/trash', [StudentController::class, 'trash'])->name('students.trash');
     Route::delete('/students/empty-all', [StudentController::class, 'emptyAll'])->name('students.empty-all');

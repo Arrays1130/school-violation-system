@@ -4,7 +4,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { 
     Users, Search, Filter, X, UploadCloud, UserPlus, 
-    Eye, Edit, Trash2, FilePlus, GraduationCap, TrendingUp, Link as LinkIcon
+    Eye, Edit, Trash2, FilePlus, GraduationCap, Link as LinkIcon
 } from 'lucide-react';
 import useInertiaLoading from '@/hooks/useInertiaLoading';
 import Skeleton, { ListPageSkeleton } from '@/Components/ui/Skeleton';
@@ -63,7 +63,6 @@ export default function Index({ auth, students, departments, summary, filterAcad
     const [showGraduateDialog, setShowGraduateDialog] = useState(false);
     const [graduateYear, setGraduateYear] = useState('');
     const [graduateError, setGraduateError] = useState('');
-    const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
     const [confirmEmptyAll, setConfirmEmptyAll] = useState(false);
     const [emptying, setEmptying] = useState(false);
     const canEmptyAll = ['admin', 'super_admin'].includes(auth.user?.role);
@@ -97,13 +96,6 @@ export default function Index({ auth, students, departments, summary, filterAcad
             academic_year: graduateYear,
         });
         setShowGraduateDialog(false);
-    };
-
-    const handlePromote = () => setShowPromoteConfirm(true);
-
-    const confirmPromote = () => {
-        router.post(route('students.promote'));
-        setShowPromoteConfirm(false);
     };
 
     const handleEmptyAll = () => {
@@ -169,15 +161,6 @@ export default function Index({ auth, students, departments, summary, filterAcad
             </ConfirmDialog>
 
             <ConfirmDialog
-                open={showPromoteConfirm}
-                onClose={() => setShowPromoteConfirm(false)}
-                onConfirm={confirmPromote}
-                title="Confirm Promotion"
-                description="Promote all 1st, 2nd, and 3rd year students to the next year level?"
-                confirmLabel="Yes, Promote"
-            />
-
-            <ConfirmDialog
                 open={confirmEmptyAll}
                 onClose={() => !emptying && setConfirmEmptyAll(false)}
                 onConfirm={handleEmptyAll}
@@ -213,10 +196,6 @@ export default function Index({ auth, students, departments, summary, filterAcad
                         <div className="flex flex-col lg:flex-row items-end lg:items-center justify-end gap-3 mt-4 md:mt-0 w-full lg:w-auto">
                             {/* Academic Actions Group */}
                             <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-full sm:w-auto justify-end">
-                                <motion.button onClick={handlePromote} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-200 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm">
-                                    <TrendingUp className="w-4 h-4" />
-                                    Promote Students
-                                </motion.button>
                                 <motion.button onClick={handleGraduate} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm">
                                     <GraduationCap className="w-4 h-4" />
                                     Graduate 4th Years

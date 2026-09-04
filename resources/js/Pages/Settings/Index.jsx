@@ -20,10 +20,26 @@ export default function Index({
         school_name: schoolName || '',
     });
     const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+    const [showYearChangeConfirm, setShowYearChangeConfirm] = useState(false);
+
+    const yearChanging = data.current_academic_year !== (currentAcademicYear || '');
+
+    const submitSettings = () => {
+        post(route('settings.update'));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('settings.update'));
+        if (yearChanging) {
+            setShowYearChangeConfirm(true);
+            return;
+        }
+        submitSettings();
+    };
+
+    const confirmYearChange = () => {
+        setShowYearChangeConfirm(false);
+        submitSettings();
     };
 
     const confirmArchive = () => {
@@ -34,6 +50,16 @@ export default function Index({
     return (
         <AuthenticatedLayout user={auth.user}>
             <Head title="System Settings" />
+
+            <ConfirmDialog
+                open={showYearChangeConfirm}
+                onClose={() => setShowYearChangeConfirm(false)}
+                onConfirm={confirmYearChange}
+                title={`Change academic year to ${data.current_academic_year}?`}
+                description={`This will promote all 1st–3rd year students to the next year level and update every active student’s academic year to ${data.current_academic_year}. 4th-year students are not graduated automatically.`}
+                confirmLabel="Yes, change year and promote"
+                destructive
+            />
 
             <ConfirmDialog
                 open={showArchiveConfirm}
@@ -79,7 +105,7 @@ export default function Index({
                                     Current Academic Year
                                 </label>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                                    Default academic year for new student registrations and imports. Existing students keep their assigned year.
+                                    Default for new registrations and imports. Changing this year will also promote all 1st–3rd year students and update every active student’s academic year. 4th years are not graduated automatically.
                                 </p>
                                 <select
                                     id="current_academic_year"
