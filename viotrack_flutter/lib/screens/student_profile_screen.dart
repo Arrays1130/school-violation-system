@@ -32,67 +32,59 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
   Future<void> _fetchStudentHistory({bool forcedRefresh = false}) async {
     try {
-      final data = await _apiService.getViolations(forcedRefresh: forcedRefresh);
-      
-      List<dynamic> allCases;
-      if (data is Map) {
-        allCases = (data['data'] ?? data['violations'] ?? []) as List<dynamic>;
-      } else if (data is List) {
-        allCases = data;
-      } else {
-        allCases = [];
-      }
-      
-      // Robust ID matching using toString() to avoid int/string type mismatch
-      final studentId = widget.student['id']?.toString() ?? '';
-      final studentName = (widget.student['full_name'] ?? '').toString().toLowerCase().trim();
-      
-      final filteredCases = allCases.where((c) {
-        final cStudent = c['student'] ?? {};
-        final cStudentId = cStudent['id']?.toString() ?? '';
-        final cStudentName = (cStudent['full_name'] ?? '').toString().toLowerCase().trim();
-        
-        // Match by ID first, fallback to name match if ID is empty
-        if (studentId.isNotEmpty && cStudentId.isNotEmpty) {
-          return cStudentId == studentId;
-        }
-        return studentName.isNotEmpty && cStudentName == studentName;
-      }).toList();
+      final studentId = int.tryParse(widget.student['id']?.toString() ?? '');
+      final data = await _apiService.getViolations(
+        forcedRefresh: forcedRefresh,
+        page: 1,
+        studentId: studentId,
+        perPage: 50,
+      );
 
-      // Sort by newest first
-      filteredCases.sort((a, b) {
-        try {
-          final dateA = DateTime.parse(a['created_at'] ?? '');
-          final dateB = DateTime.parse(b['created_at'] ?? '');
-          return dateB.compareTo(dateA);
-        } catch (_) {
-          return 0;
-        }
-      });
+      List<dynamic> cases;
+      if (data is Map) {
+        cases = (data['data'] ?? data['violations'] ?? []) as List<dynamic>;
+      } else if (data is List) {
+        cases = data;
+      } else {
+        cases = [];
+      }
+
+      if (studentId == null) {
+        final studentName =
+            (widget.student['full_name'] ?? '').toString().toLowerCase().trim();
+        cases = cases.where((c) {
+          final name = (c['student']?['full_name'] ?? '')
+              .toString()
+              .toLowerCase()
+              .trim();
+          return studentName.isNotEmpty && name == studentName;
+        }).toList();
+      }
 
       int major = 0;
       int minor = 0;
-      for (var c in filteredCases) {
-        // severity can be at root level OR inside the nested 'violation' object
-        final severity = (c['severity'] 
-            ?? c['violation']?['severity'] 
-            ?? '').toString().toLowerCase();
+      for (var c in cases) {
+        final severity = (c['severity'] ??
+                c['violation']?['severity'] ??
+                '')
+            .toString()
+            .toLowerCase();
         if (severity == 'major') major++;
         if (severity == 'minor') minor++;
       }
 
       if (mounted) {
         setState(() {
-        _studentCases = filteredCases;
-        _majorCount = major;
-        _minorCount = minor;
-        _isLoading = false;
+          _studentCases = cases;
+          _majorCount = major;
+          _minorCount = minor;
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-        _isLoading = false;
+          _isLoading = false;
         });
       }
     }
@@ -129,28 +121,29 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
       body: RefreshIndicator(
-        color: AppTheme.primaryNavy,
+        color: AppTheme.primary,
         backgroundColor: Colors.white,
         onRefresh: () => _fetchStudentHistory(forcedRefresh: true),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverAppBar(
-              expandedHeight: 210,
+              expandedHeight: 168,
               pinned: true,
               stretch: true,
-              backgroundColor: AppTheme.primaryNavy,
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
               leading: IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: AppTheme.inputBg,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.arrow_back_ios_new_rounded,
                     size: 16,
-                    color: Colors.white,
+                    color: AppTheme.textMain,
                   ),
                 ),
                 onPressed: () {
@@ -162,7 +155,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 stretchModes: const [StretchMode.zoomBackground],
                 background: Container(
                   decoration: const BoxDecoration(
-                    gradient: AppTheme.heroGradient,
+                    color: Color(0xFFF2F2F7),
                   ),
                   child: Stack(
                     children: [
@@ -211,8 +204,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                     style: GoogleFonts.inter(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.4,
+                                    color: AppTheme.textMain,
                                     ),
                                   ),
                                   if (subtitle.isNotEmpty) ...[
@@ -221,7 +213,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                       subtitle,
                                       style: GoogleFonts.inter(
                                         fontSize: 12,
-                                        color: Colors.white.withValues(alpha: 0.82),
+                                        color: AppTheme.textMuted,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),

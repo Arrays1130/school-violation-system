@@ -53,7 +53,7 @@ class BrandedSplash extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.primaryNavy,
+                      color: AppTheme.primary,
                       letterSpacing: -0.6,
                     ),
                   ),

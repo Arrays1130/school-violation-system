@@ -33,9 +33,10 @@ class _VtPressableState extends State<VtPressable> {
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.disableAnimationsOf(context);
     Widget scaled = AnimatedScale(
-      scale: _pressed ? widget.pressedScale : 1.0,
-      duration: const Duration(milliseconds: 110),
+      scale: reduce || !_pressed ? 1.0 : widget.pressedScale,
+      duration: reduce ? Duration.zero : const Duration(milliseconds: 110),
       curve: Curves.easeOut,
       child: widget.child,
     );
@@ -115,18 +116,21 @@ class VtStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
+    return Semantics(
+      label: 'Status $label',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
       ),
     );

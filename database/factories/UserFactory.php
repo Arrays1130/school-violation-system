@@ -51,6 +51,11 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function gso(): static
+    {
+        return $this->state(fn () => ['role' => 'gso']);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */

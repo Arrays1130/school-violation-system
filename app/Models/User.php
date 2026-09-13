@@ -58,6 +58,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is GSO (community service / DTR supervisor).
+     */
+    public function isGso(): bool
+    {
+        return $this->role === 'gso';
+    }
+
+    /**
      * Deans assigned to a college, matching shortcut, long name, or alias.
      */
     public function scopeDeansForDepartment(Builder $query, ?string $department): Builder

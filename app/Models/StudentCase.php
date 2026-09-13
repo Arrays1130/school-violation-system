@@ -231,6 +231,30 @@ class StudentCase extends Model
         return $this->hasMany(CaseAttachment::class, 'case_id')->orderBy('created_at', 'desc');
     }
 
+    public function sanctionAssignments()
+    {
+        return $this->hasMany(SanctionAssignment::class, 'case_id')->latest();
+    }
+
+    public function activeSanctionAssignment(): ?SanctionAssignment
+    {
+        return $this->sanctionAssignments()
+            ->where('status', SanctionAssignment::STATUS_IN_PROGRESS)
+            ->first();
+    }
+
+    public function hasPendingGsoSanction(): bool
+    {
+        return $this->sanctionAssignments()
+            ->where('status', SanctionAssignment::STATUS_IN_PROGRESS)
+            ->exists();
+    }
+
+    public function latestSanctionAssignment(): ?SanctionAssignment
+    {
+        return $this->sanctionAssignments()->first();
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────
 
     /**
@@ -279,6 +303,10 @@ class StudentCase extends Model
     {
         if ($this->status === 'Closed') {
             return 'This case is already closed.';
+        }
+
+        if ($this->hasPendingGsoSanction()) {
+            return 'Community service hours are still being monitored by GSO. Wait for GSO to mark Complete, or cancel the active assignment first.';
         }
 
         if ($this->isMajorOffense() && ! $this->canEndorseToGrievance() && ! in_array($this->status, ['Hearing', 'Hearing Scheduled'], true)) {

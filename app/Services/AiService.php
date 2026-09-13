@@ -1684,7 +1684,7 @@ PROMPT;
     /**
      * Draft a guardian notification message from a student case.
      *
-     * @return array{message: string, mode: string}
+     * @return array{message: string, mode: string, handbook_sources: list<string>}
      */
     public function generateGuardianMessage(\App\Models\Student $student, \App\Models\StudentCase $case): array
     {
@@ -1717,17 +1717,42 @@ PROMPT;
             $description !== '' ? "Case notes: {$description}" : null,
         ]));
 
+        $searchQuery = trim(implode(' ', array_filter([
+            $violationTitle,
+            $severity !== 'Unspecified' ? $severity : null,
+            $sanction !== 'to be determined' ? $sanction : null,
+            $description !== '' ? $description : null,
+        ])));
+
+        $handbookHits = $this->handbookHitsForGuardianDraft(
+            $searchQuery !== '' ? $searchQuery : (string) $violationTitle
+        );
+        [$handbookBlock, $handbookSources] = $this->formatGuardianHandbookExcerpts($handbookHits);
+
         $systemPrompt = <<<PROMPT
 You write short guardian notification messages for {$schoolName}'s Office of Student Affairs.
 Return ONLY the message body — no title, no markdown, no quotation marks.
 Language: English only. Use basic, simple English that any parent can understand. Short sentences. No slang, no Filipino, no Taglish.
 Tone: respectful, clear, and polite.
-Keep it under 900 characters so it can be sent by SMS or email.
-Include: greeting to the guardian, student name, violation, date, current status/sanction if known, and a polite request to contact the school.
-Do not invent facts that are not provided. Do not mention AI.
+Keep it under 1000 characters so it can be sent by SMS or email.
+
+Required structure:
+1. Greeting to the guardian
+2. Student name, violation, incident date, status, and sanction from the case facts
+3. REQUIRED when handbook excerpts are provided: one short paragraph that states the relevant school policy in plain English (paraphrase the excerpts; do not copy long text). Start that paragraph with "According to school policy," or similar.
+4. A polite request to contact the Office of Student Affairs
+
+Do not invent facts, rules, or sanctions that are not in the case facts or handbook excerpts.
+Do not mention AI, Gemini, or that you used a handbook document by filename.
+If no handbook excerpts are provided, skip the policy paragraph.
 PROMPT;
 
         $userPrompt = "Write a guardian message using these case facts:\n\n{$facts}";
+        if ($handbookBlock !== '') {
+            $userPrompt .= "\n\nRelevant student handbook / school policy excerpts (MUST include a policy paragraph based on these):\n{$handbookBlock}";
+        } else {
+            $userPrompt .= "\n\nNo handbook excerpts were found. Write the notice from case facts only.";
+        }
 
         $result = $this->gemini->generate([
             ['role' => 'user', 'parts' => [['text' => $userPrompt]]],
@@ -1739,6 +1764,7 @@ PROMPT;
             return [
                 'message' => Str::limit($message, 1000, ''),
                 'mode' => 'gemini',
+                'handbook_sources' => $handbookSources,
             ];
         }
 
@@ -1755,10 +1781,87 @@ PROMPT;
                 $violationTitle,
                 $occurred,
                 $status,
-                $sanction
+                $sanction,
+                $handbookBlock
             ),
             'mode' => 'fallback',
+            'handbook_sources' => $handbookSources,
         ];
+    }
+
+    /**
+     * Retrieve top handbook hits for a guardian draft without clearing results
+     * due to student-page context flags.
+     *
+     * @return list<array{handbook: Handbook, score?: float|int, matches?: array, snippet?: string}>
+     */
+    private function handbookHitsForGuardianDraft(string $query): array
+    {
+        $keywords = $this->expandKeywords($query);
+        $handbooks = $this->searchHandbooks($query, $keywords);
+
+        if ($this->embeddingService->isAvailable()) {
+            $vectorHits = $this->embeddingService->search($query, 8);
+            if (! empty($vectorHits)) {
+                $merged = $this->mergeVectorAndKeywordResults($vectorHits, [
+                    'handbooks' => $handbooks,
+                    'violations' => [],
+                    'search_mode' => 'hybrid',
+                    'student_query' => false,
+                ]);
+                $handbooks = $merged['handbooks'] ?? $handbooks;
+            }
+        }
+
+        return array_slice($handbooks, 0, 3);
+    }
+
+    /**
+     * @param  list<array{handbook: Handbook, score?: float|int, matches?: array, snippet?: string}>  $hits
+     * @return array{0: string, 1: list<string>}
+     */
+    private function formatGuardianHandbookExcerpts(array $hits): array
+    {
+        if ($hits === []) {
+            return ['', []];
+        }
+
+        $sources = [];
+        $parts = [];
+        $budget = 1800;
+
+        foreach ($hits as $item) {
+            $handbook = $item['handbook'] ?? null;
+            if (! $handbook instanceof Handbook) {
+                continue;
+            }
+
+            $title = trim((string) $handbook->title);
+            if ($title === '') {
+                continue;
+            }
+
+            $sources[] = $title;
+
+            $fullContent = trim((string) ($handbook->content ?? ''));
+            $snippet = trim((string) ($item['snippet'] ?? ''));
+            if ($snippet === '' && $fullContent !== '') {
+                $snippet = $this->createSmartSnippet(
+                    $fullContent,
+                    $item['matches'] ?? [],
+                    500
+                );
+            }
+
+            $snippet = Str::limit($snippet, 500, '…');
+            $block = "- {$title}: {$snippet}";
+            if (mb_strlen(implode("\n", $parts)."\n".$block) > $budget) {
+                break;
+            }
+            $parts[] = $block;
+        }
+
+        return [implode("\n", $parts), array_values(array_unique($sources))];
     }
 
     private function fallbackGuardianMessage(
@@ -1768,12 +1871,48 @@ PROMPT;
         string $violationTitle,
         string $occurred,
         string $status,
-        string $sanction
+        string $sanction,
+        string $handbookBlock = ''
     ): string {
-        return "Good day, {$guardianName}.\n\n"
+        $message = "Good day, {$guardianName}.\n\n"
             ."This is a notice from {$schoolName}. Your child, {$studentName}, has a recorded school violation: {$violationTitle} "
-            ."on {$occurred}. Current status: {$status}. Sanction: {$sanction}.\n\n"
-            .'Please contact the Office of Student Affairs for more details and next steps. Thank you.';
+            ."on {$occurred}. Current status: {$status}. Sanction: {$sanction}.\n\n";
+
+        $policyLine = $this->policySentenceFromHandbookBlock($handbookBlock);
+        if ($policyLine !== '') {
+            $message .= $policyLine."\n\n";
+        }
+
+        $message .= 'Please contact the Office of Student Affairs for more details and next steps. Thank you.';
+
+        return Str::limit($message, 1000, '');
+    }
+
+    /**
+     * Turn handbook excerpt lines into one plain-English policy sentence for SMS drafts.
+     */
+    private function policySentenceFromHandbookBlock(string $handbookBlock): string
+    {
+        $handbookBlock = trim($handbookBlock);
+        if ($handbookBlock === '') {
+            return '';
+        }
+
+        // Prefer the first excerpt body after "- Title: "
+        $firstLine = trim(explode("\n", $handbookBlock)[0] ?? '');
+        if (preg_match('/^-\s*(.+?):\s*(.+)$/u', $firstLine, $m)) {
+            $title = trim($m[1]);
+            $snippet = trim($m[2]);
+            $snippet = preg_replace('/\s+/u', ' ', $snippet) ?? $snippet;
+            $snippet = str_replace(['**', '__', '`'], '', $snippet);
+            $snippet = Str::limit($snippet, 220, '…');
+
+            return "According to school policy ({$title}): {$snippet}";
+        }
+
+        $compact = preg_replace('/\s+/u', ' ', $handbookBlock) ?? $handbookBlock;
+
+        return 'According to school policy: '.Str::limit($compact, 220, '…');
     }
 
     /**

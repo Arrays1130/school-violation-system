@@ -38,6 +38,8 @@ class CasesScreenState extends State<CasesScreen> {
   bool _loadingMore = false;
   bool _showAdvancedFilters = false;
   bool _fetchError = false;
+  DateTime? _lastRefreshedAt;
+  String? _monthAbbrev;
 
   @override
   void initState() {
@@ -116,9 +118,14 @@ class CasesScreenState extends State<CasesScreen> {
     String? search,
     String? status,
     bool focusSearch = false,
+    String? monthAbbrev,
   }) {
     if (search != null) _searchController.text = search;
     if (status != null) _selectedStatus = status;
+    if (monthAbbrev != null) {
+      _monthAbbrev = monthAbbrev;
+      _selectedDate = 'All Time';
+    }
     _applyFilters();
     if (focusSearch) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -158,6 +165,7 @@ class CasesScreenState extends State<CasesScreen> {
           _filteredViolations = _computeFilteredList();
           _isLoading = false;
           _fetchError = false;
+          _lastRefreshedAt = DateTime.now();
         });
       }
     } catch (e) {
@@ -197,7 +205,18 @@ class CasesScreenState extends State<CasesScreen> {
       final matchesStatus = CaseStatus.matchesFilter(caseMap, _selectedStatus);
 
       var matchesDate = true;
-      if (_selectedDate != 'All Time' && dateStr.isNotEmpty) {
+      if (_monthAbbrev != null && dateStr.isNotEmpty) {
+        try {
+          final date = DateTime.parse(dateStr);
+          const months = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          ];
+          matchesDate = months[date.month - 1] == _monthAbbrev;
+        } catch (_) {
+          matchesDate = true;
+        }
+      } else if (_selectedDate != 'All Time' && dateStr.isNotEmpty) {
         try {
           final date = DateTime.parse(dateStr);
           if (_selectedDate == 'Today') {
@@ -260,16 +279,17 @@ class CasesScreenState extends State<CasesScreen> {
       _selectedDate = 'All Time';
       _searchController.clear();
       _isAscending = false;
+      _monthAbbrev = null;
     });
     _applyFilters();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding =
-        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
+    final bottomPadding = 20 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
+      primary: false,
       backgroundColor: AppTheme.bgLight,
       body: RefreshIndicator(
         onRefresh: () => _fetchData(showLoading: false, forcedRefresh: true),
@@ -279,6 +299,13 @@ class CasesScreenState extends State<CasesScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(child: _buildHeader()),
+            if (_lastRefreshedAt != null && !_isLoading)
+              SliverToBoxAdapter(
+                child: AppUi.subtleMetaLine(
+                  'Last updated ${AppUi.formatRelativeTime(_lastRefreshedAt)}',
+                  icon: Icons.update_rounded,
+                ),
+              ),
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildQuickStatusOverview()),
             SliverToBoxAdapter(child: _buildAdvancedFilters()),
@@ -336,14 +363,15 @@ class CasesScreenState extends State<CasesScreen> {
     return AppUi.gradientHeader(
       greeting: 'Case records',
       title: 'Cases',
+      safeTop: false,
       subtitle: _hasActiveFilters()
           ? 'Showing ${_filteredViolations.length} of ${_allViolations.length}'
-          : '${_filteredViolations.length} cases · search, filter, and open any record',
+          : '${_filteredViolations.length} cases',
       badge: AppUi.iconCircle(
         icon: Icons.inventory_2_outlined,
-        color: AppTheme.primaryNavy,
-        size: 36,
-        iconSize: 18,
+        color: AppTheme.primary,
+        size: 32,
+        iconSize: 16,
         backgroundColor: Colors.white,
       ),
       trailing: Row(
@@ -465,7 +493,12 @@ class CasesScreenState extends State<CasesScreen> {
     final isSelected =
         _selectedStatus == status ||
         (status == 'All' && _selectedStatus == 'All');
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '$label, $count cases',
+      child: VtPressable(
+        child: GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() => _selectedStatus = status);
@@ -473,18 +506,16 @@ class CasesScreenState extends State<CasesScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 124,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
         decoration: BoxDecoration(
-          gradient: isSelected ? AppTheme.heroGradient : null,
-          color: isSelected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          color: isSelected ? AppTheme.primary : Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
           border: Border.all(
             color: isSelected
-                ? Colors.transparent
+                ? AppTheme.primary
                 : AppTheme.inputBorder.withValues(alpha: 0.8),
           ),
-          boxShadow: AppTheme.cardShadow,
+          boxShadow: isSelected ? AppTheme.softShadow : AppTheme.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,13 +523,13 @@ class CasesScreenState extends State<CasesScreen> {
             AppUi.iconCircle(
               icon: icon,
               color: isSelected ? Colors.white : color,
-              size: 34,
-              iconSize: 16,
+              size: 30,
+              iconSize: 15,
               backgroundColor: isSelected
-                  ? Colors.white.withValues(alpha: 0.14)
+                  ? Colors.white.withValues(alpha: 0.18)
                   : color.withValues(alpha: 0.12),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             AppUi.animatedCount(
               count,
               style: GoogleFonts.inter(
@@ -522,6 +553,8 @@ class CasesScreenState extends State<CasesScreen> {
           ],
         ),
       ),
+    ),
+    ),
     );
   }
 
@@ -553,6 +586,7 @@ class CasesScreenState extends State<CasesScreen> {
     return _selectedSeverity != 'All' ||
         _selectedStatus != 'All' ||
         _selectedDate != 'All Time' ||
+        _monthAbbrev != null ||
         _searchController.text.isNotEmpty;
   }
 
@@ -701,13 +735,12 @@ class CasesScreenState extends State<CasesScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppTheme.inputBorder),
-          boxShadow: AppTheme.softShadow,
+          color: AppTheme.inputBg,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+          border: Border.all(color: AppTheme.inputBorder.withValues(alpha: 0.8)),
         ),
         child: TextField(
           controller: _searchController,
@@ -727,15 +760,24 @@ class CasesScreenState extends State<CasesScreen> {
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
-            hintText: 'Search student name or violation',
+            hintText: 'Search student or case',
             hintStyle: GoogleFonts.inter(
               color: AppTheme.textHint,
               fontSize: 15,
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: AppTheme.primary,
-              size: 22,
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: AppTheme.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
+              ),
             ),
             suffixIcon: ValueListenableBuilder<TextEditingValue>(
               valueListenable: _searchController,
@@ -756,13 +798,12 @@ class CasesScreenState extends State<CasesScreen> {
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
       ),
     );
   }
-
   Widget _buildAdvancedFilters() {
     return AppUi.expandTile(
       title: 'More filters',
@@ -795,7 +836,7 @@ class CasesScreenState extends State<CasesScreen> {
               color: AppTheme.textMuted,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -809,7 +850,12 @@ class CasesScreenState extends State<CasesScreen> {
                       isSelected: isSelected,
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        if (mounted) setState(() => _selectedDate = opt);
+                        if (mounted) {
+                          setState(() {
+                            _selectedDate = opt;
+                            _monthAbbrev = null;
+                          });
+                        }
                         _applyFilters();
                       },
                     ),
@@ -818,7 +864,7 @@ class CasesScreenState extends State<CasesScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -845,7 +891,7 @@ class CasesScreenState extends State<CasesScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -894,19 +940,21 @@ class CasesScreenState extends State<CasesScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          gradient: isSelected ? AppTheme.heroGradient : null,
-          color: isSelected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? AppTheme.primary : Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
           border: Border.all(
-            color: isSelected ? Colors.transparent : AppTheme.inputBorder,
+            color: isSelected ? AppTheme.primary : AppTheme.inputBorder,
           ),
-          boxShadow: isSelected ? AppTheme.softShadow : null,
         ),
         child: Text(
           label,
@@ -917,6 +965,7 @@ class CasesScreenState extends State<CasesScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -954,15 +1003,13 @@ class CasesScreenState extends State<CasesScreen> {
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  gradient: isSelected ? AppTheme.heroGradient : null,
-                  color: isSelected ? null : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: isSelected ? AppTheme.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
                   border: Border.all(
                     color: isSelected
-                        ? Colors.transparent
+                        ? AppTheme.primary
                         : AppTheme.inputBorder,
                   ),
-                  boxShadow: isSelected ? AppTheme.softShadow : null,
                 ),
                 child: Text(
                   opt,
@@ -981,11 +1028,20 @@ class CasesScreenState extends State<CasesScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const EmptyStateWidget(
+    return EmptyStateWidget(
       icon: Icons.search_off_rounded,
-      title: "No results found",
-      message:
-          "We couldn't find any cases matching your search or filters. Try adjusting them.",
+      title: 'No results found',
+      message: 'Try a different search or clear filters.',
+      action: TextButton(
+        onPressed: _clearAllFilters,
+        child: Text(
+          'Clear filters',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.primary,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1022,7 +1078,7 @@ class CasesScreenState extends State<CasesScreen> {
           HapticFeedback.mediumImpact();
           Navigator.push(
             context,
-            AppPageTransitions.fadeScale(
+            AppPageTransitions.fadeSlide(
               CaseDetailsScreen(caseId: violation['id']),
             ),
           );

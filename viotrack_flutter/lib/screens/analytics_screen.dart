@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,6 +8,8 @@ import '../theme/app_theme.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/app_ui.dart';
 import '../widgets/empty_state_widget.dart';
+import '../widgets/vt_ui.dart';
+import 'main_layout.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -106,14 +109,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding =
-        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
+    final bottomPadding = 20 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
+      primary: false,
       backgroundColor: AppTheme.bgLight,
       body: RefreshIndicator(
         onRefresh: () => _loadData(forcedRefresh: true),
-        color: AppTheme.primaryNavy,
+        color: AppTheme.primary,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -141,7 +144,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             else if (_totalCases == 0)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildErrorState(),
+                child: _loadFailed ? _buildLoadFailedState() : _buildEmptyState(),
               )
             else
               SliverPadding(
@@ -158,12 +161,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return AppUi.gradientHeader(
       greeting: 'Trend overview',
       title: 'Stats',
-      subtitle: 'See patterns in case volume, severity, and repeat offenders.',
+      safeTop: false,
+      subtitle: 'Volume, severity, and repeat offenders.',
       badge: AppUi.iconCircle(
         icon: Icons.insights_outlined,
-        color: AppTheme.primaryNavy,
-        size: 36,
-        iconSize: 18,
+        color: AppTheme.primary,
+        size: 32,
+        iconSize: 16,
         backgroundColor: Colors.white,
       ),
       trailing: IconButton(
@@ -243,7 +247,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24),
+        child: EmptyStateWidget(
+          icon: Icons.query_stats_rounded,
+          title: 'No case data yet',
+          message:
+              'Analytics will appear here once violation records are available.',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadFailedState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -251,10 +269,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const EmptyStateWidget(
-              icon: Icons.query_stats_rounded,
-              title: 'No analytics yet',
+              icon: Icons.cloud_off_rounded,
+              title: 'Could not load analytics',
               message:
-                  'Case insights will appear here once violation records are available.',
+                  'Check your connection and try again to refresh case insights.',
             ),
             const SizedBox(height: 16),
             AppUi.retryButton(onPressed: () => _loadData(forcedRefresh: true)),
@@ -322,7 +340,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               "Total Cases",
               "$_totalCases",
               Icons.folder_open_rounded,
-              AppTheme.primaryNavy,
+              AppTheme.primary,
             ),
             const SizedBox(width: 12),
             _statCard(
@@ -358,7 +376,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _statCard(String label, String value, IconData icon, Color color) {
     return Expanded(
       child: AppUi.surfaceCard(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         radius: 20,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,8 +422,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final chartMax = (maxY < 5 ? 5 : maxY + 2).ceilToDouble();
 
     return AppUi.surfaceCard(
-      padding: const EdgeInsets.fromLTRB(20, 24, 16, 16),
-      radius: 24,
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+      radius: 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -438,11 +456,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               swapAnimationCurve: Curves.easeOutCubic,
               BarChartData(
                 maxY: chartMax,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchCallback: (event, response) {
+                    if (event is! FlTapUpEvent) return;
+                    final i = response?.spot?.touchedBarGroupIndex;
+                    if (i == null || i < 0 || i >= _monthlyTrend.length) return;
+                    HapticFeedback.selectionClick();
+                    MainLayout.of(context)?.navigateToTab(
+                      1,
+                      month: _monthlyTrend[i]['month']?.toString(),
+                    );
+                  },
+                ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) =>
-                      FlLine(color: AppTheme.bgLight, strokeWidth: 1.5),
+                      FlLine(
+                        color: AppTheme.inputBorder.withValues(alpha: 0.7),
+                        strokeWidth: 1,
+                      ),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
@@ -495,10 +529,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     barRods: [
                       BarChartRodData(
                         toY: count,
-                        color: AppTheme.primaryNavy,
-                        width: 18,
+                        color: AppTheme.primary,
+                        width: 14,
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(8),
+                          top: Radius.circular(10),
                         ),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
@@ -534,7 +568,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final colors = [
             AppTheme.accentRose,
             AppTheme.accentAmber,
-            AppTheme.primaryNavy,
+            AppTheme.primary,
             AppTheme.accentCyan,
             AppTheme.accentEmerald,
           ];
@@ -542,7 +576,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
           return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
+                child: VtPressable(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    MainLayout.of(context)?.navigateToTab(
+                      1,
+                      search: entry.key,
+                    );
+                  },
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -600,6 +642,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                   ],
                 ),
+                )
               )
               .animate()
               .fadeIn(delay: Duration(milliseconds: i * 80))
@@ -612,7 +655,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildSeverityCard() {
     final total = _majorCases + _minorCases;
     return AppUi.surfaceCard(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
+      radius: 20,
       child: Column(
         children: [
           SizedBox(
@@ -643,8 +687,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         },
                       ),
                       startDegreeOffset: -90,
-                      sectionsSpace: 4,
-                      centerSpaceRadius: 52,
+                      sectionsSpace: 6,
+                      centerSpaceRadius: 56,
                       sections: [
                         PieChartSectionData(
                           value: _majorCases.toDouble(),
@@ -735,8 +779,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final entry = _repeatOffenders[i];
           return Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child:
-                Row(
+            child: VtPressable(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                MainLayout.of(context)?.navigateToTab(
+                  1,
+                  search: entry.key,
+                );
+              },
+              child: Row(
                       children: [
                         Container(
                           width: 40,
@@ -800,7 +851,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                         ),
                       ],
-                    )
+                    ),
+                  )
                     .animate()
                     .fadeIn(delay: Duration(milliseconds: i * 80))
                     .slideX(begin: 0.05, end: 0),

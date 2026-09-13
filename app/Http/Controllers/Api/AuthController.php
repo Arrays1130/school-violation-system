@@ -35,7 +35,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if (! $user->isDean() && ! $user->isAdmin() && ! $user->isSuperAdmin()) {
+        if (! $user->isDean() && ! $user->isAdmin() && ! $user->isSuperAdmin() && ! $user->isGso()) {
             Auth::logout();
 
             return response()->json(['message' => 'This account is not authorized for mobile access.'], 403);

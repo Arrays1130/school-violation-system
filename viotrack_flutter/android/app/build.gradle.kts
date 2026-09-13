@@ -1,4 +1,4 @@
-import java.io.FileInputStream
+﻿import java.io.FileInputStream
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -37,11 +37,25 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.viotrack.dean"
+        applicationId = "com.viotrack.dean.taas"
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "app"
+    productFlavors {
+        create("dean") {
+            dimension = "app"
+            applicationId = "com.viotrack.dean.taas"
+            resValue("string", "app_name", "VIOTRACK")
+        }
+        create("gso") {
+            dimension = "app"
+            applicationId = "com.viotrack.gso"
+            resValue("string", "app_name", "VIOTRACK GSO")
+        }
     }
 
     buildTypes {

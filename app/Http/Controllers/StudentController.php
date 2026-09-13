@@ -494,6 +494,7 @@ class StudentController extends Controller
         return response()->json([
             'message' => $result['message'],
             'mode' => $result['mode'],
+            'handbook_sources' => $result['handbook_sources'] ?? [],
         ]);
     }
 

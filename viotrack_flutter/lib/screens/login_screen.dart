@@ -10,6 +10,8 @@ import '../services/push_bootstrap.dart';
 import '../services/fcm_service.dart';
 import '../utils/page_transitions.dart';
 import 'main_layout.dart';
+import 'gso_main_layout.dart';
+import '../config/app_flavor.dart';
 
 /// GCash-style login: dark hero, saved account pill, dual login card.
 class LoginScreen extends StatefulWidget {
@@ -123,9 +125,11 @@ class _LoginScreenState extends State<LoginScreen> {
           await FCMService.syncTokenWithBackend();
         }
         if (!mounted) return;
+        final home =
+            AppFlavor.isGso ? const GsoMainLayout() : const MainLayout();
         Navigator.pushReplacement(
           context,
-          AppPageTransitions.fadeScale(const MainLayout()),
+          AppPageTransitions.fadeScale(home),
         );
       } else {
         setState(() {
@@ -146,17 +150,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _biometricLogin() async {
     if (!_canBiometric) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _biometricSupported
-                ? 'Sign in with password first, then enable $_biometricLabel in Profile.'
-                : 'Biometric login is not available on this device.',
-            style: GoogleFonts.inter(),
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppTheme.primaryNavy,
-        ),
+      AppUi.showSnack(
+        context,
+        _biometricSupported
+            ? 'Sign in with password first, then enable $_biometricLabel in Profile.'
+            : 'Biometric login is not available on this device.',
+        kind: SnackKind.info,
       );
       _openPasswordForm();
       return;
@@ -202,6 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bgLight,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -242,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.only(bottom: 24),
-                child: CircularProgressIndicator(color: Colors.white),
+                child: CircularProgressIndicator(color: AppTheme.primary),
               )
             else
               Padding(
@@ -292,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: GoogleFonts.inter(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: AppTheme.primary,
                 letterSpacing: -0.6,
               ),
             ),
@@ -301,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: GoogleFonts.inter(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.accentCyan,
+                color: AppTheme.primaryDark,
                 letterSpacing: -0.6,
               ),
             ),
@@ -313,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen> {
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withValues(alpha: 0.55),
+            color: AppTheme.textMuted,
             letterSpacing: 2.2,
           ),
         ),
@@ -418,15 +418,10 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         TextButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Contact your system administrator for account help.',
-                  style: GoogleFonts.inter(),
-                ),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: AppTheme.primaryNavy,
-              ),
+            AppUi.showSnack(
+              context,
+              'Contact your system administrator for account help.',
+              kind: SnackKind.info,
             );
           },
           child: Text(
@@ -434,9 +429,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.85),
-              decoration: TextDecoration.underline,
-              decorationColor: Colors.white.withValues(alpha: 0.5),
+              color: AppTheme.primary,
             ),
           ),
         ),
@@ -444,7 +437,7 @@ class _LoginScreenState extends State<LoginScreen> {
           '${AppTheme.appName} v${AppTheme.appVersion}',
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: Colors.white.withValues(alpha: 0.35),
+            color: AppTheme.textHint,
           ),
         ),
       ],
@@ -463,9 +456,12 @@ class _LoginScreenState extends State<LoginScreen> {
             alignment: Alignment.centerLeft,
             child: IconButton(
               onPressed: _isLoading ? null : _closePasswordForm,
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppTheme.textMain,
+              ),
               style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                backgroundColor: Colors.white,
               ),
             ),
           ),
@@ -475,8 +471,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: GoogleFonts.inter(
               fontSize: 26,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: -0.5,
+              color: AppTheme.textMain,
             ),
           ),
           const SizedBox(height: 6),
@@ -484,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'Enter your official dean account credentials',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.6),
+              color: AppTheme.textMuted,
             ),
           ),
           const SizedBox(height: 28),
@@ -624,14 +619,10 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Contact your system administrator to reset your password.',
-                        style: GoogleFonts.inter(),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  AppUi.showSnack(
+                    context,
+                    'Contact your system administrator to reset your password.',
+                    kind: SnackKind.info,
                   );
                 },
                 child: Text(
@@ -639,7 +630,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: AppTheme.primary,
                   ),
                 ),
               ),
@@ -706,197 +697,23 @@ class _LoginBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Base: deep navy → royal blue → midnight (friendly fintech feel)
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0C1929),
-                Color(0xFF1E40AF),
-                Color(0xFF2563EB),
-                Color(0xFF0F172A),
-              ],
-              stops: [0.0, 0.38, 0.62, 1.0],
-            ),
+    return const ColoredBox(
+      color: AppTheme.bgLight,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFFFFF),
+              Color(0xFFF2F2F7),
+              Color(0xFFEFF6FF),
+            ],
           ),
         ),
-
-        // Cyan glow — top right
-        Positioned(
-          top: -size.height * 0.08,
-          right: -size.width * 0.18,
-          child: Container(
-            width: size.width * 0.75,
-            height: size.width * 0.75,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF38BDF8).withValues(alpha: 0.28),
-                  const Color(0xFF2563EB).withValues(alpha: 0.08),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.45, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // Indigo glow — center left
-        Positioned(
-          top: size.height * 0.22,
-          left: -size.width * 0.35,
-          child: Container(
-            width: size.width * 0.85,
-            height: size.width * 0.85,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF818CF8).withValues(alpha: 0.18),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Soft highlight behind logo area
-        Positioned(
-          top: size.height * 0.06,
-          left: size.width * 0.5 - 90,
-          child: Container(
-            width: 180,
-            height: 180,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  Colors.white.withValues(alpha: 0.12),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Bottom wave layers
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: size.height * 0.38,
-          child: const CustomPaint(painter: _LoginWavePainter()),
-        ),
-
-        // Subtle dot grid for depth (very faint)
-        const CustomPaint(painter: _LoginDotGridPainter()),
-
-        // Top vignette for status-bar legibility
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 120,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.22),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
-}
-
-/// Layered translucent waves at the bottom of the login screen.
-class _LoginWavePainter extends CustomPainter {
-  const _LoginWavePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // Back wave — lighter blue
-    final wave1 = Path()
-      ..moveTo(0, h * 0.55)
-      ..quadraticBezierTo(w * 0.25, h * 0.38, w * 0.5, h * 0.5)
-      ..quadraticBezierTo(w * 0.78, h * 0.62, w, h * 0.45)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
-    canvas.drawPath(
-      wave1,
-      Paint()..color = const Color(0xFF3B82F6).withValues(alpha: 0.22),
-    );
-
-    // Mid wave
-    final wave2 = Path()
-      ..moveTo(0, h * 0.72)
-      ..quadraticBezierTo(w * 0.35, h * 0.58, w * 0.65, h * 0.7)
-      ..quadraticBezierTo(w * 0.88, h * 0.8, w, h * 0.65)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
-    canvas.drawPath(
-      wave2,
-      Paint()..color = const Color(0xFF1D4ED8).withValues(alpha: 0.35),
-    );
-
-    // Front wave — deepest
-    final wave3 = Path()
-      ..moveTo(0, h * 0.88)
-      ..quadraticBezierTo(w * 0.4, h * 0.78, w * 0.7, h * 0.86)
-      ..quadraticBezierTo(w * 0.92, h * 0.92, w, h * 0.82)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
-    canvas.drawPath(
-      wave3,
-      Paint()..color = const Color(0xFF0F172A).withValues(alpha: 0.55),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Faint dot pattern — adds texture without hurting readability.
-class _LoginDotGridPainter extends CustomPainter {
-  const _LoginDotGridPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04)
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-
-    const spacing = 28.0;
-    for (double x = spacing; x < size.width; x += spacing) {
-      for (double y = spacing; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.0, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _LoginOptionTile extends StatelessWidget {

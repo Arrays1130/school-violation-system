@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:viotrack_flutter/config/api_config.dart';
+import 'package:viotrack_flutter/config/app_flavor.dart';
 import 'package:viotrack_flutter/services/app_icon_badge_service.dart';
 import 'package:viotrack_flutter/services/auth_storage_service.dart';
 import 'package:viotrack_flutter/services/session_service.dart';
@@ -82,12 +83,20 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final user = data['user'];
+        final role = user is Map ? user['role']?.toString() : null;
+        if (!AppFlavor.allowsRole(role)) {
+          return {
+            'success': false,
+            'message': AppFlavor.unauthorizedMessage,
+          };
+        }
         final prefs = await SharedPreferences.getInstance();
         await AuthStorageService.saveToken(data['token'] as String);
         await prefs.setString('user', jsonEncode(data['user']));
         SessionService.reset();
         isOfflineNotifier.value = false;
-        return {'success': true, 'message': 'Success'};
+        return {'success': true, 'message': 'Success', 'role': role};
       }
 
       if (response.statusCode == 403) {
@@ -146,10 +155,25 @@ class ApiService {
     await AppIconBadgeService.clear();
   }
 
-  Future<dynamic> getViolations({bool forcedRefresh = false, int page = 1}) async {
+  Future<dynamic> getViolations({
+    bool forcedRefresh = false,
+    int page = 1,
+    int? studentId,
+    int perPage = 15,
+  }) async {
+    final params = <String, String>{
+      'page': '$page',
+      'per_page': '${perPage.clamp(1, 50)}',
+    };
+    if (studentId != null) {
+      params['student_id'] = '$studentId';
+    }
+    final suffix = studentId != null ? '_student_$studentId' : '';
     return _getWithCache(
-      cacheKey: page == 1 ? 'violations' : 'violations_page_$page',
-      uri: Uri.parse('$baseUrl/mobile/violations?page=$page'),
+      cacheKey: page == 1
+          ? 'violations$suffix'
+          : 'violations${suffix}_page_$page',
+      uri: Uri.parse('$baseUrl/mobile/violations').replace(queryParameters: params),
       forcedRefresh: forcedRefresh,
     );
   }
@@ -346,4 +370,95 @@ class ApiService {
     }
     throw Exception('Failed to load hearings calendar');
   }
+
+  Future<Map<String, dynamic>> getGsoSanctions({
+    String status = 'in_progress',
+    bool forcedRefresh = false,
+  }) async {
+    final cacheKey = 'gso_sanctions_$status';
+    if (!forcedRefresh && _isCacheValid(cacheKey)) {
+      return Map<String, dynamic>.from(_cache[cacheKey] as Map);
+    }
+
+    final headers = await _authHeaders();
+    final uri = Uri.parse('$baseUrl/mobile/gso/sanctions').replace(
+      queryParameters: {'status': status, 'per_page': '50'},
+    );
+    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 30));
+    _handleUnauthorized(response);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      _cache[cacheKey] = data;
+      _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
+      return data;
+    }
+    throw Exception('Failed to load GSO sanctions (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> getGsoSanction(int id, {bool forcedRefresh = false}) async {
+    final cacheKey = 'gso_sanction_$id';
+    if (!forcedRefresh && _isCacheValid(cacheKey)) {
+      return Map<String, dynamic>.from(_cache[cacheKey] as Map);
+    }
+
+    final headers = await _authHeaders();
+    final response = await http
+        .get(Uri.parse('$baseUrl/mobile/gso/sanctions/$id'), headers: headers)
+        .timeout(const Duration(seconds: 30));
+    _handleUnauthorized(response);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      _cache[cacheKey] = data;
+      _cacheExpiry[cacheKey] = DateTime.now().add(cacheDuration);
+      return data;
+    }
+    throw Exception('Failed to load sanction detail (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> gsoTimeIn(int assignmentId, {String? notes}) async {
+    return _gsoPostAction(assignmentId, 'time-in', notes: notes);
+  }
+
+  Future<Map<String, dynamic>> gsoTimeOut(int assignmentId, {String? notes}) async {
+    return _gsoPostAction(assignmentId, 'time-out', notes: notes);
+  }
+
+  Future<Map<String, dynamic>> gsoComplete(int assignmentId, {String? notes}) async {
+    return _gsoPostAction(assignmentId, 'complete', notes: notes);
+  }
+
+  Future<Map<String, dynamic>> _gsoPostAction(
+    int assignmentId,
+    String action, {
+    String? notes,
+  }) async {
+    final headers = await _authHeaders();
+    headers['Content-Type'] = 'application/json';
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/mobile/gso/sanctions/$assignmentId/$action'),
+          headers: headers,
+          body: jsonEncode({if (notes != null && notes.isNotEmpty) 'notes': notes}),
+        )
+        .timeout(const Duration(seconds: 30));
+    _handleUnauthorized(response);
+    if (response.statusCode == 200) {
+      clearCache();
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map && body['message'] != null) {
+        throw Exception(body['message'].toString());
+      }
+      if (body is Map && body['errors'] is Map) {
+        final first = (body['errors'] as Map).values.first;
+        throw Exception(first is List ? first.first.toString() : first.toString());
+      }
+    } catch (e) {
+      if (e is Exception && e.toString().startsWith('Exception:')) rethrow;
+    }
+    throw Exception('Request failed (${response.statusCode})');
+  }
 }
+

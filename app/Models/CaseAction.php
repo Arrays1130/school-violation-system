@@ -31,6 +31,7 @@ class CaseAction extends Model
         'verbal_warning'     => 'Verbal Warning',
         'written_warning'    => 'Written Warning',
         'endorsement'        => 'Endorsement to Grievance Committee',
+        'gso_completed'      => 'GSO Completed Community Service',
         'other'              => 'Other Action',
     ];
 
@@ -44,6 +45,7 @@ class CaseAction extends Model
         'verbal_warning'     => 'megaphone',
         'written_warning'    => 'file-text',
         'endorsement'        => 'send',
+        'gso_completed'      => 'check-circle',
         'other'              => 'circle-dot',
     ];
 

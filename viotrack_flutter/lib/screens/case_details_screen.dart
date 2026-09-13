@@ -28,6 +28,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   Map<String, dynamic>? _case;
   bool _isLoading = true;
   bool _acknowledging = false;
+  bool _acknowledgedLocally = false;
   bool _showingStaleData = false;
   Map<String, String>? _authHeaders;
 
@@ -71,8 +72,19 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   }
 
   Future<void> _acknowledgeCase() async {
-    if (_acknowledging) return;
-    setState(() => _acknowledging = true);
+    if (_acknowledging || _acknowledgedLocally) return;
+    if (ApiService.isOfflineNotifier.value) {
+      AppUi.showSnack(
+        context,
+        'You are offline. Try again when connected.',
+        kind: SnackKind.error,
+      );
+      return;
+    }
+    setState(() {
+      _acknowledging = true;
+      _acknowledgedLocally = true;
+    });
     try {
       await _apiService.acknowledgeCase(widget.caseId);
       if (!mounted) return;
@@ -84,6 +96,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       await _fetchDetails(force: true);
     } catch (e) {
       if (!mounted) return;
+      setState(() => _acknowledgedLocally = false);
       AppUi.showSnack(
         context,
         'Could not acknowledge case.',
@@ -100,7 +113,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       _case == null ? null : Map<String, dynamic>.from(_case!),
     );
     final status = CaseStatus.normalize(_case?['status']?.toString());
-    final showAcknowledge = endorsed && status != 'Closed';
+    final showAcknowledge = endorsed && status != 'Closed' && !_acknowledgedLocally;
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
@@ -151,190 +164,139 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     final status = CaseStatus.normalize(_case?['status']?.toString());
     final endorsed = CaseStatus.isEndorsed(Map<String, dynamic>.from(_case!));
     final statusColor = CaseStatus.colorFor(status, endorsed: endorsed);
-    final showAcknowledge = endorsed && status != 'Closed';
+    final showAcknowledge = endorsed && status != 'Closed' && !_acknowledgedLocally;
     final bottomPad = showAcknowledge ? 140.0 : 40.0;
 
     return RefreshIndicator(
       onRefresh: () => _fetchDetails(force: true),
-      color: AppTheme.accentCyan,
+      color: AppTheme.primary,
       child: CustomScrollView(
         slivers: [
           if (_showingStaleData)
             SliverToBoxAdapter(
               child: CaseStaleBanner(onRetry: () => _fetchDetails(force: true)),
             ),
-          // Sticky header with refined gradient
+          // Sticky white header
           SliverAppBar(
-            expandedHeight: 236,
             pinned: true,
             elevation: 0,
-            stretch: true,
-            backgroundColor: AppTheme.primaryNavy,
+            scrolledUnderElevation: 0,
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
             leading: IconButton(
               tooltip: 'Go back',
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 16,
-                  color: Colors.white,
-                ),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: AppTheme.textMain,
               ),
               onPressed: () => Navigator.pop(context),
             ),
-            flexibleSpace: FlexibleSpaceBar(
-              stretchModes: const [StretchMode.zoomBackground],
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryNavy,
-                          AppTheme.primaryIndigo,
-                          _getSeverityColor(severity).withValues(alpha: 0.9),
-                        ],
+            title: Text(
+              'Case details',
+              style: GoogleFonts.inter(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textMain,
+                letterSpacing: -0.3,
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(0.5),
+              child: Divider(
+                height: 0.5,
+                thickness: 0.5,
+                color: AppTheme.inputBorder.withValues(alpha: 0.95),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: AppUi.surfaceCard(
+                padding: const EdgeInsets.all(16),
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      AppPageTransitions.fadeSlide(
+                        StudentProfileScreen(student: student),
                       ),
-                    ),
-                  ),
-                  _buildPattern(),
-                  // User Profile Header
-                  Positioned(
-                    bottom: 34,
-                    left: 24,
-                    right: 24,
-                    child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.push(
-                          context,
-                          AppPageTransitions.fadeSlide(
-                            StudentProfileScreen(student: student),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Hero(
+                        tag: 'case_${widget.caseId}_avatar',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: AppUi.initialsAvatar(
+                            studentName,
+                            size: 56,
+                            radius: 18,
                           ),
-                        );
-                      },
-                      child: Row(
-                        children: [
-                          Hero(
-                            tag: 'case_${widget.caseId}_avatar',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: AppUi.initialsAvatar(
-                                studentName,
-                                size: 76,
-                                radius: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              student['full_name'] ??
+                                  'Student name unavailable',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textMain,
+                                letterSpacing: -0.3,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            const SizedBox(height: 8),
+                            Row(
                               children: [
-                                AppUi.brandPill(
-                                  label: 'Case overview',
-                                  leading: Icon(
-                                    Icons.shield_outlined,
-                                    size: 14,
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                  ),
+                                AppUi.statusBadgeForCase(
+                                  Map<String, dynamic>.from(_case!),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(width: 8),
                                 Text(
-                                  student['full_name'] ??
-                                      'Student name unavailable',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                  severity,
                                   style: GoogleFonts.inter(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: -0.5,
-                                    height: 1.1,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.14),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.28,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    severity.toUpperCase(),
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.95,
-                                      ),
-                                      letterSpacing: 1.0,
-                                    ),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textMuted,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          AppUi.iconCircle(
-                            icon: Icons.arrow_outward_rounded,
-                            color: Colors.white,
-                            size: 46,
-                            iconSize: 20,
-                            backgroundColor: Colors.white12,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppTheme.textMuted,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
 
-          // â”€â”€ Main Body â”€â”€
           SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: const Offset(0, -32),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: AppTheme.bgLight,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(20, 32, 20, bottomPad),
-                  child: Column(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
+              child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AppUi.staggerIn(
                         _buildStatusCard(status, statusColor, severity),
                         0,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
                       AppUi.staggerIn(
                         AppUi.inlineSectionHeader(
@@ -348,7 +310,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                         _buildBentoGrid(violation, severity, status),
                         2,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
                       AppUi.staggerIn(
                         AppUi.inlineSectionHeader(
@@ -363,7 +325,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                         CaseTimelineWidget(currentStatus: status),
                         4,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
                       if (_case!['hearings'] != null &&
                           (_case!['hearings'] as List).isNotEmpty) ...[
@@ -381,7 +343,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                           ),
                           6,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                       ],
 
                       if (_case!['attachments'] != null &&
@@ -396,27 +358,21 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                         ),
                         const SizedBox(height: 12),
                         AppUi.staggerIn(_buildEvidenceGallery(), 6),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                       ],
                     ],
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPattern() {
-    return Opacity(opacity: 0.035, child: CustomPaint(painter: GridPainter()));
+          ],
+        ),
+      );
   }
 
   Widget _buildStatusCard(String status, Color color, String severity) {
     return AppUi.surfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      radius: 24,
+      padding: const EdgeInsets.all(16),
+      radius: 20,
       child: Row(
         children: [
           Container(
@@ -642,20 +598,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     required IconData icon,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.08), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return AppUi.surfaceCard(
+      padding: const EdgeInsets.all(16),
+      radius: 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -713,8 +658,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     final notes = hearing['notes']?.toString() ?? 'No agenda details provided.';
 
     return AppUi.surfaceCard(
-      padding: const EdgeInsets.all(20),
-      radius: 24,
+      padding: const EdgeInsets.all(16),
+      radius: 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -722,10 +667,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             children: [
               AppUi.iconCircle(
                 icon: Icons.calendar_month_rounded,
-                color: Colors.white,
+                color: AppTheme.primary,
                 size: 48,
                 iconSize: 22,
-                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                backgroundColor: AppTheme.primaryLight,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -872,7 +817,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
   Widget _buildEvidenceGallery() {
     final attachments = _case!['attachments'] as List;
-    return SizedBox(
+    return AppUi.surfaceCard(
+      padding: const EdgeInsets.all(16),
+      radius: 20,
+      child: SizedBox(
       height: 140,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -919,6 +867,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           );
         },
       ),
+      ),
     );
   }
 
@@ -956,22 +905,4 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     if (severity == 'Moderate') return AppTheme.accentAmber;
     return AppTheme.accentCyan;
   }
-}
-
-class GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1;
-    for (double i = 0; i < size.width; i += 20) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += 20) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -5,8 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/api_service_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/page_transitions.dart';
+import '../widgets/app_ui.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/skeleton_loader.dart';
+import '../widgets/vt_ui.dart';
 import 'case_details_screen.dart';
 
 class HearingsCalendarScreen extends ConsumerStatefulWidget {
@@ -104,49 +106,13 @@ class _HearingsCalendarScreenState extends ConsumerState<HearingsCalendarScreen>
 
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
-      body: SafeArea(
-        child: RefreshIndicator(
+      appBar: AppUi.innerAppBar(context: context, title: 'Hearings'),
+      body: RefreshIndicator(
           color: AppTheme.primary,
           onRefresh: _loadHearings,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        color: AppTheme.textMain,
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hearings calendar',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.textMain,
-                              ),
-                            ),
-                            Text(
-                              'Upcoming scheduled hearings',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: AppTheme.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               if (_isLoading)
                 SliverPadding(
                   padding: const EdgeInsets.all(20),
@@ -162,23 +128,12 @@ class _HearingsCalendarScreenState extends ConsumerState<HearingsCalendarScreen>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            'Could not load hearings',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: AppTheme.textMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: _loadHearings,
-                            child: const Text('Retry'),
+                          AppUi.dataBanner(
+                            icon: Icons.cloud_off_rounded,
+                            message: _error ?? 'Could not load hearings.',
+                            accent: AppTheme.accentRose,
+                            actionLabel: 'Retry',
+                            onAction: _loadHearings,
                           ),
                         ],
                       ),
@@ -226,7 +181,6 @@ class _HearingsCalendarScreenState extends ConsumerState<HearingsCalendarScreen>
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -240,7 +194,8 @@ class _HearingsCalendarScreenState extends ConsumerState<HearingsCalendarScreen>
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
+      child: VtPressable(
+        child: Material(
         color: AppTheme.bgCard,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
@@ -250,7 +205,7 @@ class _HearingsCalendarScreenState extends ConsumerState<HearingsCalendarScreen>
             HapticFeedback.lightImpact();
             Navigator.push(
               context,
-              AppPageTransitions.fadeScale(
+              AppPageTransitions.fadeSlide(
                 CaseDetailsScreen(caseId: int.parse(caseId.toString())),
               ),
             );
@@ -330,6 +285,7 @@ class _HearingsCalendarScreenState extends ConsumerState<HearingsCalendarScreen>
             ),
           ),
         ),
+      ),
       ),
     );
   }

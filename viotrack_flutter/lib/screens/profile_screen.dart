@@ -148,12 +148,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showSnack(String message, {required bool success}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.inter()),
-        backgroundColor: success ? AppTheme.accentEmerald : AppTheme.accentRose,
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppUi.showSnack(
+      context,
+      message,
+      kind: success ? SnackKind.success : SnackKind.error,
     );
   }
 
@@ -230,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: Column(
           children: [
             Container(
-              height: 220,
+              height: 148,
               decoration: const BoxDecoration(
                 gradient: AppTheme.heroGradient,
                 borderRadius: BorderRadius.only(
@@ -257,18 +255,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
+      primary: false,
       backgroundColor: AppTheme.bgLight,
       body: Column(
         children: [
           AppUi.gradientHeader(
             greeting: 'Your account',
             title: 'Profile',
+            safeTop: false,
             subtitle: 'Identity, security, and sign-out.',
             badge: AppUi.iconCircle(
               icon: Icons.person_outline_rounded,
               color: AppTheme.primaryNavy,
-              size: 36,
-              iconSize: 18,
+              size: 32,
+              iconSize: 16,
               backgroundColor: Colors.white,
             ),
             bottom: Row(
@@ -313,11 +313,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 20,
+                16,
                 20,
-                20,
-                AppTheme.bottomNavClearance,
+                20 + MediaQuery.paddingOf(context).bottom,
               ),
               children: [
                 AppUi.staggerIn(_section('Account'), 0),
@@ -440,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        AppPageTransitions.fadeScale(const PolicyLookupScreen()),
+                        AppPageTransitions.fadeSlide(const PolicyLookupScreen()),
                       );
                     },
                     icon: const Icon(Icons.auto_awesome_outlined, size: 20),

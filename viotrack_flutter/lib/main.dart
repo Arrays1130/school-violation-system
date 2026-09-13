@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/main_layout.dart';
+import 'screens/gso_main_layout.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_storage_service.dart';
@@ -11,8 +12,11 @@ import 'services/security_service.dart';
 import 'services/session_service.dart';
 import 'services/push_bootstrap.dart';
 import 'services/push_navigation_service.dart';
+import 'widgets/app_ui.dart';
 import 'widgets/branded_splash.dart';
 import 'api_service.dart';
+import 'utils/role_home.dart';
+import 'config/app_flavor.dart';
 
 void main() {
   runZonedGuarded(
@@ -51,7 +55,7 @@ class VioTrackApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: PushNavigationService.navigatorKey,
-      title: 'VioTrack',
+      title: AppFlavor.appName,
       theme: AppTheme.lightTheme,
       home: const AuthWrapper(),
     );
@@ -73,6 +77,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _didAttemptAutoUnlock = false;
   String? _unlockMessage;
   String _biometricLabel = 'Biometrics';
+  String _role = 'dean';
 
   @override
   void initState() {
@@ -106,6 +111,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final hasToken = await AuthStorageService.hasToken();
       final biometricEnabled = await SecurityService.isBiometricLockEnabled();
       final biometricLabel = await SecurityService.getBiometricLabel();
+      final role = await RoleHome.currentRole();
 
       if (!mounted) return;
       setState(() {
@@ -114,6 +120,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         _isLoading = false;
         _unlockMessage = null;
         _biometricLabel = biometricLabel;
+        _role = role;
         if (!_isLocked) {
           _didAttemptAutoUnlock = false;
         }
@@ -182,16 +189,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: Container(
+                child: AppUi.surfaceCard(
                   padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.heroGradient,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                    boxShadow: AppTheme.floatShadow,
-                  ),
+                  radius: 24,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -199,15 +199,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
                         width: 96,
                         height: 96,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
+                          color: AppTheme.primaryLight,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: AppTheme.primary.withValues(alpha: 0.12),
                           ),
                         ),
                         child: Icon(
                           SecurityService.iconForLabel(_biometricLabel),
-                          color: Colors.white,
+                          color: AppTheme.primary,
                           size: 48,
                         ),
                       ),
@@ -216,7 +216,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                         'App locked',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          color: Colors.white,
+                          color: AppTheme.textMain,
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.4,
@@ -227,7 +227,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                         'Use your $_biometricLabel to continue.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          color: Colors.white.withValues(alpha: 0.82),
+                          color: AppTheme.textMuted,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -238,17 +238,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: AppTheme.primaryLight,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: AppTheme.primary.withValues(alpha: 0.12),
                             ),
                           ),
                           child: Text(
                             _unlockMessage!,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
-                              color: Colors.white,
+                              color: AppTheme.textSub,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -270,7 +270,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppTheme.primary,
+                                    color: Colors.white,
                                   ),
                                 )
                               : Icon(
@@ -282,9 +282,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
                                 : 'Unlock with $_biometricLabel',
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppTheme.primaryNavy,
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
                             minimumSize: const Size(double.infinity, 52),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
                         ),
                       ),
@@ -298,6 +302,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    return const MainLayout();
+    return AppFlavor.isGso ? const GsoMainLayout() : const MainLayout();
   }
 }

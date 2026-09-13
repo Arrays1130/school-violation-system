@@ -71,6 +71,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
     const [showMessageModal, setShowMessageModal] = useState(false);
     const [selectedCaseId, setSelectedCaseId] = useState('');
     const [generatingAi, setGeneratingAi] = useState(false);
+    const [handbookSources, setHandbookSources] = useState([]);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         message: '',
@@ -105,6 +106,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
     const openMessageModal = () => {
         const latestCaseId = cases[0]?.id ? String(cases[0].id) : '';
         setSelectedCaseId(latestCaseId);
+        setHandbookSources([]);
         setShowMessageModal(true);
     };
 
@@ -121,10 +123,17 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                 { case_id: Number(selectedCaseId) }
             );
             setData('message', payload.message || '');
+            const sources = Array.isArray(payload.handbook_sources)
+                ? payload.handbook_sources.filter(Boolean)
+                : [];
+            setHandbookSources(sources);
+            const usedHandbook = sources.length > 0;
             showSuccessToast(
                 payload.mode === 'fallback'
                     ? 'Draft created from case details (AI unavailable).'
-                    : 'AI drafted a message from the selected case.',
+                    : usedHandbook
+                        ? 'AI drafted a message from the case and student handbook.'
+                        : 'AI drafted a message from the selected case.',
                 'Message Ready'
             );
         } catch (error) {
@@ -150,6 +159,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                 }
                 reset();
                 setSelectedCaseId('');
+                setHandbookSources([]);
                 setShowMessageModal(false);
             },
             onError: (formErrors) => {
@@ -164,6 +174,7 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
     const closeModal = () => {
         setShowMessageModal(false);
         setSelectedCaseId('');
+        setHandbookSources([]);
         reset();
     };
 
@@ -503,8 +514,13 @@ export default function Show({ auth, student, offenseSummary, messageTemplates }
                                     {errors.message && <p className="text-rose-500 text-xs mt-1 font-semibold">{errors.message}</p>}
                                     <p className="text-xs text-slate-500 mt-2">
                                         The message will be sent directly to {student.guardian_name || 'the guardian'}.
-                                        {canUseAi ? ' AI uses the selected case details to draft the text.' : ''}
+                                        {canUseAi ? ' AI uses the selected case and relevant student handbook / school policy to draft the text.' : ''}
                                     </p>
+                                    {handbookSources.length > 0 && (
+                                        <p className="text-xs text-indigo-600 mt-1.5 font-medium">
+                                            Based on: {handbookSources.join(', ')}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

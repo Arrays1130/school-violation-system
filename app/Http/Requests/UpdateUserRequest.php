@@ -24,7 +24,7 @@ class UpdateUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->route('user')->id)],
             'phone' => ['nullable', 'string', 'regex:/^(09\d{9}|\+639\d{9})$/'],
-            'role' => 'required|in:super_admin,admin,dean',
+            'role' => 'required|in:super_admin,admin,dean,gso',
             'department' => [
                 Rule::requiredIf(fn () => $this->input('role') === 'dean'),
                 'nullable',

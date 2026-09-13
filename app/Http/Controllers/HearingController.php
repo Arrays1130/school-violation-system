@@ -158,10 +158,33 @@ class HearingController extends Controller
 
         $request->validate([
             'sanction' => 'required|string',
+            'required_hours' => 'nullable|numeric|min:0.25|max:999',
         ]);
 
         $case = $hearing->case;
         $case->update(['sanction' => $request->sanction]);
+        $case->load(['student', 'violation']);
+
+        $requiredHours = $request->filled('required_hours') ? (float) $request->input('required_hours') : 0;
+
+        // Hour-based sanctions go to GSO first; do not close the case yet.
+        if ($requiredHours > 0) {
+            app(\App\Services\SanctionAssignmentService::class)->assignHours(
+                $case,
+                $requiredHours,
+                $request->user(),
+                'Assigned from hearing completion.'
+            );
+
+            \App\Support\QueueHelper::triggerBackgroundWorker();
+
+            return back()->with('success', 'Hearing completed. Community service hours assigned to GSO. Case stays open until GSO completes and OSA closes it.');
+        }
+
+        if ($reason = $case->closureBlockReason()) {
+            return back()->with('error', $reason);
+        }
+
         $case->markClosed(auth()->id());
         $case->load(['student', 'violation']);
 

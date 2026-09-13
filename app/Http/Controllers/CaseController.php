@@ -457,7 +457,7 @@ class CaseController extends Controller
 
     public function show(\App\Models\StudentCase $case)
     {
-        $case->load(['student', 'violation', 'hearings', 'creator', 'actions.user', 'attachments.uploader', 'closedByUser']);
+        $case->load(['student', 'violation', 'hearings', 'creator', 'actions.user', 'attachments.uploader', 'closedByUser', 'sanctionAssignments.dtrEntries']);
 
         // Get full offense history for this student
         $allStudentCases = \App\Models\StudentCase::where('student_id', $case->student_id)
@@ -474,16 +474,22 @@ class CaseController extends Controller
             'major'  => $allStudentCases->filter(fn($c) => $c->violation?->severity === 'Major')->count(),
         ];
 
+        $activeAssignment = $case->activeSanctionAssignment();
+        $latestAssignment = $case->latestSanctionAssignment();
+
         return inertia('Cases/Show', [
             'caseRecord' => $case,
             'offenseHistory' => $offenseHistory,
             'offenseSummary' => $offenseSummary,
+            'sanctionAssignment' => $latestAssignment?->toApiArray(),
             'workflow' => [
                 'can_close' => $case->canClose(),
                 'can_endorse' => $case->canEndorse(),
                 'close_block_reason' => $case->closureBlockReason(),
                 'endorse_block_reason' => $case->endorseBlockReason(),
                 'needs_osa_action' => $case->isMajorOffense() && ! $case->canEndorseToGrievance(),
+                'has_pending_gso' => $activeAssignment !== null,
+                'can_assign_service_hours' => $case->status !== 'Closed' && $activeAssignment === null,
             ],
             'auth' => ['user' => auth()->user()]
         ]);
@@ -651,6 +657,36 @@ class CaseController extends Controller
 
         return back()->with('success', 'Case has been officially closed.');
     }
+
+    /**
+     * Assign community service hours for GSO monitoring (hour-based sanctions only).
+     */
+    public function assignServiceHours(\Illuminate\Http\Request $request, \App\Models\StudentCase $case)
+    {
+        $this->authorize('update', $case);
+
+        $data = $request->validate([
+            'required_hours' => 'required|numeric|min:0.25|max:999',
+            'sanction' => 'nullable|string|max:500',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if (! empty($data['sanction'])) {
+            $case->update(['sanction' => $data['sanction']]);
+        }
+
+        app(\App\Services\SanctionAssignmentService::class)->assignHours(
+            $case->fresh(),
+            (float) $data['required_hours'],
+            $request->user(),
+            $data['notes'] ?? null
+        );
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
+
+        return back()->with('success', 'Community service hours assigned. GSO can now monitor DTR in the mobile app.');
+    }
+
     /**
      * Print individual case report.
      */

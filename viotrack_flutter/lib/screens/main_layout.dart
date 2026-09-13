@@ -8,6 +8,7 @@ import '../services/notification_poller.dart';
 import '../services/push_bootstrap.dart';
 import '../services/fcm_service.dart';
 import '../services/push_navigation_service.dart';
+import '../widgets/app_ui.dart';
 import 'dashboard_screen.dart';
 import 'cases_screen.dart';
 import 'analytics_screen.dart';
@@ -48,17 +49,17 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   ];
   static const _icons = [
     Icons.home_outlined,
-    Icons.folder_outlined,
-    Icons.bar_chart_outlined,
-    Icons.notifications_outlined,
-    Icons.person_outline,
+    Icons.folder_copy_outlined,
+    Icons.insights_outlined,
+    Icons.notifications_none_rounded,
+    Icons.account_circle_outlined,
   ];
   static const _iconsActive = [
     Icons.home_rounded,
-    Icons.folder_rounded,
-    Icons.bar_chart_rounded,
+    Icons.folder_copy_rounded,
+    Icons.insights_rounded,
     Icons.notifications_rounded,
-    Icons.person_rounded,
+    Icons.account_circle_rounded,
   ];
 
   @override
@@ -113,22 +114,12 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
     if (increased && _selectedIndex != 3 && mounted) {
       HapticFeedback.lightImpact();
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'May bagong alert ($newCount unread)',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: AppTheme.primary,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'Tingnan',
-            textColor: Colors.white,
-            onPressed: () => navigateToTab(3),
-          ),
-        ),
+      AppUi.showSnack(
+        context,
+        'New alert ($newCount unread)',
+        kind: SnackKind.info,
+        actionLabel: 'View',
+        onAction: () => navigateToTab(3),
       );
     }
   }
@@ -140,7 +131,13 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     );
   }
 
-  void navigateToTab(int index, {String? search, String? status}) {
+  void navigateToTab(
+    int index, {
+    String? search,
+    String? status,
+    bool focusSearch = false,
+    String? month,
+  }) {
     HapticFeedback.selectionClick();
     setState(() {
       _selectedIndex = index;
@@ -149,10 +146,13 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     if (index == 1) {
       _pendingSearch = search;
       _pendingStatus = status;
+      final shouldFocusSearch = focusSearch;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _casesScreenKey.currentState?.applyExternalFilters(
           search: _pendingSearch,
           status: _pendingStatus,
+          monthAbbrev: month,
+          focusSearch: shouldFocusSearch,
         );
         _pendingSearch = null;
         _pendingStatus = null;
@@ -197,19 +197,68 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
           navigateToTab(0);
         }
       },
-      child: Scaffold(
-      backgroundColor: AppTheme.bgLight,
-      extendBody: true,
-      body: Column(
-        children: [
-          ValueListenableBuilder<bool>(
-            valueListenable: ApiService.isOfflineNotifier,
-            builder: (context, offline, _) {
-              if (!offline) return const SizedBox.shrink();
-              return Material(
-                color: AppTheme.accentAmber.withValues(alpha: 0.12),
-                child: SafeArea(
-                  bottom: false,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+        child: Scaffold(
+        backgroundColor: AppTheme.bgLight,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          automaticallyImplyLeading: false,
+          centerTitle: false,
+          titleSpacing: 0,
+          toolbarHeight: 56,
+          title: _buildFacebookTabBar(),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(3),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: List.generate(5, (i) {
+                    final selected = _selectedIndex == i;
+                    return Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        height: 3,
+                        margin: EdgeInsets.symmetric(
+                          horizontal: selected ? 16 : 28,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppTheme.primary
+                              : Colors.transparent,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(3),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                Divider(
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: AppTheme.inputBorder.withValues(alpha: 0.9),
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: Column(
+          children: [
+            ValueListenableBuilder<bool>(
+              valueListenable: ApiService.isOfflineNotifier,
+              builder: (context, offline, _) {
+                if (!offline) return const SizedBox.shrink();
+                return Material(
+                  color: AppTheme.accentAmber.withValues(alpha: 0.12),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                     child: Row(
@@ -254,169 +303,112 @@ class MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: List.generate(5, (i) {
-                if (!_loadedTabs.contains(i)) return const SizedBox.shrink();
-                return AnimatedOpacity(
-                  opacity: _selectedIndex == i ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOut,
-                  child: _screenFor(i),
                 );
-              }),
+              },
             ),
-          ),
-        ],
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: List.generate(5, (i) {
+                  if (!_loadedTabs.contains(i)) return const SizedBox.shrink();
+                  return AnimatedOpacity(
+                    opacity: _selectedIndex == i ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    child: _screenFor(i),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.bgCard.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.inputBorder.withValues(alpha: 0.85),
-            ),
-            boxShadow: AppTheme.navShadow,
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final tabWidth = constraints.maxWidth / 5;
-                  return Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 280),
-                        curve: Curves.easeOutCubic,
-                        left: _selectedIndex * tabWidth + 4,
-                        top: 4,
-                        width: tabWidth - 8,
-                        height: 52,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.heroGradient,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primary.withValues(alpha: 0.22),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+        ),
+    );
+  }
+
+  Widget _buildFacebookTabBar() {
+    return SizedBox(
+      height: 56,
+      child: Row(
+        children: List.generate(5, (i) {
+          final selected = _selectedIndex == i;
+          final isAlerts = i == 3;
+          return Expanded(
+            child: Semantics(
+              button: true,
+              selected: selected,
+              label: _semanticsLabels[i],
+              child: InkWell(
+                onTap: () => _onItemTapped(i),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      height: 26,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            selected ? _iconsActive[i] : _icons[i],
+                            size: 26,
+                            color: selected
+                                ? AppTheme.primary
+                                : const Color(0xFF65676B),
                           ),
-                        ),
-                      ),
-                      Row(
-                        children: List.generate(5, (i) {
-                          final selected = _selectedIndex == i;
-                          final isAlerts = i == 3;
-                          return Expanded(
-                            child: Semantics(
-                              button: true,
-                              selected: selected,
-                              label: _semanticsLabels[i],
-                              child: Tooltip(
-                                message: _labels[i],
-                                child: GestureDetector(
-                                  onTap: () => _onItemTapped(i),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 2),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          width: 32,
-                                          height: 32,
-                                          child: Stack(
-                                            clipBehavior: Clip.none,
-                                            alignment: Alignment.center,
-                                            children: [
-                                              AnimatedSwitcher(
-                                                duration: const Duration(milliseconds: 200),
-                                                child: Icon(
-                                                  selected ? _iconsActive[i] : _icons[i],
-                                                  key: ValueKey(selected),
-                                                  size: selected ? 18 : 20,
-                                                  color: selected
-                                                      ? Colors.white
-                                                      : AppTheme.textMuted,
-                                                ),
-                                              ),
-                                              if (isAlerts && _unreadCount > 0)
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 5,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: AppTheme.accentRose,
-                                                      borderRadius: BorderRadius.circular(10),
-                                                      border: Border.all(
-                                                        color: AppTheme.bgCard,
-                                                        width: 1.5,
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      _unreadCount > 99
-                                                          ? '99+'
-                                                          : '$_unreadCount',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.w700,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        AnimatedDefaultTextStyle(
-                                          duration: const Duration(milliseconds: 200),
-                                          style: GoogleFonts.inter(
-                                            fontSize: 9,
-                                            height: 1.1,
-                                            fontWeight: selected
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                            color: selected
-                                                ? AppTheme.primaryNavy
-                                                : AppTheme.textMuted,
-                                          ),
-                                          child: Text(_labels[i]),
-                                        ),
-                                      ],
-                                    ),
+                          if (isAlerts && _unreadCount > 0)
+                            Positioned(
+                              top: -4,
+                              right: -8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentRose,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _unreadCount > 99 ? '99+' : '$_unreadCount',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
                             ),
-                          );
-                        }),
+                        ],
                       ),
-                    ],
-                  );
-                },
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _labels[i],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        color: selected
+                            ? AppTheme.primary
+                            : const Color(0xFF65676B),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ),
-    ),
     );
   }
 }

@@ -24,21 +24,18 @@ class EmptyStateWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 76,
-            height: 76,
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
-              color: AppTheme.bgCard,
+              color: AppTheme.primaryLight,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.inputBorder.withValues(alpha: 0.8),
-              ),
-              boxShadow: AppTheme.softShadow,
             ),
-            child: Icon(icon, size: 34, color: AppTheme.primary),
+            child: Icon(icon, size: 38, color: AppTheme.primary),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
           Text(
             title,
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,

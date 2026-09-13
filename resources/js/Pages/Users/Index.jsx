@@ -5,7 +5,7 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 import { 
     Users, Search, Filter, X, 
     Edit, Trash2, Shield, UserPlus, 
-    ShieldCheck, Building
+    ShieldCheck, Building, ClipboardList
 } from 'lucide-react';
 import Pagination from '@/Components/Pagination';
 import FilterBar from '@/Components/FilterBar';
@@ -72,6 +72,8 @@ export default function Index({ auth, users, filters }) {
                 return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><Shield className="w-3.5 h-3.5"/> Admin</span>;
             case 'dean':
                 return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-700 border border-amber-200"><Building className="w-3.5 h-3.5"/> Dean</span>;
+            case 'gso':
+                return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200"><ClipboardList className="w-3.5 h-3.5"/> GSO</span>;
             default:
                 return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{role}</span>;
         }
@@ -101,7 +103,7 @@ export default function Index({ auth, users, filters }) {
                         badge="Administration"
                         badgeIcon={Users}
                         title="System Users"
-                        description="Manage system administrators, deans, and their access privileges."
+                        description="Manage system administrators, deans, GSO, and their access privileges."
                     >
                         <Link href={route('users.create')} className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/30">
                             <UserPlus className="w-4 h-4" />
@@ -126,6 +128,7 @@ export default function Index({ auth, users, filters }) {
                                 <option value="super_admin">Super Admin</option>
                                 <option value="admin">Admin</option>
                                 <option value="dean">Dean</option>
+                                <option value="gso">GSO</option>
                             </select>
                         </div>
                     </FilterBar>

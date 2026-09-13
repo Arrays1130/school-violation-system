@@ -19,6 +19,7 @@ export default function Show({ auth, hearing }) {
     const [showStartConfirm, setShowStartConfirm] = useState(false);
     const [showCompleteDialog, setShowCompleteDialog] = useState(false);
     const [sanction, setSanction] = useState('');
+    const [requiredHours, setRequiredHours] = useState('');
     const [sanctionError, setSanctionError] = useState('');
 
     const handleStartHearing = () => setShowStartConfirm(true);
@@ -30,6 +31,7 @@ export default function Show({ auth, hearing }) {
 
     const handleCompleteHearing = () => {
         setSanction('');
+        setRequiredHours('');
         setSanctionError('');
         setShowCompleteDialog(true);
     };
@@ -39,7 +41,11 @@ export default function Show({ auth, hearing }) {
             setSanctionError('Sanction is required.');
             return;
         }
-        router.post(route('hearings.complete', hearing.id), { sanction });
+        const payload = { sanction };
+        if (requiredHours) {
+            payload.required_hours = requiredHours;
+        }
+        router.post(route('hearings.complete', hearing.id), payload);
         setShowCompleteDialog(false);
     };
 
@@ -64,8 +70,8 @@ export default function Show({ auth, hearing }) {
                 onClose={() => setShowCompleteDialog(false)}
                 onConfirm={confirmCompleteHearing}
                 title="Complete Hearing"
-                description="Enter the sanction or resolution reached during this hearing. This will close the case."
-                confirmLabel="Close Case"
+                description="Enter the sanction. Add required hours only for GSO-monitored community service (case stays open until GSO completes)."
+                confirmLabel="Complete Hearing"
             >
                 <div>
                     <label htmlFor="hearing-sanction" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -81,6 +87,19 @@ export default function Show({ auth, hearing }) {
                         autoFocus
                     />
                     {sanctionError && <p className="text-rose-500 text-xs mt-1.5 font-semibold">{sanctionError}</p>}
+                    <label htmlFor="hearing-hours" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">
+                        GSO required hours (optional)
+                    </label>
+                    <input
+                        id="hearing-hours"
+                        type="number"
+                        min="0.25"
+                        step="0.25"
+                        value={requiredHours}
+                        onChange={(e) => setRequiredHours(e.target.value)}
+                        placeholder="e.g. 8 — leave blank to close case now"
+                        className="form-input"
+                    />
                 </div>
             </ConfirmDialog>
 

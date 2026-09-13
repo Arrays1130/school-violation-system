@@ -271,6 +271,7 @@ Route::middleware(['auth', 'recaptcha.verified'])->group(function () {
 
     // Case Status
     Route::post('/cases/{case}/close', [CaseController::class, 'close'])->name('cases.close');
+    Route::post('/cases/{case}/assign-service-hours', [CaseController::class, 'assignServiceHours'])->name('cases.assign-service-hours');
 
     // Student Search API (popup with violation history)
     Route::get('/api/students/search', [StudentController::class, 'searchWithHistory'])->name('api.students.search');

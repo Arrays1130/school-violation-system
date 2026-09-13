@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureUserHasRole
 {
     /**
-     * @param  string  ...$roles  Comma-separated or variadic roles (super_admin, admin, dean)
+     * @param  string  ...$roles  Comma-separated or variadic roles (super_admin, admin, dean, gso)
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {

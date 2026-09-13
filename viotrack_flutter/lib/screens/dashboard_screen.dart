@@ -13,7 +13,7 @@ import '../providers/api_service_provider.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/app_ui.dart';
-import '../services/notification_poller.dart';
+import '../utils/case_status.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -27,7 +27,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   Map<String, dynamic> _stats = {};
   List<dynamic> _topOffenses = [];
   List<dynamic> _alerts = [];
-  int _unreadCount = 0;
   bool _isLoading = true;
   bool _refreshFailed = false;
   DateTime? _lastRefreshedAt;
@@ -36,18 +35,8 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _unreadCount = NotificationPoller.instance.unreadCount.value;
-    NotificationPoller.instance.unreadCount.addListener(_syncUnreadFromPoller);
     _loadUserName();
     _loadInitialData();
-  }
-
-  void _syncUnreadFromPoller() {
-    if (mounted) {
-      setState(
-        () => _unreadCount = NotificationPoller.instance.unreadCount.value,
-      );
-    }
   }
 
   void refreshFromPoller() {
@@ -98,14 +87,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    NotificationPoller.instance.unreadCount.removeListener(
-      _syncUnreadFromPoller,
-    );
-    super.dispose();
-  }
-
   Future<void> _refreshData({
     bool showLoading = true,
     bool forcedRefresh = false,
@@ -131,7 +112,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
         _stats = Map<String, dynamic>.from(sResult['summary'] ?? {});
         _topOffenses = List<dynamic>.from(sResult['top_offenses'] ?? []);
         _alerts = List<dynamic>.from(sResult['upcoming_hearings'] ?? []);
-        _unreadCount = NotificationPoller.instance.unreadCount.value;
         _isLoading = false;
         _refreshFailed = false;
         _lastRefreshedAt = DateTime.now();
@@ -150,12 +130,13 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding =
-        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
+    final bottomPadding = 20 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
+      primary: false,
       backgroundColor: AppTheme.bgLight,
       body: SafeArea(
+        top: false,
         child: RefreshIndicator(
           onRefresh: () => _refreshData(showLoading: false, forcedRefresh: true),
           color: AppTheme.primary,
@@ -173,13 +154,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                     actionLabel: 'Retry',
                     onAction: () => _refreshData(forcedRefresh: true),
                   ),
-                )
-              else if (_lastRefreshedAt != null && !_isLoading)
-                SliverToBoxAdapter(
-                  child: AppUi.subtleMetaLine(
-                    'Updated ${AppUi.formatRelativeTime(_lastRefreshedAt)}',
-                    icon: Icons.update_rounded,
-                  ),
                 ),
               SliverToBoxAdapter(
                 child: AppUi.staggerIn(
@@ -188,7 +162,10 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                     actionLabel: 'Search all violation records',
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      MainLayout.of(context)?.navigateToTab(1);
+                      MainLayout.of(context)?.navigateToTab(
+                        1,
+                        focusSearch: true,
+                      );
                     },
                   ),
                   1,
@@ -196,6 +173,23 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               SliverToBoxAdapter(child: AppUi.staggerIn(_buildHeroCard(), 2)),
               SliverToBoxAdapter(child: AppUi.staggerIn(_buildQuickActions(), 3)),
+              if (_topOffenses.isNotEmpty) ...[
+                SliverToBoxAdapter(child: AppUi.sectionHeader('Top offenses')),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => AppUi.staggerIn(
+                        _buildOffenseItem(_topOffenses[index], index),
+                        index,
+                      ),
+                      childCount: _topOffenses.length > 3
+                          ? 3
+                          : _topOffenses.length,
+                    ),
+                  ),
+                ),
+              ],
               SliverToBoxAdapter(
                 child: AppUi.sectionHeader(
                   'Upcoming hearings',
@@ -222,23 +216,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ),
                 ),
-              if (_topOffenses.isNotEmpty) ...[
-                SliverToBoxAdapter(child: AppUi.sectionHeader('Top offenses')),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => AppUi.staggerIn(
-                        _buildOffenseItem(_topOffenses[index], index),
-                        index,
-                      ),
-                      childCount: _topOffenses.length > 3
-                          ? 3
-                          : _topOffenses.length,
-                    ),
-                  ),
-                ),
-              ],
               SliverToBoxAdapter(
                 child: AppUi.sectionHeader(
                   'Recent cases',
@@ -295,54 +272,15 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader() {
+    final updatedLabel = _lastRefreshedAt == null || _isLoading
+        ? null
+        : 'Updated ${AppUi.formatRelativeTime(_lastRefreshedAt)}';
+
     return AppUi.pageHeader(
       greeting: '$_timeGreeting, $_userName',
       title: 'Home',
+      subtitle: updatedLabel,
       compact: true,
-      trailing: IconButton(
-        onPressed: () => MainLayout.of(context)?.navigateToTab(3),
-        icon: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.bgCard,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: AppTheme.softShadow,
-              ),
-              child: const Icon(
-                Icons.notifications_outlined,
-                color: AppTheme.textMain,
-                size: 22,
-              ),
-            ),
-            if (_unreadCount > 0)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  constraints: const BoxConstraints(minWidth: 18),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentRose,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.bgCard, width: 1.5),
-                  ),
-                  child: Text(
-                    _unreadCount > 9 ? '9+' : '$_unreadCount',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -377,16 +315,14 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
       child: Row(
         children: [
-          AppUi.statChip(
+          AppUi.statCard(
             label: 'All cases',
             value: '${_stats['total'] ?? 0}',
-            animatedValue: (_stats['total'] as num? ?? 0).toInt(),
-            icon: Icons.folder_open_rounded,
+            icon: Icons.folder_outlined,
             color: AppTheme.primary,
             onTap: () {
               HapticFeedback.lightImpact();
@@ -394,10 +330,9 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           const SizedBox(width: 10),
-          AppUi.statChip(
+          AppUi.statCard(
             label: 'Pending',
             value: '${_stats['pending'] ?? 0}',
-            animatedValue: (_stats['pending'] as num? ?? 0).toInt(),
             icon: Icons.schedule_rounded,
             color: AppTheme.accentAmber,
             onTap: () {
@@ -406,10 +341,9 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           const SizedBox(width: 10),
-          AppUi.statChip(
+          AppUi.statCard(
             label: 'Closed',
             value: '${_stats['resolved'] ?? 0}',
-            animatedValue: (_stats['resolved'] as num? ?? 0).toInt(),
             icon: Icons.check_circle_outline_rounded,
             color: AppTheme.accentEmerald,
             onTap: () {
@@ -453,7 +387,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             if (caseId == null) return;
             Navigator.push(
               context,
-              AppPageTransitions.fadeScale(
+              AppPageTransitions.fadeSlide(
                 CaseDetailsScreen(caseId: int.parse(caseId.toString())),
               ),
             );
@@ -653,7 +587,11 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     final violationTitle =
         caseMap['violation']?['title']?.toString() ?? 'N/A';
 
-    return AppUi.listRow(
+    return Semantics(
+      button: true,
+      label:
+          'Case for $studentName, $violationTitle, $severity, ${CaseStatus.displayLabel(CaseStatus.resolve(caseMap))}',
+      child: AppUi.listRow(
       title: studentName,
       subtitle: violationTitle,
       leading: Stack(
@@ -691,7 +629,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
         HapticFeedback.lightImpact();
         Navigator.push(
           context,
-          AppPageTransitions.fadeScale(
+          AppPageTransitions.fadeSlide(
             CaseDetailsScreen(
               caseId: caseMap['id'],
               initialData: {
@@ -705,6 +643,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         );
       },
+    ),
     );
   }
 

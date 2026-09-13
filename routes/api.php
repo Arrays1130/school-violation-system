@@ -66,5 +66,11 @@ Route::prefix('mobile')->group(function () {
         Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);
         Route::post('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
         Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+
+        Route::get('/gso/sanctions', [\App\Http\Controllers\Api\GsoSanctionController::class, 'index']);
+        Route::get('/gso/sanctions/{assignment}', [\App\Http\Controllers\Api\GsoSanctionController::class, 'show']);
+        Route::post('/gso/sanctions/{assignment}/time-in', [\App\Http\Controllers\Api\GsoSanctionController::class, 'timeIn']);
+        Route::post('/gso/sanctions/{assignment}/time-out', [\App\Http\Controllers\Api\GsoSanctionController::class, 'timeOut']);
+        Route::post('/gso/sanctions/{assignment}/complete', [\App\Http\Controllers\Api\GsoSanctionController::class, 'complete']);
     });
 });

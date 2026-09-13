@@ -18,12 +18,17 @@ const OSA_LABELS = {
     parent_conference: 'Parent Conference',
     verbal_warning: 'Verbal Warning',
     written_warning: 'Written Warning',
+    gso_completed: 'GSO Completed',
     other: 'Other',
 };
 
-export default function Show({ auth, caseRecord, offenseHistory, offenseSummary, workflow = {} }) {
+export default function Show({ auth, caseRecord, offenseHistory, offenseSummary, workflow = {}, sanctionAssignment = null }) {
     const [confirmAction, setConfirmAction] = useState(null);
     const [hearingSanction, setHearingSanction] = useState('');
+    const [hearingHours, setHearingHours] = useState('');
+    const [serviceHours, setServiceHours] = useState('');
+    const [serviceSanction, setServiceSanction] = useState('');
+    const [serviceError, setServiceError] = useState('');
     const [osaType, setOsaType] = useState('letter_sent');
     const [osaDescription, setOsaDescription] = useState('');
     const [osaError, setOsaError] = useState('');
@@ -49,7 +54,15 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
     const handleCompleteHearing = () => {
         if (!latestHearing) return;
         setHearingSanction('');
+        setHearingHours('');
         setConfirmAction('complete');
+    };
+
+    const handleAssignServiceHours = () => {
+        setServiceHours('');
+        setServiceSanction(caseRecord.sanction || '');
+        setServiceError('');
+        setConfirmAction('assign_hours');
     };
 
     const handleEndorse = (e) => {
@@ -81,8 +94,23 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                 router.post(route('hearings.start', latestHearing.id));
                 break;
             case 'complete':
-                router.post(route('hearings.complete', latestHearing.id), { sanction: hearingSanction });
+                router.post(route('hearings.complete', latestHearing.id), {
+                    sanction: hearingSanction,
+                    ...(hearingHours ? { required_hours: hearingHours } : {}),
+                });
                 break;
+            case 'assign_hours': {
+                const hours = parseFloat(serviceHours);
+                if (!serviceHours || Number.isNaN(hours) || hours < 0.25) {
+                    setServiceError('Enter required hours (minimum 0.25).');
+                    return;
+                }
+                router.post(route('cases.assign-service-hours', caseRecord.id), {
+                    required_hours: hours,
+                    sanction: serviceSanction || undefined,
+                });
+                break;
+            }
             case 'endorse':
                 router.post(route('cases.endorse', caseRecord.id));
                 break;
@@ -419,6 +447,16 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                             Schedule Hearing
                                         </Link>
                                     )}
+                                    {workflow.can_assign_service_hours && (
+                                        <button
+                                            type="button"
+                                            onClick={handleAssignServiceHours}
+                                            className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-teal-50 border border-teal-200 text-teal-700 rounded-xl text-sm font-bold shadow-sm hover:bg-teal-100 hover:-translate-y-0.5 transition-all duration-200"
+                                        >
+                                            <ClipboardList className="w-4.5 h-4.5" />
+                                            Assign GSO Service Hours
+                                        </button>
+                                    )}
                                     {!isEndorsed && (
                                     <button
                                         type="button"
@@ -442,13 +480,39 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                                         Close Case
                                     </button>
                                 </div>
-                                
-                                {/* Destructive Actions - Admin Only usually, but let's place it below */}
                                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                     <button onClick={handleDelete} className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 rounded-xl text-sm font-bold shadow-sm hover:bg-rose-100 dark:hover:bg-rose-900/30 hover:-translate-y-0.5 transition-all duration-200">
                                         <Trash2 className="w-4.5 h-4.5" />
                                         Move to Trash Bin
                                     </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {sanctionAssignment && (
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-teal-200/80 dark:border-teal-800/50 shadow-sm p-6">
+                                <h3 className="text-[11px] font-bold text-teal-700 dark:text-teal-300 uppercase tracking-widest mb-4">GSO Community Service</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-500">Status</span>
+                                        <span className="font-bold text-slate-900 dark:text-white capitalize">{String(sanctionAssignment.status || '').replaceAll('_', ' ')}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-500">Hours</span>
+                                        <span className="font-bold text-slate-900 dark:text-white">
+                                            {sanctionAssignment.hours_served ?? 0} / {sanctionAssignment.required_hours ?? 0}
+                                        </span>
+                                    </div>
+                                    {workflow.has_pending_gso && (
+                                        <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
+                                            GSO is still monitoring DTR. Case cannot be closed until GSO marks Complete.
+                                        </p>
+                                    )}
+                                    {sanctionAssignment.status === 'submitted_to_osa' && (
+                                        <p className="text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-3 py-2">
+                                            GSO completed hours. OSA can now close or continue the case.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -523,8 +587,8 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                 onClose={() => setConfirmAction(null)}
                 onConfirm={runConfirmAction}
                 title="Complete Hearing"
-                description="Enter the sanction or resolution for this hearing."
-                confirmLabel="Close Case"
+                description="Enter the sanction. Add required hours only if GSO must monitor community service (case stays open until GSO completes)."
+                confirmLabel="Complete Hearing"
                 destructive={false}
             >
                 <label htmlFor="hearing-sanction" className="block text-xs font-bold text-slate-500 uppercase mb-2">
@@ -538,6 +602,54 @@ export default function Show({ auth, caseRecord, offenseHistory, offenseSummary,
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
                     placeholder="Enter the sanction or resolution..."
                 />
+                <label htmlFor="hearing-hours" className="block text-xs font-bold text-slate-500 uppercase mb-2 mt-4">
+                    GSO required hours (optional)
+                </label>
+                <input
+                    id="hearing-hours"
+                    type="number"
+                    min="0.25"
+                    step="0.25"
+                    value={hearingHours}
+                    onChange={(e) => setHearingHours(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                    placeholder="e.g. 8 — leave blank to close case now"
+                />
+            </ConfirmDialog>
+            <ConfirmDialog
+                open={confirmAction === 'assign_hours'}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={runConfirmAction}
+                title="Assign GSO Service Hours"
+                description="Creates a DTR assignment for GSO. Case cannot be closed until GSO marks Complete."
+                confirmLabel="Assign to GSO"
+            >
+                <label htmlFor="service-sanction" className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                    Sanction label (optional)
+                </label>
+                <input
+                    id="service-sanction"
+                    type="text"
+                    value={serviceSanction}
+                    onChange={(e) => setServiceSanction(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm mb-4"
+                    placeholder="e.g. 8 hours community service"
+                />
+                <label htmlFor="service-hours" className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                    Required hours
+                </label>
+                <input
+                    id="service-hours"
+                    type="number"
+                    min="0.25"
+                    step="0.25"
+                    value={serviceHours}
+                    onChange={(e) => { setServiceHours(e.target.value); setServiceError(''); }}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                    placeholder="e.g. 8"
+                    autoFocus
+                />
+                {serviceError && <p className="text-rose-500 text-xs mt-1.5 font-semibold">{serviceError}</p>}
             </ConfirmDialog>
             <ConfirmDialog
                 open={confirmAction === 'endorse'}

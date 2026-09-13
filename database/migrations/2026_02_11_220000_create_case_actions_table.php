@@ -22,6 +22,7 @@ return new class extends Migration
                 'verbal_warning',
                 'written_warning',
                 'endorsement',
+                'gso_completed',
                 'other',
             ]);
             $table->text('description');

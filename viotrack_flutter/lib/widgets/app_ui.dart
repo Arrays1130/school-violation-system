@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'vt_ui.dart';
 
+enum SnackKind { success, error, info }
+
 /// Shared VioTrack UI — clean cards, soft shadows, I-LINK dean portal styling.
 class AppUi {
   AppUi._();
@@ -126,25 +128,32 @@ class AppUi {
     );
   }
 
+  static bool reduceMotion(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context);
+
   static Widget staggerIn(
     Widget child,
     int index, {
     int baseDelayMs = 45,
     int maxStaggerSteps = 8,
   }) {
-    // Cap the delay so lazily-built items deep in a list don't wait seconds.
-    final step = index < maxStaggerSteps ? index : maxStaggerSteps;
-    final delay = (step * baseDelayMs).ms;
-    return child
-        .animate()
-        .fadeIn(duration: 320.ms, delay: delay)
-        .slideY(
-          begin: 0.06,
-          end: 0,
-          duration: 320.ms,
-          delay: delay,
-          curve: Curves.easeOutCubic,
-        );
+    return Builder(
+      builder: (context) {
+        if (reduceMotion(context)) return child;
+        final step = index < maxStaggerSteps ? index : maxStaggerSteps;
+        final delay = (step * baseDelayMs).ms;
+        return child
+            .animate()
+            .fadeIn(duration: 320.ms, delay: delay)
+            .slideY(
+              begin: 0.06,
+              end: 0,
+              duration: 320.ms,
+              delay: delay,
+              curve: Curves.easeOutCubic,
+            );
+      },
+    );
   }
 
   /// Animated number that counts up from 0 when first shown or when the
@@ -154,12 +163,19 @@ class AppUi {
     required TextStyle style,
     Duration duration = const Duration(milliseconds: 700),
   }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: value.toDouble()),
-      duration: duration,
-      curve: Curves.easeOutCubic,
-      builder: (context, animated, _) =>
-          Text('${animated.round()}', style: style),
+    return Builder(
+      builder: (context) {
+        if (reduceMotion(context)) {
+          return Text('$value', style: style);
+        }
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: value.toDouble()),
+          duration: duration,
+          curve: Curves.easeOutCubic,
+          builder: (context, animated, _) =>
+              Text('${animated.round()}', style: style),
+        );
+      },
     );
   }
 
@@ -222,6 +238,47 @@ class AppUi {
     );
   }
 
+  static PreferredSizeWidget innerAppBar({
+    required BuildContext context,
+    required String title,
+    List<Widget>? actions,
+  }) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+      leading: IconButton(
+        tooltip: 'Go back',
+        onPressed: () => Navigator.pop(context),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 18,
+          color: AppTheme.textMain,
+        ),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textMain,
+          letterSpacing: -0.3,
+        ),
+      ),
+      actions: actions,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(0.5),
+        child: Divider(
+          height: 0.5,
+          thickness: 0.5,
+          color: AppTheme.inputBorder.withValues(alpha: 0.95),
+        ),
+      ),
+    );
+  }
+
   static Widget sectionHeader(
     String title, {
     String? subtitle,
@@ -229,7 +286,7 @@ class AppUi {
     VoidCallback? onAction,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 16, 8),
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -303,7 +360,7 @@ class AppUi {
     int? animatedValue,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -450,54 +507,51 @@ class AppUi {
     bool compact = false,
   }) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, compact ? 4 : 8, 12, compact ? 0 : 4),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      padding: EdgeInsets.fromLTRB(20, compact ? 12 : 16, 16, compact ? 8 : 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  greeting,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: compact ? 28 : 30,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textMain,
+                    letterSpacing: -0.9,
+                    height: 1.1,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 6),
                   Text(
-                    greeting,
+                    subtitle,
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: AppTheme.textMuted,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: compact ? 26 : 28,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textMain,
-                      letterSpacing: -0.8,
-                      height: 1.1,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: AppTheme.textMuted,
-                        fontWeight: FontWeight.w500,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                  if (badge != null) ...[const SizedBox(height: 10), badge],
                 ],
-              ),
+                if (badge != null) ...[const SizedBox(height: 10), badge],
+              ],
             ),
-            ?trailing,
-          ],
-        ),
+          ),
+          ?trailing,
+        ],
       ),
     );
   }
@@ -510,115 +564,118 @@ class AppUi {
     Widget? trailing,
     Widget? bottom,
     Widget? watermark,
+    bool compact = true,
+    bool safeTop = true,
   }) {
+    final content = Padding(
+      padding: EdgeInsets.fromLTRB(20, compact ? 14 : 16, 12, compact ? 16 : 20),
+      child: Stack(
+          children: [
+            Positioned(
+              top: -36,
+              right: -28,
+              child: IgnorePointer(
+                child: Container(
+                  width: compact ? 110 : 148,
+                  height: compact ? 110 : 148,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+              ),
+            ),
+            if (watermark != null)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.1,
+                    child: SizedBox(
+                      width: compact ? 72 : 110,
+                      height: compact ? 72 : 110,
+                      child: FittedBox(child: watermark),
+                    ),
+                  ),
+                ),
+              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (badge != null) ...[
+                                badge,
+                                const SizedBox(width: 10),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  greeting,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: compact ? 24 : 26,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                height: 1.35,
+                                color: Colors.white.withValues(alpha: 0.78),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    ?trailing,
+                  ],
+                ),
+                if (bottom != null) ...[const SizedBox(height: 14), bottom],
+              ],
+            ),
+          ],
+        ),
+    );
+
     return Container(
       decoration: BoxDecoration(
         gradient: AppTheme.heroGradient,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+          bottomLeft: Radius.circular(compact ? 22 : 28),
+          bottomRight: Radius.circular(compact ? 22 : 28),
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 12, 20),
-          child: Stack(
-            children: [
-              Positioned(
-                top: -30,
-                right: -24,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 148,
-                    height: 148,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                ),
-              ),
-              if (watermark != null)
-                Positioned(
-                  top: 12,
-                  right: 6,
-                  child: IgnorePointer(
-                    child: Opacity(
-                      opacity: 0.11,
-                      child: SizedBox(
-                        width: 110,
-                        height: 110,
-                        child: FittedBox(child: watermark),
-                      ),
-                    ),
-                  ),
-                ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                if (badge != null) ...[
-                                  badge,
-                                  const SizedBox(width: 10),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    greeting,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.85,
-                                      ),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              title,
-                              style: GoogleFonts.inter(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                subtitle,
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  height: 1.35,
-                                  color: Colors.white.withValues(alpha: 0.78),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      ?trailing,
-                    ],
-                  ),
-                  if (bottom != null) ...[const SizedBox(height: 18), bottom],
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+      child: safeTop
+          ? SafeArea(bottom: false, child: content)
+          : content,
     );
   }
 
@@ -1020,6 +1077,47 @@ class AppUi {
     );
   }
 
+  /// Shared snackbar styles — success / error / info.
+  static void showSnack(
+    BuildContext context,
+    String message, {
+    SnackKind kind = SnackKind.info,
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    final Color bg;
+    switch (kind) {
+      case SnackKind.success:
+        bg = AppTheme.accentEmerald;
+      case SnackKind.error:
+        bg = AppTheme.accentRose;
+      case SnackKind.info:
+        bg = AppTheme.primary;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    final height = MediaQuery.sizeOf(context).height;
+    final bottomGap = (height - 160).clamp(8.0, height);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.inter()),
+        backgroundColor: bg,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(12, 8, 12, bottomGap),
+        duration: duration,
+        action: actionLabel != null && onAction != null
+            ? SnackBarAction(
+                label: actionLabel,
+                textColor: Colors.white,
+                onPressed: onAction,
+              )
+            : null,
+      ),
+    );
+  }
+
   static Widget iconCircle({
     required IconData icon,
     required Color color,
@@ -1123,14 +1221,17 @@ class AppUi {
     return Expanded(
       child: Material(
         color: AppTheme.bgCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              border: Border.all(
+                color: AppTheme.inputBorder.withValues(alpha: 0.7),
+              ),
               boxShadow: AppTheme.softShadow,
             ),
             child: Column(
@@ -1178,31 +1279,30 @@ class AppUi {
     String? actionLabel,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
       child: Material(
-        color: AppTheme.bgCard,
-        borderRadius: BorderRadius.circular(18),
+        color: AppTheme.inputBg,
+        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppTheme.radiusPill),
               border: Border.all(
-                color: AppTheme.primary.withValues(alpha: 0.1),
+                color: AppTheme.inputBorder.withValues(alpha: 0.8),
               ),
-              boxShadow: AppTheme.softShadow,
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
                       color: AppTheme.primaryLight,
-                      borderRadius: BorderRadius.circular(10),
+                      shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.search_rounded,
@@ -1235,7 +1335,7 @@ class AppUi {
                   ),
                   Icon(
                     Icons.arrow_forward_ios_rounded,
-                    size: 14,
+                    size: 12,
                     color: AppTheme.textHint.withValues(alpha: 0.8),
                   ),
                 ],

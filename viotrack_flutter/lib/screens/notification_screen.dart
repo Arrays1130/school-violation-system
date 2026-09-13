@@ -11,6 +11,7 @@ import '../widgets/empty_state_widget.dart';
 import 'case_details_screen.dart';
 import 'main_layout.dart';
 import '../widgets/app_ui.dart';
+import '../widgets/vt_ui.dart';
 import '../utils/notification_pagination.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -29,6 +30,8 @@ class NotificationScreenState extends State<NotificationScreen> {
   bool _fetchError = false;
   int _currentPage = 1;
   int _lastPage = 1;
+  bool _unreadOnly = false;
+  DateTime? _lastRefreshedAt;
 
   @override
   void initState() {
@@ -104,6 +107,7 @@ class NotificationScreenState extends State<NotificationScreen> {
           _applyPageResult(result, reset: reset);
           _isLoading = false;
           _fetchError = false;
+          _lastRefreshedAt = DateTime.now();
         });
       }
     } catch (e) {
@@ -141,32 +145,30 @@ class NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _markAllAsRead() async {
+    if (ApiService.isOfflineNotifier.value) {
+      AppUi.showSnack(
+        context,
+        'You are offline. Try again when connected.',
+        kind: SnackKind.error,
+      );
+      return;
+    }
     try {
       await _apiService.markAllNotificationsAsRead();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'All notifications marked as read',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: AppTheme.accentCyan,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppUi.showSnack(
+        context,
+        'All notifications marked as read',
+        kind: SnackKind.success,
       );
       await _fetchNotifications(showLoading: false);
       await _syncBadge();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to mark all as read',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: AppTheme.accentRose,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppUi.showSnack(
+        context,
+        'Failed to mark all as read',
+        kind: SnackKind.error,
       );
     }
   }
@@ -178,81 +180,177 @@ class NotificationScreenState extends State<NotificationScreen> {
         ? _parseNotificationData(notification['data'])
         : _parseNotificationData(notification['data']);
     if (notification['read_at'] == null) {
+      if (ApiService.isOfflineNotifier.value) {
+        if (mounted) {
+          AppUi.showSnack(
+            context,
+            'You are offline. The alert was not marked read.',
+            kind: SnackKind.error,
+          );
+        }
+      } else {
       try {
         await _apiService.markNotificationAsRead(id);
         await _fetchNotifications(showLoading: false);
         await _syncBadge();
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to mark as read',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: AppTheme.accentRose,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppUi.showSnack(
+          context,
+          'Failed to mark as read',
+          kind: SnackKind.error,
         );
+      }
       }
     }
     if (data.containsKey('case_id')) {
       if (!mounted) return;
       Navigator.push(
         context,
-        AppPageTransitions.fadeScale(
+        AppPageTransitions.fadeSlide(
           CaseDetailsScreen(caseId: int.parse(data['case_id'].toString())),
         ),
       ).then((_) => _fetchNotifications(showLoading: false));
     } else {
       if (!mounted) return;
-      _showDetailsDialog(notification['title'] ?? 'Notification Details', data);
+      _showDetailsSheet(
+        notification['title'] ?? 'Notification details',
+        data,
+      );
     }
   }
 
-  void _showDetailsDialog(String title, Map<String, dynamic> data) {
-    showDialog(
+  void _showDetailsSheet(String title, Map<String, dynamic> data) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              data['message'] ?? 'No additional details.',
-              style: GoogleFonts.inter(),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.bgCard,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: AppTheme.floatShadow,
             ),
-            const SizedBox(height: 16),
-            if (data.containsKey('student_name'))
-              _buildDialogInfo("Student", data['student_name']),
-            if (data.containsKey('department'))
-              _buildDialogInfo("Department", data['department']),
-            if (data.containsKey('violation'))
-              _buildDialogInfo("Violation", data['violation']),
-            if (data.containsKey('schedule'))
-              _buildDialogInfo("Schedule", data['schedule']),
-            if (data.containsKey('venue'))
-              _buildDialogInfo("Venue", data['venue']),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "CLOSE",
-              style: GoogleFonts.inter(
-                color: AppTheme.accentCyan,
-                fontWeight: FontWeight.bold,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppTheme.inputBorder,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        AppUi.iconCircle(
+                          icon: Icons.notifications_active_outlined,
+                          color: AppTheme.primary,
+                          size: 40,
+                          iconSize: 18,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textMain,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      data['message']?.toString() ?? 'No additional details.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: AppTheme.textSub,
+                      ),
+                    ),
+                    if (data.containsKey('student_name') ||
+                        data.containsKey('department') ||
+                        data.containsKey('violation') ||
+                        data.containsKey('schedule') ||
+                        data.containsKey('venue')) ...[
+                      const SizedBox(height: 16),
+                      AppUi.surfaceCard(
+                        padding: const EdgeInsets.all(14),
+                        color: AppTheme.bgLight,
+                        borderColor: AppTheme.inputBorder.withValues(alpha: 0.6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (data.containsKey('student_name'))
+                              _buildDialogInfo(
+                                'Student',
+                                data['student_name'].toString(),
+                              ),
+                            if (data.containsKey('department'))
+                              _buildDialogInfo(
+                                'Department',
+                                data['department'].toString(),
+                              ),
+                            if (data.containsKey('violation'))
+                              _buildDialogInfo(
+                                'Violation',
+                                data['violation'].toString(),
+                              ),
+                            if (data.containsKey('schedule'))
+                              _buildDialogInfo(
+                                'Schedule',
+                                data['schedule'].toString(),
+                              ),
+                            if (data.containsKey('venue'))
+                              _buildDialogInfo(
+                                'Venue',
+                                data['venue'].toString(),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          'Close',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -261,11 +359,11 @@ class NotificationScreenState extends State<NotificationScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: RichText(
         text: TextSpan(
-          style: GoogleFonts.inter(color: AppTheme.textMain),
+          style: GoogleFonts.inter(color: AppTheme.textMain, fontSize: 13),
           children: [
             TextSpan(
-              text: "$label: ",
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             TextSpan(text: value),
           ],
@@ -279,10 +377,13 @@ class NotificationScreenState extends State<NotificationScreen> {
     final unreadCount = _notifications
         .where((n) => n['read_at'] == null)
         .length;
-    final bottomPadding =
-        AppTheme.bottomNavClearance + MediaQuery.paddingOf(context).bottom;
+    final visible = _unreadOnly
+        ? _notifications.where((n) => n['read_at'] == null).toList()
+        : _notifications;
+    final bottomPadding = 20 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
+      primary: false,
       backgroundColor: AppTheme.bgLight,
       body: RefreshIndicator(
         onRefresh: () => _fetchNotifications(
@@ -290,12 +391,20 @@ class NotificationScreenState extends State<NotificationScreen> {
           reset: true,
           forcedRefresh: true,
         ),
-        color: AppTheme.accentCyan,
+        color: AppTheme.primary,
         child: CustomScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(child: _buildHeader(unreadCount)),
+            if (_lastRefreshedAt != null && !_isLoading)
+              SliverToBoxAdapter(
+                child: AppUi.subtleMetaLine(
+                  'Last updated ${AppUi.formatRelativeTime(_lastRefreshedAt)}',
+                  icon: Icons.update_rounded,
+                ),
+              ),
+            SliverToBoxAdapter(child: _buildAlertChips(unreadCount)),
             if (_isLoading)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -310,7 +419,7 @@ class NotificationScreenState extends State<NotificationScreen> {
                   onRetry: () => _fetchNotifications(forcedRefresh: true),
                 ),
               )
-            else if (_notifications.isEmpty)
+            else if (visible.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: _buildEmptyState(),
@@ -321,7 +430,7 @@ class NotificationScreenState extends State<NotificationScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      if (index >= _notifications.length) {
+                      if (index >= visible.length) {
                         return const Padding(
                           padding: EdgeInsets.all(16),
                           child: Center(
@@ -335,7 +444,7 @@ class NotificationScreenState extends State<NotificationScreen> {
                       return RepaintBoundary(
                         child: AppUi.staggerIn(
                           _buildNotificationItem(
-                            _notifications[index],
+                            visible[index],
                             index,
                           ),
                           index,
@@ -343,12 +452,63 @@ class NotificationScreenState extends State<NotificationScreen> {
                       );
                     },
                     childCount:
-                        _notifications.length + (_isLoadingMore ? 1 : 0),
+                        visible.length + (_isLoadingMore ? 1 : 0),
                   ),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAlertChips(int unreadCount) {
+    Widget chip(String label, bool selected, VoidCallback onTap) {
+      return Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: VtPressable(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected ? AppTheme.primary : Colors.white,
+                borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                border: Border.all(
+                  color: selected ? AppTheme.primary : AppTheme.inputBorder,
+                ),
+              ),
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : AppTheme.textMuted,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: Row(
+        children: [
+          chip('All', !_unreadOnly, () {
+            HapticFeedback.selectionClick();
+            setState(() => _unreadOnly = false);
+          }),
+          chip('Unread ($unreadCount)', _unreadOnly, () {
+            HapticFeedback.selectionClick();
+            setState(() => _unreadOnly = true);
+          }),
+        ],
       ),
     );
   }
@@ -359,12 +519,13 @@ class NotificationScreenState extends State<NotificationScreen> {
           ? '$unreadCount unread'
           : 'All caught up',
       title: 'Alerts',
-      subtitle: 'Hearings, endorsements, and case updates land here.',
+      safeTop: false,
+      subtitle: 'Hearings, endorsements, and case updates.',
       badge: AppUi.iconCircle(
         icon: Icons.notifications_active_outlined,
-        color: AppTheme.primaryNavy,
-        size: 36,
-        iconSize: 18,
+        color: AppTheme.primary,
+        size: 32,
+        iconSize: 16,
         backgroundColor: Colors.white,
       ),
       trailing: unreadCount > 0
@@ -417,11 +578,12 @@ class NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const EmptyStateWidget(
+    return EmptyStateWidget(
       icon: Icons.notifications_off_rounded,
-      title: "All caught up!",
-      message:
-          "You have no new notifications at the moment. We'll alert you when there's an update.",
+      title: _unreadOnly ? 'No unread alerts' : 'All caught up!',
+      message: _unreadOnly
+          ? 'You have no unread notifications. Switch to All to see earlier alerts.'
+          : "You have no new notifications at the moment. We'll alert you when there's an update.",
     );
   }
 
@@ -429,17 +591,23 @@ class NotificationScreenState extends State<NotificationScreen> {
     final isUnread = notif['read_at'] == null;
     final Map<String, dynamic> data = _parseNotificationData(notif['data']);
 
-    return Padding(
+    return Semantics(
+      button: true,
+      label:
+          '${isUnread ? 'Unread' : 'Read'} notification: ${notif['title'] ?? data['title'] ?? 'Record update'}',
+      child: Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: AppUi.surfaceCard(
+      child: VtPressable(
+        child: AppUi.surfaceCard(
         padding: EdgeInsets.zero,
         clip: true,
+        radius: 20,
         borderColor: isUnread
-            ? AppTheme.accentCyan.withValues(alpha: 0.22)
+            ? AppTheme.primary.withValues(alpha: 0.22)
             : AppTheme.inputBorder.withValues(alpha: 0.5),
         color: isUnread
-            ? AppTheme.accentCyan.withValues(alpha: 0.03)
-            : AppTheme.bgCard,
+            ? AppTheme.primary.withValues(alpha: 0.06)
+            : Colors.white,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -454,9 +622,9 @@ class NotificationScreenState extends State<NotificationScreen> {
                   if (isUnread)
                     Container(
                       width: 4,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.accentGradient,
-                        borderRadius: const BorderRadius.horizontal(
+                      decoration: const BoxDecoration(
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(20),
                         ),
                       ),
@@ -500,13 +668,9 @@ class NotificationScreenState extends State<NotificationScreen> {
                                             data['title'] ??
                                             'Record Update',
                                         style: GoogleFonts.inter(
-                                          fontWeight: isUnread
-                                              ? FontWeight.w800
-                                              : FontWeight.w600,
-                                          fontSize: 14,
-                                          color: isUnread
-                                              ? AppTheme.textMain
-                                              : AppTheme.textMuted,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                          color: AppTheme.textMain,
                                         ),
                                       ),
                                     ),
@@ -551,8 +715,8 @@ class NotificationScreenState extends State<NotificationScreen> {
                                     Text(
                                       _formatDate(notif['created_at']),
                                       style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
                                         color: AppTheme.textHint,
                                       ),
                                     ),
@@ -571,6 +735,8 @@ class NotificationScreenState extends State<NotificationScreen> {
           ),
         ),
       ),
+      ),
+    ),
     );
   }
 
