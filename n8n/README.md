@@ -2,7 +2,33 @@
 
 Presentation-ready automation for the VioTrack school violation lifecycle.
 
-## What the panel will see
+## Online setup (recommended for defense)
+
+### 1) Host n8n online
+1. Go to [https://app.n8n.cloud](https://app.n8n.cloud) and create / open a workspace (free trial works for demo).
+2. **Workflows → Import from File** → choose `VioTrack-Capstone-Automation.json`.
+3. Open **VioTrack Webhook** node → switch to **Production URL** → copy it.  
+   It should look like:  
+   `https://YOUR-INSTANCE.app.n8n.cloud/webhook/viotrack-automation`  
+   (must be `/webhook/`, **not** `/webhook-test/`)
+4. Toggle the workflow **Active** (ON).
+5. Optional: attach SMTP credential on `Send Email Notice`; set n8n env `SEMAPHORE_API_KEY` for SMS.
+
+### 2) Point Render (VioTrack) to that webhook
+In Render Dashboard → your web service → **Environment**:
+
+```env
+N8N_WEBHOOK_URL=https://YOUR-INSTANCE.app.n8n.cloud/webhook/viotrack-automation
+```
+
+Save → wait for redeploy (or Manual Deploy).
+
+### 3) Verify
+Trigger a real action in production (record violation / assign GSO hours) and open n8n → **Executions**.
+
+---
+
+## Pipeline the panel will see
 
 ```text
 Violation recorded
@@ -11,43 +37,6 @@ Violation recorded
          → GSO DTR completed → OSA handoff
             → Case closed
 ```
-
-Each stage fires a Laravel webhook into **n8n**, which:
-
-1. Routes the event
-2. Builds email + SMS copy
-3. Sends notices (when credentials are configured)
-4. Returns an audit JSON response (great for live Executions demo)
-
-## Import the workflow
-
-1. Open n8n (local or cloud)
-2. **Workflows → Import from File**
-3. Choose [`VioTrack-Capstone-Automation.json`](VioTrack-Capstone-Automation.json)
-4. Configure:
-   - **SMTP** credential on `Send Email Notice`
-   - Env vars in n8n:
-     - `SEMAPHORE_API_KEY` (optional SMS)
-     - `SEMAPHORE_SENDER` (optional)
-     - `VIOTRACK_FROM_EMAIL` (optional)
-5. Click **Listen for test event** / activate the workflow
-6. Copy the Production Webhook URL
-
-## Laravel `.env`
-
-```env
-N8N_WEBHOOK_URL=http://localhost:5678/webhook/viotrack-automation
-# For n8n cloud, use the production HTTPS webhook URL from the imported workflow
-```
-
-After changing `.env`:
-
-```bash
-php artisan config:clear
-php artisan n8n:test
-```
-
-`docker/start.sh` already runs the queue worker path your app uses; make sure queue jobs are processed so webhooks leave Laravel.
 
 ## Events Laravel sends
 
@@ -59,20 +48,16 @@ php artisan n8n:test
 | `gso_sanction_completed` | GSO taps Complete in mobile app |
 | `case_closed` | OSA closes the case |
 
-Legacy export [`school_violation_workflow.json`](school_violation_workflow.json) is kept for reference; use **VioTrack Capstone Automation** for defense.
-
 ## 3-minute defense script
 
-1. Open n8n **Executions** beside VioTrack web/app.
-2. Record a minor violation → show `violation_recorded` execution.
-3. Schedule a hearing → `hearing_scheduled`.
-4. Assign GSO service hours → `gso_sanction_assigned`.
-5. On GSO app: Time In / Out / **Complete** → `gso_sanction_completed`.
-6. Close case on web → `case_closed`.
-7. Point to sticky notes on the canvas: stages 1–5 = full compliance pipeline.
+1. Open n8n **Executions** beside VioTrack.
+2. Record a violation → `violation_recorded`.
+3. Schedule hearing → `hearing_scheduled`.
+4. Assign GSO hours → `gso_sanction_assigned`.
+5. GSO app Complete → `gso_sanction_completed`.
+6. Close case → `case_closed`.
 
-## Security notes
+## Security
 
-- Do **not** hardcode SMS API keys in the workflow JSON.
-- Prefer n8n environment variables / credentials.
-- Keep `N8N_WEBHOOK_URL` out of public screenshots if it includes secrets.
+- Do not hardcode SMS API keys in the workflow JSON.
+- Use `/webhook/` production URL while the workflow is Active.
