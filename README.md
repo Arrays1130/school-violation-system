@@ -66,7 +66,7 @@ ATTACHMENTS_DISK=local
 
 SCHOOL_NAME="I-Link CST"
 
-# n8n
+# n8n (import n8n/VioTrack-Capstone-Automation.json — see n8n/README.md)
 N8N_WEBHOOK_URL=
 N8N_WEBHOOK_SECRET=
 

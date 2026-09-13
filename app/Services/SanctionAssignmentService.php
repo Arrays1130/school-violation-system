@@ -56,6 +56,7 @@ class SanctionAssignmentService
         ]);
 
         $this->notifyGsoUsersAssigned($assignment);
+        $this->dispatchN8nLifecycle('gso_sanction_assigned', $assignment);
 
         return $assignment->fresh(['dtrEntries', 'studentCase.student', 'studentCase.violation']);
     }
@@ -151,6 +152,7 @@ class SanctionAssignmentService
 
             $assignment = $assignment->fresh(['studentCase.student', 'studentCase.violation', 'dtrEntries']);
             $this->notifyOsaCompleted($assignment);
+            $this->dispatchN8nLifecycle('gso_sanction_completed', $assignment);
 
             return $assignment;
         });
@@ -183,5 +185,32 @@ class SanctionAssignmentService
         }
 
         Notification::send($osaUsers, new GsoSanctionCompletedNotification($assignment));
+    }
+
+    protected function dispatchN8nLifecycle(string $event, SanctionAssignment $assignment): void
+    {
+        $assignment->loadMissing(['studentCase.student', 'studentCase.violation']);
+        $case = $assignment->studentCase;
+        $student = $case?->student;
+
+        \App\Jobs\TriggerN8nWebhook::dispatch($event, [
+            'case_id' => $assignment->case_id,
+            'case_code' => $case?->display_code,
+            'sanction_assignment_id' => $assignment->id,
+            'student_db_id' => $student?->id,
+            'student_name' => $student?->full_name,
+            'student_email' => $student?->email,
+            'guardian_email' => $student?->guardian_email,
+            'guardian_contact' => $student?->guardian_phone,
+            'department' => $student?->department,
+            'violation_title' => $case?->violation?->title,
+            'violation_severity' => $case?->violation?->severity,
+            'sanction' => $case?->sanction,
+            'required_hours' => $assignment->required_hours,
+            'hours_served' => $assignment->hoursServed(),
+            'status' => $assignment->status,
+        ]);
+
+        \App\Support\QueueHelper::triggerBackgroundWorker();
     }
 }

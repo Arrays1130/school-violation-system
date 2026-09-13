@@ -1,0 +1,390 @@
+{
+  "name": "VioTrack Capstone Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## VioTrack × n8n\n**Capstone automation pipeline**\n\nEvents:\n1. `violation_recorded`\n2. `hearing_scheduled`\n3. `gso_sanction_assigned`\n4. `gso_sanction_completed`\n5. `case_closed`\n\nLaravel → Webhook → Route → Email + SMS + Audit log",
+        "height": 340,
+        "width": 360,
+        "color": 5
+      },
+      "id": "sticky-overview",
+      "name": "Capstone Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-220, 80]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "viotrack-automation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-in",
+      "name": "VioTrack Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [40, 360],
+      "webhookId": "viotrack-capstone-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0].json;\nconst body = raw.body && typeof raw.body === 'object' ? raw.body : raw;\n\nconst eventType = body.event_type || body.event || 'unknown';\nconst guardianPhone = body.guardian_contact || body.guardian_phone || body.student_contact || '';\nconst guardianEmail = body.guardian_email || '';\nconst studentEmail = body.student_email || '';\nconst studentName = body.student_name || 'Student';\nconst caseCode = body.case_code || (body.case_id ? `Case #${body.case_id}` : 'N/A');\nconst violation = body.violation_title || 'School violation';\nconst severity = body.violation_severity || body.severity || 'N/A';\nconst sanction = body.sanction || 'To be determined';\nconst department = body.department || 'N/A';\nconst hours = body.required_hours || body.hours_served || '';\nconst closedAt = body.closed_at || '';\nconst scheduledAt = body.scheduled_at || '';\nconst venue = body.venue || '';\n\nlet subject = `[VioTrack] Update — ${caseCode}`;\nlet emailText = '';\nlet smsText = '';\nlet stage = eventType;\n\nswitch (eventType) {\n  case 'violation_recorded':\n    subject = `[VioTrack] Violation recorded — ${studentName}`;\n    emailText = `Good day,\\n\\nA school violation was recorded for ${studentName} (${department}).\\n\\nCase: ${caseCode}\\nViolation: ${violation}\\nSeverity: ${severity}\\nRecommended sanction: ${sanction}\\n\\nPlease coordinate with the Office of Student Affairs / Dean as needed.\\n\\n— VioTrack · I-Link CST`;\n    smsText = `I-Link CST: Violation recorded for ${studentName} (${violation}). Case ${caseCode}. Check VioTrack / contact OSA.`;\n    stage = '1 · Violation recorded';\n    break;\n  case 'hearing_scheduled':\n    subject = `[VioTrack] Hearing scheduled — ${studentName}`;\n    emailText = `Good day,\\n\\nA hearing has been scheduled for ${studentName}.\\n\\nCase: ${caseCode}\\nViolation: ${violation}\\nWhen: ${scheduledAt || 'TBA'}\\nVenue: ${venue || 'TBA'}\\n\\nPlease arrive on time / ensure the guardian is informed.\\n\\n— VioTrack · I-Link CST`;\n    smsText = `I-Link CST: Hearing for ${studentName} on ${scheduledAt || 'TBA'} at ${venue || 'TBA'}. Case ${caseCode}.`;\n    stage = '2 · Hearing scheduled';\n    break;\n  case 'gso_sanction_assigned':\n    subject = `[VioTrack] Community service assigned — ${studentName}`;\n    emailText = `Good day,\\n\\nCommunity service hours were assigned for ${studentName}.\\n\\nCase: ${caseCode}\\nSanction: ${sanction}\\nRequired hours: ${hours || 'N/A'}\\n\\nGSO will monitor DTR compliance in VioTrack.\\n\\n— VioTrack · I-Link CST`;\n    smsText = `I-Link CST: ${studentName} assigned ${hours || ''} hr community service. Case ${caseCode}. GSO will monitor DTR.`;\n    stage = '3 · GSO hours assigned';\n    break;\n  case 'gso_sanction_completed':\n    subject = `[VioTrack] GSO completed — ready for OSA — ${studentName}`;\n    emailText = `Good day, OSA team,\\n\\nGSO marked community service COMPLETE for ${studentName}.\\n\\nCase: ${caseCode}\\nHours served: ${hours || 'N/A'}\\nSanction: ${sanction}\\n\\nThe DTR record was forwarded for the next OSA step (review / close case).\\n\\n— VioTrack · I-Link CST`;\n    smsText = `I-Link CST: GSO completed hours for ${studentName}. Case ${caseCode}. Ready for OSA next step.`;\n    stage = '4 · GSO completed → OSA';\n    break;\n  case 'case_closed':\n    subject = `[VioTrack] Case closed — ${studentName}`;\n    emailText = `Good day,\\n\\nThe case for ${studentName} has been officially closed.\\n\\nCase: ${caseCode}\\nViolation: ${violation}\\nSanction served: ${sanction}\\nClosed at: ${closedAt || 'N/A'}\\n\\nThank you for your cooperation.\\n\\n— VioTrack · I-Link CST`;\n    smsText = `I-Link CST: Case ${caseCode} for ${studentName} is CLOSED. Sanction: ${sanction}.`;\n    stage = '5 · Case closed';\n    break;\n  default:\n    subject = `[VioTrack] Event: ${eventType}`;\n    emailText = `Event ${eventType} received for ${studentName}. Case ${caseCode}.`;\n    smsText = `I-Link CST: ${eventType} for ${studentName}. Case ${caseCode}.`;\n    stage = `Other · ${eventType}`;\n}\n\nreturn [{\n  json: {\n    event_type: eventType,\n    stage,\n    subject,\n    email_text: emailText,\n    sms_text: smsText,\n    guardian_email: guardianEmail,\n    student_email: studentEmail,\n    notify_email: guardianEmail || studentEmail,\n    guardian_phone: String(guardianPhone || '').replace(/\\s+/g, ''),\n    student_name: studentName,\n    case_code: caseCode,\n    violation_title: violation,\n    sanction,\n    department,\n    timestamp: body.timestamp || new Date().toISOString(),\n    raw: body\n  }\n}];"
+      },
+      "id": "normalize",
+      "name": "Normalize Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 360]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "violation_recorded",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "violation_recorded"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "hearing_scheduled",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "hearing_scheduled"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "gso_sanction_assigned",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "gso_assigned"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "gso_sanction_completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "gso_completed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "case_closed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "case_closed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "route",
+      "name": "Route by Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [520, 360]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "pipeline_label",
+              "value": "={{ $json.stage }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "pass-all",
+      "name": "Pass to Notifiers",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [780, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c-email",
+              "leftValue": "={{ $json.notify_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-email",
+      "name": "Has Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1020, 220]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.VIOTRACK_FROM_EMAIL || 'noreply@ilinkcst.edu' }}",
+        "toEmail": "={{ $json.notify_email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.email_text }}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Notice",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1260, 140],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_WITH_SMTP_CREDENTIAL_ID",
+          "name": "VioTrack SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c-phone",
+              "leftValue": "={{ $json.guardian_phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-phone",
+      "name": "Has Phone?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1020, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SEMAPHORE_API_KEY }}"
+            },
+            {
+              "name": "number",
+              "value": "={{ $json.guardian_phone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.sms_text }}"
+            },
+            {
+              "name": "sendername",
+              "value": "={{ $env.SEMAPHORE_SENDER || 'SEMAPHORE' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-sms",
+      "name": "Send SMS (Semaphore)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1260, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0].json;\nreturn [{\n  json: {\n    ok: true,\n    stage: item.stage || item.pipeline_label,\n    event_type: item.event_type,\n    student_name: item.student_name,\n    case_code: item.case_code,\n    notified_email: item.notify_email || null,\n    notified_phone: item.guardian_phone || null,\n    presented_at: new Date().toISOString(),\n    message: 'VioTrack automation executed successfully'\n  }\n}];"
+      },
+      "id": "audit",
+      "name": "Build Audit Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 360]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond to Laravel",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1740, 360]
+    },
+    {
+      "parameters": {
+        "content": "### Demo tip\nDuring defense:\n1. Activate this workflow\n2. Record a violation in VioTrack\n3. Show n8n Executions lighting up\n4. Walk stages 1→5 (GSO handoff is stage 4)",
+        "height": 220,
+        "width": 320,
+        "color": 4
+      },
+      "id": "sticky-demo",
+      "name": "Defense Demo Tip",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1480, 80]
+    }
+  ],
+  "connections": {
+    "VioTrack Webhook": {
+      "main": [[{ "node": "Normalize Event", "type": "main", "index": 0 }]]
+    },
+    "Normalize Event": {
+      "main": [[{ "node": "Route by Event", "type": "main", "index": 0 }]]
+    },
+    "Route by Event": {
+      "main": [
+        [{ "node": "Pass to Notifiers", "type": "main", "index": 0 }],
+        [{ "node": "Pass to Notifiers", "type": "main", "index": 0 }],
+        [{ "node": "Pass to Notifiers", "type": "main", "index": 0 }],
+        [{ "node": "Pass to Notifiers", "type": "main", "index": 0 }],
+        [{ "node": "Pass to Notifiers", "type": "main", "index": 0 }],
+        [{ "node": "Pass to Notifiers", "type": "main", "index": 0 }]
+      ]
+    },
+    "Pass to Notifiers": {
+      "main": [
+        [
+          { "node": "Has Email?", "type": "main", "index": 0 },
+          { "node": "Has Phone?", "type": "main", "index": 0 },
+          { "node": "Build Audit Log", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Has Email?": {
+      "main": [
+        [{ "node": "Send Email Notice", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Has Phone?": {
+      "main": [
+        [{ "node": "Send SMS (Semaphore)", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Build Audit Log": {
+      "main": [[{ "node": "Respond to Laravel", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "VioTrack" },
+    { "name": "Capstone" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
